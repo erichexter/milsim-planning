@@ -65,6 +65,8 @@ Faction commanders can publish a complete event briefing — roster, assignments
 | External map platforms | Interactive mapping is high complexity; linking is sufficient for v1 | — Pending |
 | Email/password + magic link | Balances security and ease of access for non-technical players | — Pending |
 | Static frontend + API backend | Separation enables independent scaling; frontend CDN-hosted | — Pending |
+| **API: C# .NET 10 (ASP.NET Core)** | User decision — locked | ✓ Locked |
+| **Frontend: React (Vite)** | User decision — locked | ✓ Locked |
 
 ---
-*Last updated: 2026-03-12 after initialization*
+*Last updated: 2026-03-12 after stack decision (C# .NET 10 API + React/Vite frontend)*

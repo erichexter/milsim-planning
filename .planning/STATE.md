@@ -42,11 +42,13 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Stack: Next.js 15 App Router + PostgreSQL + Drizzle ORM + better-auth + Resend + UploadThing
-- Auth: better-auth with magic link + admin RBAC plugins; magic link tokens must be single-use, 15-60 min expiry
-- Files: UploadThing private storage; pre-signed time-limited URLs only — no public buckets
-- Email: Resend batch send API; notification blast must be async from day one (800 recipients)
-- CSV import: Two-phase (validate → preview → commit) using Papa Parse + Zod + Drizzle transactions
+- **API stack: C# .NET 10 / ASP.NET Core** — user-locked decision, overrides all prior Node.js research
+- **Frontend: React (Vite)** — user-locked decision, replaces Next.js
+- Database: PostgreSQL (unchanged)
+- Auth: Email/password + magic link — implementation library TBD for .NET (e.g. ASP.NET Core Identity)
+- Files: Private storage with authenticated pre-signed URLs — provider TBD
+- Email: Transactional provider (Resend or SendGrid) — notification blast must be async
+- CSV import: Two-phase (validate → preview → commit) — implementation in C#
 
 ### Pending Todos
 
@@ -60,5 +62,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-12
-Stopped at: Roadmap created and written to disk; ready to plan Phase 1
+Stopped at: Stack decision made (C# .NET 10 API + React/Vite frontend); Phase 1 plans invalidated and need replanning
 Resume file: None

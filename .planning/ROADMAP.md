@@ -32,9 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Dependency install, Drizzle schema (8 tables), better-auth wiring, Wave 0 test scaffold
-- [ ] 01-02-PLAN.md — Auth pages (login, magic link two-step, forgot/reset password), middleware, AUTH integration tests
-- [ ] 01-03-PLAN.md — RBAC permission matrix (5 roles), scope guards, IDOR isolation test, email-visibility projection
+- [ ] 01-01-PLAN.md — TBD (replanning: C# .NET 10 + React/Vite stack)
+- [ ] 01-02-PLAN.md — TBD
+- [ ] 01-03-PLAN.md — TBD
 
 ### Phase 2: Commander Workflow
 **Goal**: A Faction Commander can create an event, import their player roster via CSV, and organize players into platoons and squads
@@ -67,7 +67,7 @@ Plans:
 
 Plans:
 - [ ] 03-01: Information sections (markdown editor, attachments, reordering)
-- [ ] 03-02: Map resources (external links and private file upload via UploadThing)
+- [ ] 03-02: Map resources (external links and private file upload)
 - [ ] 03-03: Notification blast, assignment-change emails, and async email pipeline
 
 ### Phase 4: Player Experience & Change Requests
