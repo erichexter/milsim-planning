@@ -29,12 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can log in via magic link sent to their email (single-use, 15-60 min expiry)
   4. User can log out from any page and reset a forgotten password via email link
   5. A Faction Commander can take actions their role permits; a Player is blocked from commander-only actions; email addresses are hidden from Player role
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Database schema, Drizzle migrations, and better-auth setup
-- [ ] 01-02: Email/password and magic link authentication flows
-- [ ] 01-03: RBAC permission matrix and scope guard middleware
+- [ ] 01-01-PLAN.md — Dependency install, Drizzle schema (8 tables), better-auth wiring, Wave 0 test scaffold
+- [ ] 01-02-PLAN.md — Auth pages (login, magic link two-step, forgot/reset password), middleware, AUTH integration tests
+- [ ] 01-03-PLAN.md — RBAC permission matrix (5 roles), scope guards, IDOR isolation test, email-visibility projection
 
 ### Phase 2: Commander Workflow
 **Goal**: A Faction Commander can create an event, import their player roster via CSV, and organize players into platoons and squads
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 0/3 | Planned | - |
 | 2. Commander Workflow | 0/3 | Not started | - |
 | 3. Content, Maps & Notifications | 0/3 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
