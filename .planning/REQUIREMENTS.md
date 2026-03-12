@@ -147,48 +147,48 @@
 | EVNT-04 | Phase 2 | Pending |
 | EVNT-05 | Phase 2 | Pending |
 | EVNT-06 | Phase 2 | Pending |
-| ROST-01 | Phase 3 | Pending |
-| ROST-02 | Phase 3 | Pending |
-| ROST-03 | Phase 3 | Pending |
-| ROST-04 | Phase 3 | Pending |
-| ROST-05 | Phase 3 | Pending |
-| ROST-06 | Phase 3 | Pending |
-| HIER-01 | Phase 3 | Pending |
-| HIER-02 | Phase 3 | Pending |
-| HIER-03 | Phase 3 | Pending |
-| HIER-04 | Phase 3 | Pending |
-| HIER-05 | Phase 3 | Pending |
-| HIER-06 | Phase 3 | Pending |
-| CONT-01 | Phase 4 | Pending |
-| CONT-02 | Phase 4 | Pending |
-| CONT-03 | Phase 4 | Pending |
-| CONT-04 | Phase 4 | Pending |
-| CONT-05 | Phase 4 | Pending |
-| MAPS-01 | Phase 4 | Pending |
-| MAPS-02 | Phase 4 | Pending |
-| MAPS-03 | Phase 4 | Pending |
-| MAPS-04 | Phase 4 | Pending |
-| MAPS-05 | Phase 4 | Pending |
-| NOTF-01 | Phase 5 | Pending |
-| NOTF-02 | Phase 5 | Pending |
-| NOTF-03 | Phase 5 | Pending |
-| NOTF-04 | Phase 5 | Pending |
-| NOTF-05 | Phase 5 | Pending |
-| RCHG-01 | Phase 5 | Pending |
-| RCHG-02 | Phase 5 | Pending |
-| RCHG-03 | Phase 5 | Pending |
-| RCHG-04 | Phase 5 | Pending |
-| RCHG-05 | Phase 5 | Pending |
-| PLAY-01 | Phase 6 | Pending |
-| PLAY-02 | Phase 6 | Pending |
-| PLAY-03 | Phase 6 | Pending |
-| PLAY-04 | Phase 6 | Pending |
-| PLAY-05 | Phase 6 | Pending |
-| PLAY-06 | Phase 6 | Pending |
+| ROST-01 | Phase 2 | Pending |
+| ROST-02 | Phase 2 | Pending |
+| ROST-03 | Phase 2 | Pending |
+| ROST-04 | Phase 2 | Pending |
+| ROST-05 | Phase 2 | Pending |
+| ROST-06 | Phase 2 | Pending |
+| HIER-01 | Phase 2 | Pending |
+| HIER-02 | Phase 2 | Pending |
+| HIER-03 | Phase 2 | Pending |
+| HIER-04 | Phase 2 | Pending |
+| HIER-05 | Phase 2 | Pending |
+| HIER-06 | Phase 2 | Pending |
+| CONT-01 | Phase 3 | Pending |
+| CONT-02 | Phase 3 | Pending |
+| CONT-03 | Phase 3 | Pending |
+| CONT-04 | Phase 3 | Pending |
+| CONT-05 | Phase 3 | Pending |
+| MAPS-01 | Phase 3 | Pending |
+| MAPS-02 | Phase 3 | Pending |
+| MAPS-03 | Phase 3 | Pending |
+| MAPS-04 | Phase 3 | Pending |
+| MAPS-05 | Phase 3 | Pending |
+| NOTF-01 | Phase 3 | Pending |
+| NOTF-02 | Phase 3 | Pending |
+| NOTF-03 | Phase 3 | Pending |
+| NOTF-04 | Phase 3 | Pending |
+| NOTF-05 | Phase 3 | Pending |
+| RCHG-01 | Phase 4 | Pending |
+| RCHG-02 | Phase 4 | Pending |
+| RCHG-03 | Phase 4 | Pending |
+| RCHG-04 | Phase 4 | Pending |
+| RCHG-05 | Phase 4 | Pending |
+| PLAY-01 | Phase 4 | Pending |
+| PLAY-02 | Phase 4 | Pending |
+| PLAY-03 | Phase 4 | Pending |
+| PLAY-04 | Phase 4 | Pending |
+| PLAY-05 | Phase 4 | Pending |
+| PLAY-06 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 54 total
-- Mapped to phases: 54
+- v1 requirements: 56 total (AUTH×6, AUTHZ×6, EVNT×6, ROST×6, HIER×6, CONT×5, MAPS×5, NOTF×5, RCHG×5, PLAY×6)
+- Mapped to phases: 56
 - Unmapped: 0
 
 ---
