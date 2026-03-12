@@ -29,12 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can log in via magic link sent to their email (single-use, 15-60 min expiry)
   4. User can log out from any page and reset a forgotten password via email link
   5. A Faction Commander can take actions their role permits; a Player is blocked from commander-only actions; email addresses are hidden from Player role
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — TBD (replanning: C# .NET 10 + React/Vite stack)
-- [ ] 01-02-PLAN.md — TBD
-- [ ] 01-03-PLAN.md — TBD
+- [ ] 01-01-PLAN.md — Solution scaffold, EF Core entity model + migration, authorization policy registration (API project only)
+- [ ] 01-02-PLAN.md — Test project stubs (PostgreSqlFixture, AuthTests, AuthorizationTests) + auth endpoints (login, magic link, password reset, logout, invite) + JWT service
+- [ ] 01-03-PLAN.md — RBAC handlers + IDOR scope guard: MinimumRoleHandler, ScopeGuard, CurrentUserService, AUTHZ integration tests (wave 3, parallel with 01-04)
+- [ ] 01-04-PLAN.md — React SPA foundation: Vite scaffold, auth.ts, api.ts, useAuth hook, ProtectedRoute, all 5 auth pages (wave 3, parallel with 01-03)
 
 ### Phase 2: Commander Workflow
 **Goal**: A Faction Commander can create an event, import their player roster via CSV, and organize players into platoons and squads
@@ -93,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Planned | - |
+| 1. Foundation | 0/4 | Planned | - |
 | 2. Commander Workflow | 0/3 | Not started | - |
 | 3. Content, Maps & Notifications | 0/3 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
