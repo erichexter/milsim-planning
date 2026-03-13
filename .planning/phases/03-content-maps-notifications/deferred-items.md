@@ -1,0 +1,1 @@
+- 2026-03-13 (03-05 execution): Existing placeholder tests outside this plan still contain `expect(true).toBe(true)` in `web/src/tests/EventList.test.tsx`, `web/src/tests/CsvImportPage.test.tsx`, `web/src/tests/HierarchyBuilder.test.tsx`, and `web/src/tests/RosterView.test.tsx`. Out of scope for plan 03-05.

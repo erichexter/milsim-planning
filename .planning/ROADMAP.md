@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Secure authentication, 5-role RBAC, and full database schema (completed 2026-03-13)
 - [x] **Phase 2: Commander Workflow** - Event management, CSV roster import, and platoon/squad hierarchy (completed 2026-03-13)
-- [ ] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery
+- [x] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery (completed 2026-03-13)
 - [ ] **Phase 4: Player Experience & Change Requests** - Player dashboard, mobile UI, and roster change workflow
 
 ## Phase Details
@@ -73,7 +73,7 @@ Plans:
 - [x] 03-02-PLAN.md — Content API: InfoSectionsController + ContentService (CRUD, reorder, attachment upload flow) + EventService DuplicateEventAsync info-section copy
 - [x] 03-03-PLAN.md — Maps API: MapResourcesController + MapResourceService (external links, private file upload/download)
 - [x] 03-04-PLAN.md — Notifications pipeline: Channel queue + BackgroundService NotificationWorker + NotificationBlastsController + HierarchyService squad-change email trigger
-- [ ] 03-05-PLAN.md — React UI: BriefingPage (DnD editor), MapResourcesPage, NotificationBlastPage + real component tests
+- [x] 03-05-PLAN.md — React UI: BriefingPage (DnD editor), MapResourcesPage, NotificationBlastPage + real component tests
 
 ### Phase 4: Player Experience & Change Requests
 **Goal**: Every player can find their assignment, access all event materials on a mobile phone, and submit roster change requests that commanders can act on
@@ -100,5 +100,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
-| 3. Content, Maps & Notifications | 4/5 | In Progress | - |
+| 3. Content, Maps & Notifications | 5/5 | Complete | 2026-03-13 |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |

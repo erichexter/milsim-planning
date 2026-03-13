@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-content-maps-notifications-04-PLAN.md
-last_updated: "2026-03-13T19:34:32.189Z"
-last_activity: 2026-03-13 — 03-04-PLAN.md complete (NotificationWorker queue pipeline, NotificationBlastsController, NOTF integration tests)
+stopped_at: Completed 03-content-maps-notifications-05-PLAN.md
+last_updated: "2026-03-13T19:52:15.318Z"
+last_activity: 2026-03-13 — 03-05-PLAN.md complete (BriefingPage + MapResourcesPage + NotificationBlastPage frontend and component tests)
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 14
-  completed_plans: 13
-  percent: 93
+  completed_plans: 14
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Faction commanders can publish a complete event briefing — roster, assignments, information sections, and maps — and every player receives it without anything falling through the cracks.
-**Current focus:** Phase 3 — Content, Maps & Notifications
+**Current focus:** Phase 4 — Player Experience & Change Requests
 
 ## Current Position
 
-Phase: 3 of 4 (Content, Maps & Notifications) — **In Progress**
-Plan: 4 of 5 in Phase 3 complete
-Status: 03-01 through 03-04 complete; next plan is 03-05
-Last activity: 2026-03-13 — 03-04-PLAN.md complete (NotificationWorker queue pipeline, NotificationBlastsController, NOTF integration tests)
+Phase: 4 of 4 (Player Experience & Change Requests) — **Ready to Start**
+Plan: 0 of 2 in Phase 4 complete
+Status: Phase 3 complete; next plan is 04-01
+Last activity: 2026-03-13 — 03-05-PLAN.md complete (BriefingPage + MapResourcesPage + NotificationBlastPage frontend and component tests)
 
-Progress: [█████████░] 93% (13 of 14 plans complete)
+Progress: [██████████] 100% (14 of 14 plans complete)
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [█████████░] 93% (13 of 14 plans complete)
 | Phase 03-content-maps-notifications P02 | 12 min | 2 tasks | 10 files |
 | Phase 03-content-maps-notifications P03 | 26 min | 2 tasks | 6 files |
 | Phase 03-content-maps-notifications P04 | 4 min | 2 tasks | 10 files |
+| Phase 03-content-maps-notifications P05 | 7 min | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - [Phase 03-content-maps-notifications]: Map file upload endpoint uses caller-provided map resource ID so confirm/download operate on stable resource identity
 - [Phase 03-content-maps-notifications]: Resend v0.2.2 is registered via AddHttpClient/Configure/AddTransient because AddResend extension is unavailable
 - [Phase 03-content-maps-notifications]: Notification blasts persist NotificationBlast synchronously and return 202 after enqueue; RecipientCount is finalized by worker delivery
+- [Phase 03-content-maps-notifications]: Drag activation stays bound to grip button only for sortable briefing cards.
+- [Phase 03-content-maps-notifications]: Map resources and section attachments fetch download URLs on click instead of prefetching signed links.
+- [Phase 03-content-maps-notifications]: Notification queue toast is shown only when POST /notification-blasts returns HTTP 202.
 
 ### Pending Todos
 
@@ -122,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T19:34:32.181Z
-Stopped at: Completed 03-content-maps-notifications-04-PLAN.md
+Last session: 2026-03-13T19:52:15.309Z
+Stopped at: Completed 03-content-maps-notifications-05-PLAN.md
 Resume file: None
