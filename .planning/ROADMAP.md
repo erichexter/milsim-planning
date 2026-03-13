@@ -47,7 +47,7 @@ Plans:
   3. Imported players who have no account receive an invitation email automatically
   4. Commander can create platoons and squads, assign players to squads, and move players between squads
   5. Full faction roster (names, callsigns, assignments) is visible to all faction members
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Phase 2 entity model (Event/Faction/Platoon/Squad/EventPlayer) + EF migration + Wave 0 test stubs (7 files)
@@ -74,6 +74,7 @@ Plans:
 - [x] 03-03-PLAN.md — Maps API: MapResourcesController + MapResourceService (external links, private file upload/download)
 - [x] 03-04-PLAN.md — Notifications pipeline: Channel queue + BackgroundService NotificationWorker + NotificationBlastsController + HierarchyService squad-change email trigger
 - [x] 03-05-PLAN.md — React UI: BriefingPage (DnD editor), MapResourcesPage, NotificationBlastPage + real component tests
+- [x] 03-06-PLAN.md — NOTF-03 gap closure: roster decision queue contract, worker branch, commander enqueue endpoint, regression verification
 
 ### Phase 4: Player Experience & Change Requests
 **Goal**: Every player can find their assignment, access all event materials on a mobile phone, and submit roster change requests that commanders can act on
@@ -100,5 +101,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
-| 3. Content, Maps & Notifications | 5/5 | Complete | 2026-03-13 |
+| 3. Content, Maps & Notifications | 6/6 | Complete | 2026-03-13 |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |

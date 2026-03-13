@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-content-maps-notifications-05-PLAN.md
-last_updated: "2026-03-13T19:52:15.318Z"
-last_activity: 2026-03-13 — 03-05-PLAN.md complete (BriefingPage + MapResourcesPage + NotificationBlastPage frontend and component tests)
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-03-13T20:32:04.814Z"
+last_activity: 2026-03-13 — 03-06-PLAN.md complete (NOTF-03 roster decision queue + worker gap closure)
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 15
+  completed_plans: 15
   percent: 100
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 Phase: 4 of 4 (Player Experience & Change Requests) — **Ready to Start**
 Plan: 0 of 2 in Phase 4 complete
 Status: Phase 3 complete; next plan is 04-01
-Last activity: 2026-03-13 — 03-05-PLAN.md complete (BriefingPage + MapResourcesPage + NotificationBlastPage frontend and component tests)
+Last activity: 2026-03-13 — 03-06-PLAN.md complete (NOTF-03 roster decision queue + worker gap closure)
 
-Progress: [██████████] 100% (14 of 14 plans complete)
+Progress: [██████████] 100% (15 of 15 plans complete)
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [██████████] 100% (14 of 14 plans complete)
 | Phase 03-content-maps-notifications P03 | 26 min | 2 tasks | 6 files |
 | Phase 03-content-maps-notifications P04 | 4 min | 2 tasks | 10 files |
 | Phase 03-content-maps-notifications P05 | 7 min | 2 tasks | 17 files |
+| Phase 03-content-maps-notifications P06 | 9 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,8 @@ Recent decisions affecting current work:
 - [Phase 03-content-maps-notifications]: Drag activation stays bound to grip button only for sortable briefing cards.
 - [Phase 03-content-maps-notifications]: Map resources and section attachments fetch download URLs on click instead of prefetching signed links.
 - [Phase 03-content-maps-notifications]: Notification queue toast is shown only when POST /notification-blasts returns HTTP 202.
+- [Phase 03-content-maps-notifications]: Kept roster decision delivery on the existing Channel + BackgroundService pipeline to match blast/squad notification behavior.
+- [Phase 03-content-maps-notifications]: Returned 422 for unregistered EventPlayer targets so commanders get actionable non-delivery feedback.
 
 ### Pending Todos
 
@@ -126,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T19:52:15.309Z
-Stopped at: Completed 03-content-maps-notifications-05-PLAN.md
+Last session: 2026-03-13T20:32:04.806Z
+Stopped at: Completed 03-06-PLAN.md
 Resume file: None
