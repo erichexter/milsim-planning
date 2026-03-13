@@ -1,10 +1,14 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
@@ -14,8 +18,9 @@ using MilsimPlanning.Api.Tests.Fixtures;
 using Moq;
 using Resend;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Xunit;
@@ -48,12 +53,30 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
         _queueMock = new Mock<INotificationQueue>();
         _queueMock.Setup(q => q.EnqueueAsync(It.IsAny<NotificationJob>(), It.IsAny<CancellationToken>()))
                   .Returns(ValueTask.CompletedTask);
+        _queueMock.Setup(q => q.ReadAllAsync(It.IsAny<CancellationToken>()))
+                  .Returns((CancellationToken ct) => EmptyQueueAsync(ct));
 
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Jwt:Secret"] = "dev-placeholder-secret-32-chars!!",
+                        ["Jwt:Issuer"] = "milsim-tests",
+                        ["Jwt:Audience"] = "milsim-tests"
+                    });
+                });
+
                 builder.ConfigureServices(services =>
                 {
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
+                        options.DefaultChallengeScheme = TestAuthHandler.SchemeName;
+                    }).AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+
                     services.RemoveAll<DbContextOptions<AppDbContext>>();
                     services.RemoveAll<AppDbContext>();
                     services.AddDbContext<AppDbContext>(opts =>
@@ -64,6 +87,16 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
 
                     services.RemoveAll<INotificationQueue>();
                     services.AddSingleton(_queueMock.Object);
+
+                    var notificationWorkerDescriptors = services
+                        .Where(d => d.ServiceType == typeof(IHostedService)
+                                    && d.ImplementationType == typeof(NotificationWorker))
+                        .ToList();
+
+                    foreach (var descriptor in notificationWorkerDescriptors)
+                    {
+                        services.Remove(descriptor);
+                    }
                 });
             });
 
@@ -104,13 +137,13 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
         db.EventMemberships.Add(new EventMembership { UserId = player.Id, EventId = _eventId, Role = "player" });
         await db.SaveChangesAsync();
 
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         _commanderClient = _factory.CreateClient();
-        _commanderClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(commander, "faction_commander"));
+        _commanderClient.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, _commanderUserId);
+        _commanderClient.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, "faction_commander");
+
         _playerClient = _factory.CreateClient();
-        _playerClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(player, "player"));
+        _playerClient.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, _playerUserId);
+        _playerClient.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, "player");
     }
 
     public Task DisposeAsync()
@@ -177,6 +210,54 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
         await db.SaveChangesAsync();
 
         return squad.Id;
+    }
+
+    private static async IAsyncEnumerable<NotificationJob> EmptyQueueAsync([EnumeratorCancellation] CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            await Task.Delay(50, ct);
+        }
+
+        yield break;
+    }
+}
+
+internal sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    public const string SchemeName = "Test";
+    public const string UserIdHeader = "X-Test-UserId";
+    public const string RoleHeader = "X-Test-Role";
+
+    public TestAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : base(options, logger, encoder)
+    {
+    }
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var userId = Request.Headers[UserIdHeader].FirstOrDefault();
+        var role = Request.Headers[RoleHeader].FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(role))
+        {
+            return Task.FromResult(AuthenticateResult.Fail("Missing test auth headers."));
+        }
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim("sub", userId),
+            new Claim(ClaimTypes.Role, role)
+        };
+
+        var identity = new ClaimsIdentity(claims, SchemeName);
+        var principal = new ClaimsPrincipal(identity);
+        var ticket = new AuthenticationTicket(principal, SchemeName);
+        return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
 
