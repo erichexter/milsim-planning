@@ -84,6 +84,7 @@ builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<EventService>();
 builder.Services.AddScoped<RosterService>();
 builder.Services.AddScoped<HierarchyService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();
