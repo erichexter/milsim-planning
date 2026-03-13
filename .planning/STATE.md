@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-08-PLAN.md
-last_updated: "2026-03-13T21:29:49.456Z"
-last_activity: 2026-03-13 — 03-08-PLAN.md complete (notification test-host stability + NOTF regression)
+stopped_at: Completed 03-09-PLAN.md
+last_updated: "2026-03-13T22:19:05.562Z"
+last_activity: 2026-03-13 — 03-09-PLAN.md complete (CONT/MAPS auth harness gap closure + full regression)
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 18
+  completed_plans: 18
   percent: 100
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 Phase: 4 of 4 (Player Experience & Change Requests) — **Ready to Start**
 Plan: 0 of 2 in Phase 4 complete
 Status: Phase 3 complete; next plan is 04-01
-Last activity: 2026-03-13 — 03-08-PLAN.md complete (notification test-host stability + NOTF regression)
+Last activity: 2026-03-13 — 03-09-PLAN.md complete (CONT/MAPS auth harness gap closure + full regression)
 
-Progress: [██████████] 100% (17 of 17 plans complete)
+Progress: [██████████] 100% (18 of 18 plans complete)
 
 ## Performance Metrics
 
@@ -71,6 +71,7 @@ Progress: [██████████] 100% (17 of 17 plans complete)
 | Phase 03-content-maps-notifications P06 | 9 min | 2 tasks | 5 files |
 | Phase 03 P07 | 3 min | 2 tasks | 2 files |
 | Phase 03-content-maps-notifications P08 | 25 min | 2 tasks | 1 files |
+| Phase 03-content-maps-notifications P09 | 5 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,8 @@ Recent decisions affecting current work:
 - [Phase 03]: Added Phase2StatusMigrationTests to assert both physical integer column type and EventStatus enum round-trip after MigrateAsync.
 - [Phase 03-content-maps-notifications]: Notification API integration tests now use deterministic test-auth headers to avoid env-sensitive JWT failures in NOTF assertions.
 - [Phase 03-content-maps-notifications]: NotificationWorker hosted registration is removed for notification API harness runs while worker behavior remains covered in NOTF_Decision_Worker tests.
+- [Phase 03-content-maps-notifications]: CONT and MAPS integration harnesses now authenticate via deterministic test scheme headers instead of runtime JWT generation.
+- [Phase 03-content-maps-notifications]: IntegrationTestAuthHandler.ApplyTestIdentity centralizes commander/player header wiring to keep role contracts aligned across suites.
 
 ### Pending Todos
 
@@ -132,10 +135,9 @@ None yet.
 
 - **Phase 2 flag**: Drag-and-drop hierarchy builder — assess dnd-kit vs select-and-confirm fallback during Phase 2 planning
 - **Phase 3 flag**: Verify Resend batch API rate limits for 800-recipient events before designing notification dispatch
-- **Phase 3 gap closure:** `Category~CONT|Category~MAPS` regression currently fails with widespread 401 Unauthorized responses in existing test host setup (outside 03-07 migration scope)
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:29:49.435Z
-Stopped at: Completed 03-08-PLAN.md
+Last session: 2026-03-13T22:19:05.553Z
+Stopped at: Completed 03-09-PLAN.md
 Resume file: None

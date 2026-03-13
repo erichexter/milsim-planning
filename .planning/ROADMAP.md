@@ -66,7 +66,7 @@ Plans:
   3. Uploaded files are accessible only via authenticated time-limited download links (never public URLs)
   4. Commander can send a notification blast to all event participants; the blast is processed asynchronously and does not block the UI
   5. Squad-assignment-change emails and roster-change-decision emails are sent automatically via transactional provider
-**Plans**: 8 plans
+**Plans**: 9 plans
 
 Plans:
 - [x] 03-01-PLAN.md — Wave 0 test stubs + EF Core Phase 3 entities (InfoSection, InfoSectionAttachment, MapResource, NotificationBlast) + Phase3Schema migration + FileService (R2 pre-signed URLs)
@@ -77,6 +77,7 @@ Plans:
 - [x] 03-06-PLAN.md — NOTF-03 gap closure: roster decision queue contract, worker branch, commander enqueue endpoint, regression verification
 - [x] 03-07-PLAN.md — Gap closure: fix PostgreSQL status migration cast path and add migration replay regression test for CONT/MAPS suites
 - [x] 03-08-PLAN.md — Gap closure: stabilize notification test host DI/queue setup and rerun NOTF regression categories
+- [x] 03-09-PLAN.md — Gap closure: extract shared deterministic integration auth handler and rewire CONT/MAPS test harnesses to close 401 verification failures
 
 ### Phase 4: Player Experience & Change Requests
 **Goal**: Every player can find their assignment, access all event materials on a mobile phone, and submit roster change requests that commanders can act on
@@ -103,5 +104,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
-| 3. Content, Maps & Notifications | 8/8 | Complete | 2026-03-13 |
+| 3. Content, Maps & Notifications | 9/9 | Complete | 2026-03-13 |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
