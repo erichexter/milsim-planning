@@ -2,17 +2,21 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
 using MilsimPlanning.Api.Infrastructure.BackgroundJobs;
 using MilsimPlanning.Api.Services;
 using MilsimPlanning.Api.Tests.Fixtures;
 using Moq;
+using Resend;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Xunit;
 
@@ -310,5 +314,125 @@ public class SquadChangeNotificationTests : NotificationTestsBase
         _queueMock.Verify(q => q.EnqueueAsync(
             It.IsAny<SquadChangeJob>(),
             It.IsAny<CancellationToken>()), Times.Never);
+    }
+}
+
+[Trait("Category", "NOTF_Decision_Worker")]
+public class RosterDecisionNotificationWorkerTests
+{
+    [Fact]
+    public async Task RosterDecisionJob_Approved_SendsEmail()
+    {
+        var resendMock = new Mock<IResend>();
+        resendMock
+            .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ResendResponse<Guid>)null!);
+
+        var queue = new SingleJobNotificationQueue(new RosterChangeDecisionJob(
+            RecipientEmail: "player@test.com",
+            RecipientName: "Alpha One",
+            EventName: "Operation Dawn",
+            Decision: "approved",
+            RequestedChangeSummary: "Move to recon element",
+            CommanderNote: "Approved after platoon review"));
+
+        var worker = BuildWorker(queue, resendMock.Object);
+
+        await RunUntilCanceledAsync(worker);
+
+        resendMock.Verify(r => r.EmailSendAsync(
+                It.Is<EmailMessage>(message =>
+                    message.Subject.Contains("approved", StringComparison.OrdinalIgnoreCase) &&
+                    message.HtmlBody.Contains("Alpha One") &&
+                    message.HtmlBody.Contains("approved", StringComparison.OrdinalIgnoreCase) &&
+                    message.HtmlBody.Contains("Move to recon element")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RosterDecisionJob_Denied_SendsEmail()
+    {
+        var resendMock = new Mock<IResend>();
+        resendMock
+            .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ResendResponse<Guid>)null!);
+
+        var queue = new SingleJobNotificationQueue(new RosterChangeDecisionJob(
+            RecipientEmail: "player@test.com",
+            RecipientName: "Bravo Two",
+            EventName: "Operation Dusk",
+            Decision: "denied",
+            RequestedChangeSummary: "Switch squads",
+            CommanderNote: "Denied due to role imbalance"));
+
+        var worker = BuildWorker(queue, resendMock.Object);
+
+        await RunUntilCanceledAsync(worker);
+
+        resendMock.Verify(r => r.EmailSendAsync(
+                It.Is<EmailMessage>(message =>
+                    message.Subject.Contains("denied", StringComparison.OrdinalIgnoreCase) &&
+                    message.HtmlBody.Contains("Bravo Two") &&
+                    message.HtmlBody.Contains("denied", StringComparison.OrdinalIgnoreCase) &&
+                    message.HtmlBody.Contains("Switch squads")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    private static TestableNotificationWorker BuildWorker(INotificationQueue queue, IResend resend)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(resend);
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Resend:FromAddress"] = "noreply@test.com"
+        }).Build());
+        var provider = services.BuildServiceProvider();
+
+        return new TestableNotificationWorker(queue, provider, Mock.Of<ILogger<NotificationWorker>>());
+    }
+
+    private static async Task RunUntilCanceledAsync(TestableNotificationWorker worker)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        try
+        {
+            await worker.RunAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // expected - queue waits for additional items after first job
+        }
+    }
+
+    private sealed class TestableNotificationWorker : NotificationWorker
+    {
+        public TestableNotificationWorker(INotificationQueue queue, IServiceProvider services, ILogger<NotificationWorker> logger)
+            : base(queue, services, logger)
+        {
+        }
+
+        public Task RunAsync(CancellationToken ct) => ExecuteAsync(ct);
+    }
+
+    private sealed class SingleJobNotificationQueue : INotificationQueue
+    {
+        private readonly NotificationJob _job;
+
+        public SingleJobNotificationQueue(NotificationJob job)
+        {
+            _job = job;
+        }
+
+        public ValueTask EnqueueAsync(NotificationJob job, CancellationToken ct = default)
+            => ValueTask.CompletedTask;
+
+        public async IAsyncEnumerable<NotificationJob> ReadAllAsync([EnumeratorCancellation] CancellationToken ct)
+        {
+            yield return _job;
+            await Task.Delay(Timeout.Infinite, ct);
+        }
     }
 }
