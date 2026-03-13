@@ -13,4 +13,9 @@ public class Event
     public EventStatus Status { get; set; } = EventStatus.Draft;
     public Guid FactionId { get; set; }
     public Faction Faction { get; set; } = null!;
+
+    // Phase 3 navigation properties
+    public ICollection<InfoSection> InfoSections { get; set; } = [];
+    public ICollection<MapResource> MapResources { get; set; } = [];
+    public ICollection<NotificationBlast> NotificationBlasts { get; set; } = [];
 }

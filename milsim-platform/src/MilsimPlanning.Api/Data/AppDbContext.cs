@@ -19,6 +19,12 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<Squad> Squads => Set<Squad>();
     public DbSet<EventPlayer> EventPlayers => Set<EventPlayer>();
 
+    // Phase 3 DbSets
+    public DbSet<InfoSection> InfoSections => Set<InfoSection>();
+    public DbSet<InfoSectionAttachment> InfoSectionAttachments => Set<InfoSectionAttachment>();
+    public DbSet<MapResource> MapResources => Set<MapResource>();
+    public DbSet<NotificationBlast> NotificationBlasts => Set<NotificationBlast>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -88,5 +94,15 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // Squad ordering
         builder.Entity<Squad>()
             .HasIndex(s => new { s.PlatoonId, s.Order });
+
+        // === Phase 3 Configuration ===
+
+        // InfoSection ordering per event
+        builder.Entity<InfoSection>()
+            .HasIndex(s => new { s.EventId, s.Order });
+
+        // MapResource ordering per event
+        builder.Entity<MapResource>()
+            .HasIndex(r => new { r.EventId, r.Order });
     }
 }
