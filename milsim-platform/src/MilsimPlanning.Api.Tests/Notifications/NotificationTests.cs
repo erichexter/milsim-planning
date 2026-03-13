@@ -438,3 +438,90 @@ public class RosterDecisionNotificationWorkerTests
         }
     }
 }
+
+[Trait("Category", "NOTF_Decision")]
+public class RosterDecisionQueueApiTests : NotificationTestsBase
+{
+    public RosterDecisionQueueApiTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task QueueRosterDecision_Approved_Returns202_AndEnqueuesJob()
+    {
+        var eventPlayerId = await SeedEventPlayerAsync(
+            $"decision-approve-{Guid.NewGuid():N}@test.com",
+            "Decision Player",
+            _playerUserId);
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-decisions",
+            new
+            {
+                eventPlayerId,
+                decision = "approved",
+                requestedChangeSummary = "Move to recon",
+                commanderNote = "Approved"
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        payload.GetProperty("queued").GetBoolean().Should().BeTrue();
+
+        _queueMock.Verify(q => q.EnqueueAsync(
+            It.Is<RosterChangeDecisionJob>(job =>
+                job.Decision == "approved" &&
+                job.RecipientName == "Decision Player" &&
+                job.RequestedChangeSummary == "Move to recon"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task QueueRosterDecision_Denied_Returns202_AndEnqueuesJob()
+    {
+        var eventPlayerId = await SeedEventPlayerAsync(
+            $"decision-deny-{Guid.NewGuid():N}@test.com",
+            "Denied Player",
+            _playerUserId);
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-decisions",
+            new
+            {
+                eventPlayerId,
+                decision = "denied",
+                requestedChangeSummary = "Stay current assignment"
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        _queueMock.Verify(q => q.EnqueueAsync(
+            It.Is<RosterChangeDecisionJob>(job =>
+                job.Decision == "denied" &&
+                job.RecipientName == "Denied Player" &&
+                job.RequestedChangeSummary == "Stay current assignment"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task QueueRosterDecision_PlayerRole_Forbidden()
+    {
+        var eventPlayerId = await SeedEventPlayerAsync(
+            $"decision-player-{Guid.NewGuid():N}@test.com",
+            "Forbidden Player",
+            _playerUserId);
+
+        var response = await _playerClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-decisions",
+            new
+            {
+                eventPlayerId,
+                decision = "approved",
+                requestedChangeSummary = "Move to support"
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        _queueMock.Verify(q => q.EnqueueAsync(
+            It.IsAny<RosterChangeDecisionJob>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+}
