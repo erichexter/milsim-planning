@@ -7,12 +7,12 @@
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can create an account via invitation email sent when imported via CSV
-- [ ] **AUTH-02**: User can log in with email and password
-- [ ] **AUTH-03**: User can log in via magic link sent to their email
-- [ ] **AUTH-04**: User session persists across browser refresh
-- [ ] **AUTH-05**: User can reset their password via email link
-- [ ] **AUTH-06**: User can log out from any page
+- [x] **AUTH-01**: User can create an account via invitation email sent when imported via CSV
+- [x] **AUTH-02**: User can log in with email and password
+- [x] **AUTH-03**: User can log in via magic link sent to their email
+- [x] **AUTH-04**: User session persists across browser refresh
+- [x] **AUTH-05**: User can reset their password via email link
+- [x] **AUTH-06**: User can log out from any page
 
 ### Authorization
 
@@ -129,12 +129,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
-| AUTH-06 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| AUTH-04 | Phase 1 | Complete |
+| AUTH-05 | Phase 1 | Complete |
+| AUTH-06 | Phase 1 | Complete |
 | AUTHZ-01 | Phase 1 | Complete |
 | AUTHZ-02 | Phase 1 | Pending |
 | AUTHZ-03 | Phase 1 | Pending |

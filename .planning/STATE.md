@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 01-foundation-01-PLAN.md
-last_updated: "2026-03-13T13:28:47.264Z"
-last_activity: 2026-03-12 — Roadmap created (4 phases, 56 requirements mapped)
+status: executing
+stopped_at: Completed 01-foundation-02-PLAN.md
+last_updated: "2026-03-13T13:42:24.941Z"
+last_activity: 2026-03-13 — 01-01-PLAN.md complete (solution scaffold, entity model, migration, auth policies)
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 9
-  completed_plans: 1
+  completed_plans: 2
   percent: 11
 ---
 
@@ -54,6 +54,7 @@ Progress: [█░░░░░░░░░] 11%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01-foundation P01 | 4 min | 2 tasks | 15 files |
+| Phase 01-foundation P02 | 10 min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - CSV import: Two-phase (validate → preview → commit) — implementation in C#
 - [Phase 01-foundation]: .slnx not .sln: dotnet new sln in .NET 10.0.104 generates .slnx (new XML format) — This is correct .NET 10 behavior; all downstream plans must reference milsim-platform.slnx
 - [Phase 01-foundation]: MinimumRoleRequirement stub in Program.cs — Policies registered early in Plan 01-01 to prevent policy-not-found errors; IAuthorizationHandler wired in Plan 01-03
+- [Phase 01-foundation]: LoginOutcome discriminated union for auth results: distinguishes LockedOut (429) from InvalidCredentials (401) — correct HTTP semantics without exceptions
+- [Phase 01-foundation]: Magic link GET returns HTML form button, POST completes auth — prevents email scanner token consumption
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T13:28:47.257Z
-Stopped at: Completed 01-foundation-01-PLAN.md
+Last session: 2026-03-13T13:42:24.934Z
+Stopped at: Completed 01-foundation-02-PLAN.md
 Resume file: None
