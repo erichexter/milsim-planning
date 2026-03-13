@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { getToken } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -35,15 +36,24 @@ export function NotificationBlastPage() {
     event.preventDefault();
     if (!canSend) return;
 
-    const response = await api.post<{ blastId: string; recipientCount: number }>(
-      `/events/${resolvedEventId}/notification-blasts`,
-      {
+    const token = getToken();
+    const response = await fetch(`/api/events/${resolvedEventId}/notification-blasts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
         subject: subject.trim(),
         body: body.trim(),
-      }
-    );
+      }),
+    });
 
-    if (response) {
+    if (!response.ok) {
+      throw new Error('Failed to queue notification blast');
+    }
+
+    if (response.status === 202) {
       toast.success('Notification queued, emails sending...');
       setSubject('');
       setBody('');
