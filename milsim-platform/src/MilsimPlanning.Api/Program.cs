@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
 using MilsimPlanning.Api.Domain;
+using MilsimPlanning.Api.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +53,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireFactionCommander", p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.FactionCommander)));
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
 });
+
+// ── Application Services ──────────────────────────────────────────────────────
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<MagicLinkService>();
 
 // ── MVC + Swagger ─────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
