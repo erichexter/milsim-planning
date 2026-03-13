@@ -66,12 +66,14 @@ Plans:
   3. Uploaded files are accessible only via authenticated time-limited download links (never public URLs)
   4. Commander can send a notification blast to all event participants; the blast is processed asynchronously and does not block the UI
   5. Squad-assignment-change emails and roster-change-decision emails are sent automatically via transactional provider
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Information sections (markdown editor, attachments, reordering)
-- [ ] 03-02: Map resources (external links and private file upload)
-- [ ] 03-03: Notification blast, assignment-change emails, and async email pipeline
+- [ ] 03-01-PLAN.md — Wave 0 test stubs + EF Core Phase 3 entities (InfoSection, InfoSectionAttachment, MapResource, NotificationBlast) + Phase3Schema migration + FileService (R2 pre-signed URLs)
+- [ ] 03-02-PLAN.md — Content API: InfoSectionsController + ContentService (CRUD, reorder, attachment upload flow) + EventService DuplicateEventAsync info-section copy
+- [ ] 03-03-PLAN.md — Maps API: MapResourcesController + MapResourceService (external links, private file upload/download)
+- [ ] 03-04-PLAN.md — Notifications pipeline: Channel queue + BackgroundService NotificationWorker + NotificationBlastsController + HierarchyService squad-change email trigger
+- [ ] 03-05-PLAN.md — React UI: BriefingPage (DnD editor), MapResourcesPage, NotificationBlastPage + real component tests
 
 ### Phase 4: Player Experience & Change Requests
 **Goal**: Every player can find their assignment, access all event materials on a mobile phone, and submit roster change requests that commanders can act on
@@ -98,5 +100,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
-| 3. Content, Maps & Notifications | 0/3 | Not started | - |
+| 3. Content, Maps & Notifications | 0/5 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
