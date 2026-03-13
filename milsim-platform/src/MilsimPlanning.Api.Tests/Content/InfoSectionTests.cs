@@ -1,4 +1,6 @@
+using FluentValidation;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +12,6 @@ using MilsimPlanning.Api.Services;
 using MilsimPlanning.Api.Tests.Fixtures;
 using Moq;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Xunit;
 
@@ -54,6 +55,12 @@ public class ContentTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
             {
                 builder.ConfigureServices(services =>
                 {
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationTestAuthHandler.SchemeName;
+                        options.DefaultChallengeScheme = IntegrationTestAuthHandler.SchemeName;
+                    }).AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthHandler>(IntegrationTestAuthHandler.SchemeName, _ => { });
+
                     services.RemoveAll<DbContextOptions<AppDbContext>>();
                     services.RemoveAll<AppDbContext>();
                     services.AddDbContext<AppDbContext>(opts =>
@@ -103,13 +110,13 @@ public class ContentTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
         db.EventMemberships.Add(new EventMembership { UserId = player.Id, EventId = _eventId, Role = "player" });
         await db.SaveChangesAsync();
 
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         _commanderClient = _factory.CreateClient();
-        _commanderClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(commander, "faction_commander"));
+        _commanderClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.UserIdHeader, commander.Id);
+        _commanderClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.RoleHeader, "faction_commander");
+
         _playerClient = _factory.CreateClient();
-        _playerClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(player, "player"));
+        _playerClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.UserIdHeader, player.Id);
+        _playerClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.RoleHeader, "player");
     }
 
     public Task DisposeAsync()
@@ -259,6 +266,10 @@ public class InfoSectionAttachmentTests : ContentTestsBase
     [Fact]
     public async Task GetUploadUrl_DisallowedMimeType_Returns400()
     {
+        _fileServiceMock
+            .Setup(f => f.GenerateUploadUrl(It.IsAny<Guid>(), It.IsAny<Guid>(), "application/x-msdownload", It.IsAny<string>()))
+            .Throws(new ValidationException("File type 'application/x-msdownload' is not permitted."));
+
         var sectionId = await CreateSectionAsync("Section Bad MIME");
 
         var response = await _commanderClient.GetAsync(
