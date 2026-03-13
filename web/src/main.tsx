@@ -12,6 +12,7 @@ import { PasswordResetConfirmPage } from './pages/auth/PasswordResetConfirmPage'
 import { DashboardPage } from './pages/DashboardPage';
 import { EventList } from './pages/events/EventList';
 import { EventDetail } from './pages/events/EventDetail';
+import { BriefingPage } from './pages/events/BriefingPage';
 import { CsvImportPage } from './pages/roster/CsvImportPage';
 import { HierarchyBuilder } from './pages/roster/HierarchyBuilder';
 import { RosterView } from './pages/roster/RosterView';
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
       { path: '/events/:id/roster/import', element: <CsvImportPage /> },
       { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
       { path: '/events/:id/roster', element: <RosterView /> },
+      { path: '/events/:id/briefing', element: <BriefingPage /> },
     ],
   },
 ]);

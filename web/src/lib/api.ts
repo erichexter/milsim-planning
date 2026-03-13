@@ -49,6 +49,8 @@ export const api = {
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 
   // Event endpoints
@@ -75,6 +77,52 @@ export const api = {
     request<{ id: string; name: string }>(`/platoons/${platoonId}/squads`, { method: 'POST', body: JSON.stringify({ name }) }),
   assignSquad: (playerId: string, squadId: string | null) =>
     request<void>(`/event-players/${playerId}/squad`, { method: 'PUT', body: JSON.stringify({ squadId }) }),
+
+  // Info sections + attachments
+  getInfoSections: (eventId: string) =>
+    request<InfoSection[]>(`/events/${eventId}/info-sections`),
+  createInfoSection: (eventId: string, payload: { title: string; bodyMarkdown: string | null; order: number }) =>
+    request<InfoSection>(`/events/${eventId}/info-sections`, { method: 'POST', body: JSON.stringify(payload) }),
+  updateInfoSection: (eventId: string, sectionId: string, payload: { title: string; bodyMarkdown: string | null; order: number }) =>
+    request<void>(`/events/${eventId}/info-sections/${sectionId}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteInfoSection: (eventId: string, sectionId: string) =>
+    request<void>(`/events/${eventId}/info-sections/${sectionId}`, { method: 'DELETE' }),
+  reorderInfoSections: (eventId: string, orderedIds: string[]) =>
+    request<void>(`/events/${eventId}/info-sections/reorder`, { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
+  getInfoSectionUploadUrl: (eventId: string, sectionId: string) =>
+    request<UploadUrlResponse>(`/events/${eventId}/info-sections/${sectionId}/attachments/upload-url`),
+  confirmInfoSectionAttachment: (
+    eventId: string,
+    sectionId: string,
+    payload: { r2Key: string; friendlyName: string; contentType: string; fileSizeBytes: number }
+  ) => request<SectionAttachment>(`/events/${eventId}/info-sections/${sectionId}/attachments/confirm`, { method: 'POST', body: JSON.stringify(payload) }),
+  getInfoSectionAttachmentDownloadUrl: (eventId: string, sectionId: string, attachmentId: string) =>
+    request<{ downloadUrl: string }>(`/events/${eventId}/info-sections/${sectionId}/attachments/${attachmentId}/download-url`),
+
+  // Map resources
+  getMapResources: (eventId: string) =>
+    request<MapResource[]>(`/events/${eventId}/map-resources`),
+  createExternalMapResource: (
+    eventId: string,
+    payload: { externalUrl: string; instructions: string | null; friendlyName: string | null }
+  ) => request<MapResource>(`/events/${eventId}/map-resources/external`, { method: 'POST', body: JSON.stringify(payload) }),
+  deleteMapResource: (eventId: string, resourceId: string) =>
+    request<void>(`/events/${eventId}/map-resources/${resourceId}`, { method: 'DELETE' }),
+  getMapResourceUploadUrl: (eventId: string, resourceId: string) =>
+    request<UploadUrlResponse>(`/events/${eventId}/map-resources/${resourceId}/upload-url`),
+  confirmMapResourceUpload: (
+    eventId: string,
+    resourceId: string,
+    payload: { r2Key: string; friendlyName: string; contentType: string; fileSizeBytes: number }
+  ) => request<void>(`/events/${eventId}/map-resources/${resourceId}/confirm`, { method: 'POST', body: JSON.stringify(payload) }),
+  getMapResourceDownloadUrl: (eventId: string, resourceId: string) =>
+    request<{ downloadUrl: string }>(`/events/${eventId}/map-resources/${resourceId}/download-url`),
+
+  // Notification blasts
+  getNotificationBlasts: (eventId: string) =>
+    request<NotificationBlast[]>(`/events/${eventId}/notification-blasts`),
+  createNotificationBlast: (eventId: string, payload: { subject: string; body: string }) =>
+    request<{ blastId: string; recipientCount: number }>(`/events/${eventId}/notification-blasts`, { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 // ─── Type exports ───────────────────────────────────────────────────────────
@@ -138,4 +186,42 @@ export interface PlayerDto {
   name: string;
   callsign: string | null;
   teamAffiliation: string | null;
+}
+
+export interface SectionAttachment {
+  id: string;
+  friendlyName: string;
+  contentType: string;
+  fileSizeBytes: number;
+}
+
+export interface InfoSection {
+  id: string;
+  title: string;
+  bodyMarkdown: string | null;
+  order: number;
+  attachments: SectionAttachment[];
+}
+
+export interface UploadUrlResponse {
+  uploadId: string;
+  presignedPutUrl: string;
+  r2Key: string;
+}
+
+export interface MapResource {
+  id: string;
+  externalUrl: string | null;
+  instructions: string | null;
+  r2Key: string | null;
+  friendlyName: string | null;
+  contentType: string | null;
+  order: number;
+}
+
+export interface NotificationBlast {
+  id: string;
+  subject: string;
+  sentAt: string;
+  recipientCount: number;
 }
