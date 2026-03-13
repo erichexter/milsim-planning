@@ -11,7 +11,9 @@ using MilsimPlanning.Api.Authorization.Requirements;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
 using MilsimPlanning.Api.Domain;
+using MilsimPlanning.Api.Infrastructure.BackgroundJobs;
 using MilsimPlanning.Api.Services;
+using Resend;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -79,12 +81,22 @@ builder.Services.AddScoped<IFileService, FileService>();
 
 // ── Application Services ──────────────────────────────────────────────────────
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddOptions();
+builder.Services.AddHttpClient<ResendClient>();
+builder.Services.Configure<ResendClientOptions>(options =>
+{
+    options.ApiToken = builder.Configuration["Resend:ApiKey"] ?? "re_placeholder";
+});
+builder.Services.AddTransient<IResend, ResendClient>();
+builder.Services.AddSingleton<INotificationQueue, NotificationQueue>();
+builder.Services.AddHostedService<NotificationWorker>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<EventService>();
 builder.Services.AddScoped<RosterService>();
 builder.Services.AddScoped<HierarchyService>();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IMapResourceService, MapResourceService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();
