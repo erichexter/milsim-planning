@@ -1,6 +1,7 @@
 using MilsimPlanning.Api.Authorization;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
+using MilsimPlanning.Api.Infrastructure.BackgroundJobs;
 using MilsimPlanning.Api.Models.Hierarchy;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,11 +11,13 @@ public class HierarchyService
 {
     private readonly AppDbContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly INotificationQueue _notificationQueue;
 
-    public HierarchyService(AppDbContext db, ICurrentUser currentUser)
+    public HierarchyService(AppDbContext db, ICurrentUser currentUser, INotificationQueue notificationQueue)
     {
         _db = db;
         _currentUser = currentUser;
+        _notificationQueue = notificationQueue;
     }
 
     // ── HIER-01: Create Platoon ───────────────────────────────────────────────
@@ -77,10 +80,15 @@ public class HierarchyService
         var player = await _db.EventPlayers
             .Include(ep => ep.Event)
                 .ThenInclude(e => e.Faction)
+            .Include(ep => ep.Squad)
+                .ThenInclude(s => s!.Platoon)
             .FirstOrDefaultAsync(ep => ep.Id == eventPlayerId)
             ?? throw new KeyNotFoundException($"EventPlayer {eventPlayerId} not found");
 
         AssertCommanderAccess(player.Event.Faction);
+
+        var oldSquadName = player.Squad?.Name ?? "(unassigned)";
+        var oldPlatoonName = player.Squad?.Platoon?.Name ?? "(unassigned)";
 
         // IDOR protection: if assigning to a squad, verify it belongs to the same event
         if (squadId.HasValue)
@@ -106,6 +114,29 @@ public class HierarchyService
         }
 
         await _db.SaveChangesAsync();
+
+        Squad? newSquad = null;
+        if (squadId.HasValue)
+        {
+            newSquad = await _db.Squads
+                .Include(s => s.Platoon)
+                .FirstOrDefaultAsync(s => s.Id == squadId.Value);
+        }
+
+        if (player.UserId is not null && !string.IsNullOrWhiteSpace(player.Email))
+        {
+            var newSquadName = newSquad?.Name ?? "(unassigned)";
+            var newPlatoonName = newSquad?.Platoon?.Name ?? "(unassigned)";
+
+            await _notificationQueue.EnqueueAsync(new SquadChangeJob(
+                player.Email,
+                player.Name,
+                oldPlatoonName,
+                oldSquadName,
+                newPlatoonName,
+                newSquadName
+            ));
+        }
     }
 
     // ── HIER-06: Get Roster Hierarchy (accessible to all faction members) ─────

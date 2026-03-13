@@ -6,26 +6,29 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
+using MilsimPlanning.Api.Infrastructure.BackgroundJobs;
 using MilsimPlanning.Api.Services;
 using MilsimPlanning.Api.Tests.Fixtures;
 using Moq;
+using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
 using Xunit;
 
 namespace MilsimPlanning.Api.Tests.Notifications;
 
-/// <summary>
-/// Integration test stubs for Notification Blast API (NOTF-01..05).
-/// All test bodies are Assert.True(true) — replaced in Plan 03-04.
-/// </summary>
 public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
 {
     protected readonly PostgreSqlFixture _fixture;
     protected WebApplicationFactory<Program> _factory = null!;
     protected Mock<IEmailService> _emailMock = null!;
+    protected Mock<INotificationQueue> _queueMock = null!;
     protected HttpClient _commanderClient = null!;
     protected HttpClient _playerClient = null!;
     protected Guid _eventId;
+    protected string _commanderUserId = string.Empty;
+    protected string _playerUserId = string.Empty;
 
     public NotificationTestsBase(PostgreSqlFixture fixture)
     {
@@ -37,6 +40,10 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
         _emailMock = new Mock<IEmailService>();
         _emailMock.Setup(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                   .Returns(Task.CompletedTask);
+
+        _queueMock = new Mock<INotificationQueue>();
+        _queueMock.Setup(q => q.EnqueueAsync(It.IsAny<NotificationJob>(), It.IsAny<CancellationToken>()))
+                  .Returns(ValueTask.CompletedTask);
 
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
@@ -50,6 +57,9 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
 
                     services.RemoveAll<IEmailService>();
                     services.AddSingleton(_emailMock.Object);
+
+                    services.RemoveAll<INotificationQueue>();
+                    services.AddSingleton(_queueMock.Object);
                 });
             });
 
@@ -71,12 +81,14 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
         await userManager.CreateAsync(commander, "TestPass123!");
         await userManager.AddToRoleAsync(commander, "faction_commander");
         commander.Profile = new UserProfile { UserId = commander.Id, Callsign = "Commander", DisplayName = "Commander", User = commander };
+        _commanderUserId = commander.Id;
 
         var playerEmail = $"notf-player-{Guid.NewGuid():N}@test.com";
         var player = new AppUser { UserName = playerEmail, Email = playerEmail, EmailConfirmed = true };
         await userManager.CreateAsync(player, "TestPass123!");
         await userManager.AddToRoleAsync(player, "player");
         player.Profile = new UserProfile { UserId = player.Id, Callsign = "Player1", DisplayName = "Player1", User = player };
+        _playerUserId = player.Id;
 
         _eventId = Guid.NewGuid();
         var factionId = Guid.NewGuid();
@@ -104,9 +116,65 @@ public class NotificationTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLif
         _factory.Dispose();
         return Task.CompletedTask;
     }
-}
 
-// ── NOTF_Blast ────────────────────────────────────────────────────────────────
+    protected AppDbContext GetDb()
+    {
+        var scope = _factory.Services.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    }
+
+    protected async Task<Guid> SeedEventPlayerAsync(string email, string name, string? userId = null, Guid? squadId = null)
+    {
+        using var db = GetDb();
+
+        Guid? platoonId = null;
+        if (squadId.HasValue)
+        {
+            var squad = await db.Squads.FirstAsync(s => s.Id == squadId.Value);
+            platoonId = squad.PlatoonId;
+        }
+
+        var player = new EventPlayer
+        {
+            EventId = _eventId,
+            Email = email,
+            Name = name,
+            UserId = userId,
+            SquadId = squadId,
+            PlatoonId = platoonId
+        };
+
+        db.EventPlayers.Add(player);
+        await db.SaveChangesAsync();
+        return player.Id;
+    }
+
+    protected async Task<Guid> SeedSquadAsync(string platoonName, string squadName)
+    {
+        using var db = GetDb();
+        var faction = await db.Factions.FirstAsync(f => f.EventId == _eventId);
+
+        var platoon = new Platoon
+        {
+            FactionId = faction.Id,
+            Name = platoonName,
+            Order = await db.Platoons.Where(p => p.FactionId == faction.Id).CountAsync() + 1
+        };
+        db.Platoons.Add(platoon);
+        await db.SaveChangesAsync();
+
+        var squad = new Squad
+        {
+            PlatoonId = platoon.Id,
+            Name = squadName,
+            Order = 1
+        };
+        db.Squads.Add(squad);
+        await db.SaveChangesAsync();
+
+        return squad.Id;
+    }
+}
 
 [Trait("Category", "NOTF_Blast")]
 public class NotificationBlastTests : NotificationTestsBase
@@ -116,23 +184,79 @@ public class NotificationBlastTests : NotificationTestsBase
     [Fact]
     public async Task SendBlast_ValidRequest_Returns202()
     {
-        Assert.True(true);
+        await SeedEventPlayerAsync($"blast-{Guid.NewGuid():N}@test.com", "Blast Player", _playerUserId);
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/notification-blasts",
+            new { subject = "Mission Update", body = "Report to briefing room" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        payload.GetProperty("blastId").GetString().Should().NotBeNullOrWhiteSpace();
+        payload.GetProperty("recipientCount").GetInt32().Should().Be(1);
+
+        _queueMock.Verify(q => q.EnqueueAsync(
+            It.IsAny<BlastNotificationJob>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task SendBlast_CreatesNotificationBlastRecord()
     {
-        Assert.True(true);
+        await SeedEventPlayerAsync($"db-{Guid.NewGuid():N}@test.com", "DB Player", _playerUserId);
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/notification-blasts",
+            new { subject = "Subject Persist", body = "Persistent body" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var blastId = Guid.Parse((await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("blastId").GetString()!);
+
+        using var db = GetDb();
+        var blast = await db.NotificationBlasts.FirstOrDefaultAsync(b => b.Id == blastId);
+        blast.Should().NotBeNull();
+        blast!.Subject.Should().Be("Subject Persist");
+        blast.Body.Should().Be("Persistent body");
+        blast.EventId.Should().Be(_eventId);
     }
 
     [Fact]
     public async Task GetBlastLog_ReturnsChronologicalList()
     {
-        Assert.True(true);
+        using (var db = GetDb())
+        {
+            db.NotificationBlasts.Add(new NotificationBlast
+            {
+                Id = Guid.NewGuid(),
+                EventId = _eventId,
+                Subject = "Older",
+                Body = "Old body",
+                SentAt = DateTime.UtcNow.AddMinutes(-5),
+                RecipientCount = 1
+            });
+            db.NotificationBlasts.Add(new NotificationBlast
+            {
+                Id = Guid.NewGuid(),
+                EventId = _eventId,
+                Subject = "Newer",
+                Body = "New body",
+                SentAt = DateTime.UtcNow,
+                RecipientCount = 2
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _playerClient.GetAsync($"/api/events/{_eventId}/notification-blasts");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await response.Content.ReadFromJsonAsync<List<JsonElement>>();
+        list.Should().NotBeNull();
+        list!.Count.Should().BeGreaterThanOrEqualTo(2);
+        list[0].GetProperty("subject").GetString().Should().Be("Newer");
+        list[1].GetProperty("subject").GetString().Should().Be("Older");
     }
 }
-
-// ── NOTF_Squad ────────────────────────────────────────────────────────────────
 
 [Trait("Category", "NOTF_Squad")]
 public class SquadChangeNotificationTests : NotificationTestsBase
@@ -142,12 +266,49 @@ public class SquadChangeNotificationTests : NotificationTestsBase
     [Fact]
     public async Task AssignSquad_PlayerWithAccount_EnqueuesSquadChangeJob()
     {
-        Assert.True(true);
+        var oldSquadId = await SeedSquadAsync("Old Platoon", "Old Squad");
+        var newSquadId = await SeedSquadAsync("New Platoon", "New Squad");
+        var playerId = await SeedEventPlayerAsync(
+            $"account-{Guid.NewGuid():N}@test.com",
+            "Account Player",
+            _playerUserId,
+            oldSquadId);
+
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/event-players/{playerId}/squad",
+            new { squadId = newSquadId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        _queueMock.Verify(q => q.EnqueueAsync(
+            It.Is<SquadChangeJob>(job =>
+                job.RecipientName == "Account Player" &&
+                job.OldPlatoonName == "Old Platoon" &&
+                job.OldSquadName == "Old Squad" &&
+                job.NewPlatoonName == "New Platoon" &&
+                job.NewSquadName == "New Squad"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task AssignSquad_PlayerWithoutAccount_DoesNotEnqueueJob()
     {
-        Assert.True(true);
+        var oldSquadId = await SeedSquadAsync("Old Platoon", "Old Squad");
+        var newSquadId = await SeedSquadAsync("New Platoon", "New Squad");
+        var playerId = await SeedEventPlayerAsync(
+            $"no-account-{Guid.NewGuid():N}@test.com",
+            "No Account Player",
+            null,
+            oldSquadId);
+
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/event-players/{playerId}/squad",
+            new { squadId = newSquadId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        _queueMock.Verify(q => q.EnqueueAsync(
+            It.IsAny<SquadChangeJob>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 }
