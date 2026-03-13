@@ -111,12 +111,10 @@ public class ContentTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
         await db.SaveChangesAsync();
 
         _commanderClient = _factory.CreateClient();
-        _commanderClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.UserIdHeader, commander.Id);
-        _commanderClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.RoleHeader, "faction_commander");
+        IntegrationTestAuthHandler.ApplyTestIdentity(_commanderClient, commander.Id, "faction_commander");
 
         _playerClient = _factory.CreateClient();
-        _playerClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.UserIdHeader, player.Id);
-        _playerClient.DefaultRequestHeaders.Add(IntegrationTestAuthHandler.RoleHeader, "player");
+        IntegrationTestAuthHandler.ApplyTestIdentity(_playerClient, player.Id, "player");
     }
 
     public Task DisposeAsync()

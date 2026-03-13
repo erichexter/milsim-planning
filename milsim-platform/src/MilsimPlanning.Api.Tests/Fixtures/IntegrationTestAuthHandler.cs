@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -18,6 +19,14 @@ public sealed class IntegrationTestAuthHandler : AuthenticationHandler<Authentic
         UrlEncoder encoder)
         : base(options, logger, encoder)
     {
+    }
+
+    public static void ApplyTestIdentity(HttpClient client, string userId, string role)
+    {
+        client.DefaultRequestHeaders.Remove(UserIdHeader);
+        client.DefaultRequestHeaders.Remove(RoleHeader);
+        client.DefaultRequestHeaders.Add(UserIdHeader, userId);
+        client.DefaultRequestHeaders.Add(RoleHeader, role);
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
