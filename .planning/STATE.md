@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 02-commander-workflow-02-PLAN.md
-last_updated: "2026-03-13T15:17:20.136Z"
-last_activity: 2026-03-13 — 02-01-PLAN.md complete (Phase 2 entities, Phase2Schema migration, DTOs, Wave 0 test stubs)
+stopped_at: Completed 02-05-PLAN.md (Phase 2 complete)
+last_updated: "2026-03-13T17:00:00.000Z"
+last_activity: 2026-03-13 — 02-05-PLAN.md complete (HierarchyService, HierarchyController, 4 endpoints, 7 integration tests)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
   completed_plans: 9
-  percent: 78
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 
 ## Current Position
 
-Phase: 2 of 4 (Commander Workflow) — In Progress
-Plan: 3 of 5 in current phase (completed)
-Status: Phase 2 — 02-01, 02-02, 02-03 complete; 02-04, 02-05 remaining
-Last activity: 2026-03-13 — 02-03-PLAN.md complete (CSV roster import API, validate + commit endpoints, 11 integration tests)
+Phase: 2 of 4 (Commander Workflow) — **Complete**
+Plan: 5 of 5 in Phase 2 (all complete)
+Status: Phase 2 fully complete — 02-01 through 02-05 done; ready for Phase 3
+Last activity: 2026-03-13 — 02-05-PLAN.md complete (HierarchyService, HierarchyController, HierarchyBuilder UI, RosterView UI)
 
-Progress: [███████░░░] 78%
+Progress: [██████████] 100% (Phase 2 of 4 complete)
 
 ## Performance Metrics
 
@@ -61,6 +61,8 @@ Progress: [███████░░░] 78%
 | Phase 02-commander-workflow P01 | 7 min | 2 tasks | 23 files |
 | Phase 02-commander-workflow P02 | 11 min | 2 tasks | 4 files |
 | Phase 02-commander-workflow P03 | 9 min | 2 tasks | 4 files |
+| Phase 02-commander-workflow P04 | ~20 min | 1 task | 35+ files |
+| Phase 02-commander-workflow P05 | ~15 min | 1 task | 8 files |
 
 ## Accumulated Context
 
@@ -92,6 +94,9 @@ Recent decisions affecting current work:
   - [Phase 02-commander-workflow]: RosterValidationException instead of generic ValidationException: avoids FluentValidation namespace collision; controller catch (RosterValidationException) is unambiguous
   - [Phase 02-commander-workflow]: IFormFile.OpenReadStream() returns fresh stream each call — no need to Seek(0) between validate and commit; plan sample code using Seek(0) was incorrect
   - [Phase 02-commander-workflow]: CommitRoster 422 test uses delta not absolute count: tests share _eventId so count may be non-zero from previous commits; delta check is resilient to test ordering
+  - [Phase 02-commander-workflow]: ScopeGuard.AssertEventAccess overload for Faction does not exist — used AssertCommanderAccess private method pattern (same as EventService) for hierarchy write ops
+  - [Phase 02-commander-workflow]: shadcn CLI writes to web/@/ (literal @ dir) — shadcn components copied manually to web/src/components/ui/
+  - [Phase 02-commander-workflow]: MSW mocks created from scratch (server.ts + handlers.ts) — plans assumed they existed; wired into vitest via test-setup.ts and vite.config.ts setupFiles
 
 ### Pending Todos
 
@@ -104,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T16:00:00.000Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-03-13T17:00:00.000Z
+Stopped at: Completed 02-05-PLAN.md — Phase 2 fully complete
 Resume file: None

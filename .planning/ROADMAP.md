@@ -13,7 +13,7 @@ Four phases that build from identity to delivery: first, a secure auth and RBAC 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Secure authentication, 5-role RBAC, and full database schema (completed 2026-03-13)
-- [ ] **Phase 2: Commander Workflow** - Event management, CSV roster import, and platoon/squad hierarchy
+- [x] **Phase 2: Commander Workflow** - Event management, CSV roster import, and platoon/squad hierarchy (completed 2026-03-13)
 - [ ] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery
 - [ ] **Phase 4: Player Experience & Change Requests** - Player dashboard, mobile UI, and roster change workflow
 
@@ -50,11 +50,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Phase 2 entity model (Event/Faction/Platoon/Squad/EventPlayer) + EF migration + Wave 0 test stubs (7 files)
-- [ ] 02-02-PLAN.md — Event CRUD API (create, list, publish, duplicate) + integration tests (wave 1, parallel with 02-03)
-- [ ] 02-03-PLAN.md — CSV roster import API (validate + commit endpoints, CsvHelper pipeline, invite trigger) + integration tests (wave 1, parallel with 02-02)
-- [ ] 02-04-PLAN.md — React UI: EventList, CreateEventDialog, DuplicateEventDialog, EventDetail, CsvImportPage (wave 2)
-- [ ] 02-05-PLAN.md — Hierarchy API (platoon/squad CRUD, player assignment, roster tree) + React HierarchyBuilder + RosterView (wave 2, parallel with 02-04)
+- [x] 02-01-PLAN.md — Phase 2 entity model (Event/Faction/Platoon/Squad/EventPlayer) + EF migration + Wave 0 test stubs (7 files)
+- [x] 02-02-PLAN.md — Event CRUD API (create, list, publish, duplicate) + integration tests (wave 1, parallel with 02-03)
+- [x] 02-03-PLAN.md — CSV roster import API (validate + commit endpoints, CsvHelper pipeline, invite trigger) + integration tests (wave 1, parallel with 02-02)
+- [x] 02-04-PLAN.md — React UI: EventList, CreateEventDialog, DuplicateEventDialog, EventDetail, CsvImportPage (wave 2)
+- [x] 02-05-PLAN.md — Hierarchy API (platoon/squad CRUD, player assignment, roster tree) + React HierarchyBuilder + RosterView (wave 2, parallel with 02-04)
 
 ### Phase 3: Content, Maps & Notifications
 **Goal**: A published event contains a complete briefing — information sections, downloadable files, and map resources — and the commander can notify all participants by email
@@ -97,6 +97,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
-| 2. Commander Workflow | 3/5 | In Progress|  |
+| 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
 | 3. Content, Maps & Notifications | 0/3 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
