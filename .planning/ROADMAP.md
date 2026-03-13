@@ -47,12 +47,14 @@ Plans:
   3. Imported players who have no account receive an invitation email automatically
   4. Commander can create platoons and squads, assign players to squads, and move players between squads
   5. Full faction roster (names, callsigns, assignments) is visible to all faction members
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: Event CRUD and status lifecycle (draft/published)
-- [ ] 02-02: Two-phase CSV import with validation preview and invitation emails
-- [ ] 02-03: Platoon/squad hierarchy builder and player assignment UI
+- [ ] 02-01-PLAN.md — Phase 2 entity model (Event/Faction/Platoon/Squad/EventPlayer) + EF migration + Wave 0 test stubs (7 files)
+- [ ] 02-02-PLAN.md — Event CRUD API (create, list, publish, duplicate) + integration tests (wave 1, parallel with 02-03)
+- [ ] 02-03-PLAN.md — CSV roster import API (validate + commit endpoints, CsvHelper pipeline, invite trigger) + integration tests (wave 1, parallel with 02-02)
+- [ ] 02-04-PLAN.md — React UI: EventList, CreateEventDialog, DuplicateEventDialog, EventDetail, CsvImportPage (wave 2)
+- [ ] 02-05-PLAN.md — Hierarchy API (platoon/squad CRUD, player assignment, roster tree) + React HierarchyBuilder + RosterView (wave 2, parallel with 02-04)
 
 ### Phase 3: Content, Maps & Notifications
 **Goal**: A published event contains a complete briefing — information sections, downloadable files, and map resources — and the commander can notify all participants by email
@@ -95,6 +97,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/4 | Planned | - |
-| 2. Commander Workflow | 0/3 | Not started | - |
+| 2. Commander Workflow | 0/5 | Planned | - |
 | 3. Content, Maps & Notifications | 0/3 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
