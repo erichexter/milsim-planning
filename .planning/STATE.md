@@ -10,8 +10,8 @@ progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 7
-  percent: 56
+  completed_plans: 9
+  percent: 78
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 2 of 4 (Commander Workflow) — In Progress
-Plan: 1 of 5 in current phase (completed)
-Status: Phase 2 started — 02-01 entity model and Wave 0 stubs complete
-Last activity: 2026-03-13 — 02-01-PLAN.md complete (Phase 2 entities, Phase2Schema migration, DTOs, Wave 0 test stubs)
+Plan: 3 of 5 in current phase (completed)
+Status: Phase 2 — 02-01, 02-02, 02-03 complete; 02-04, 02-05 remaining
+Last activity: 2026-03-13 — 02-03-PLAN.md complete (CSV roster import API, validate + commit endpoints, 11 integration tests)
 
-Progress: [█████░░░░░] 56%
+Progress: [███████░░░] 78%
 
 ## Performance Metrics
 
@@ -44,10 +44,10 @@ Progress: [█████░░░░░] 56%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4 | 29 min | 7 min |
-| 02-commander-workflow | 1 | 7 min | 7 min |
+| 02-commander-workflow | 3 | 27 min | 9 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4 min), 01-02 (10 min), 01-03 (6 min), 01-04 (9 min), 02-01 (7 min)
+- Last 5 plans: 01-04 (9 min), 02-01 (7 min), 02-02 (11 min), 02-03 (9 min)
 - Trend: Fast
 
 *Updated after each plan completion*
@@ -59,7 +59,8 @@ Progress: [█████░░░░░] 56%
 | Phase 01-foundation P03 | 6 min | 1 task (TDD) | 8 files |
 | Phase 01-foundation P04 | 9 min | 2 tasks | 27 files |
 | Phase 02-commander-workflow P01 | 7 min | 2 tasks | 23 files |
-| Phase 02-commander-workflow P02 | 11min | 2 tasks | 4 files |
+| Phase 02-commander-workflow P02 | 11 min | 2 tasks | 4 files |
+| Phase 02-commander-workflow P03 | 9 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -87,7 +88,10 @@ Recent decisions affecting current work:
 - [Phase 02-commander-workflow]: Phase2Schema migration over drop-and-recreate — keeps InitialSchema intact, adds delta migration; Event.FactionId is data column (no DB FK), Faction.EventId owns the 1:1 FK
 - [Phase 02-commander-workflow]: CopyInfoSectionIds: Guid[] in DuplicateEventRequest — Phase 3 forward compat field accepted at API level even in Phase 2 (no info sections yet)
 - [Phase 02-commander-workflow]: AssertCommanderAccess checks Faction.CommanderId (not EventMembership) for event write ops — faction ownership check distinct from ScopeGuard membership check
-- [Phase 02-commander-workflow]: EVNT-06 contract enforced: PublishEventAsync has zero IEmailService references — publish is status-flip only; notifications are Phase 3
+  - [Phase 02-commander-workflow]: EVNT-06 contract enforced: PublishEventAsync has zero IEmailService references — publish is status-flip only; notifications are Phase 3
+  - [Phase 02-commander-workflow]: RosterValidationException instead of generic ValidationException: avoids FluentValidation namespace collision; controller catch (RosterValidationException) is unambiguous
+  - [Phase 02-commander-workflow]: IFormFile.OpenReadStream() returns fresh stream each call — no need to Seek(0) between validate and commit; plan sample code using Seek(0) was incorrect
+  - [Phase 02-commander-workflow]: CommitRoster 422 test uses delta not absolute count: tests share _eventId so count may be non-zero from previous commits; delta check is resilient to test ordering
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T15:17:20.128Z
-Stopped at: Completed 02-commander-workflow-02-PLAN.md
+Last session: 2026-03-13T16:00:00.000Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

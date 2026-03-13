@@ -97,6 +97,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
-| 2. Commander Workflow | 1/5 | In Progress|  |
+| 2. Commander Workflow | 3/5 | In Progress|  |
 | 3. Content, Maps & Notifications | 0/3 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
