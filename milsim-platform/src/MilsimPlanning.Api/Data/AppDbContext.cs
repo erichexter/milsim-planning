@@ -13,6 +13,12 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<EventMembership> EventMemberships => Set<EventMembership>();
     public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
 
+    // Phase 2 DbSets
+    public DbSet<Faction> Factions => Set<Faction>();
+    public DbSet<Platoon> Platoons => Set<Platoon>();
+    public DbSet<Squad> Squads => Set<Squad>();
+    public DbSet<EventPlayer> EventPlayers => Set<EventPlayer>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -34,9 +40,10 @@ public class AppDbContext : IdentityDbContext<AppUser>
             .WithMany(u => u.EventMemberships)
             .HasForeignKey(m => m.UserId);
 
+        // EventMembership → Event (Event no longer has Memberships nav, configure explicitly)
         builder.Entity<EventMembership>()
             .HasOne(m => m.Event)
-            .WithMany(e => e.Memberships)
+            .WithMany()
             .HasForeignKey(m => m.EventId);
 
         // MagicLinkToken index on (UserId, TokenHash) for fast lookup
@@ -48,9 +55,38 @@ public class AppDbContext : IdentityDbContext<AppUser>
             .WithMany()
             .HasForeignKey(t => t.UserId);
 
-        // Event default status
-        builder.Entity<Event>()
-            .Property(e => e.Status)
-            .HasDefaultValue("draft");
+        // === Phase 2 Configuration ===
+
+        // Event → Faction (1:1 in v1; Faction owns the FK to Event)
+        builder.Entity<Faction>()
+            .HasOne(f => f.Event)
+            .WithOne(e => e.Faction)
+            .HasForeignKey<Faction>(f => f.EventId);
+
+        // EventPlayer: natural key unique index
+        builder.Entity<EventPlayer>()
+            .HasIndex(ep => new { ep.EventId, ep.Email })
+            .IsUnique();
+
+        // EventPlayer → Platoon/Squad (optional FKs — nullable)
+        builder.Entity<EventPlayer>()
+            .HasOne(ep => ep.Platoon)
+            .WithMany(p => p.Players)
+            .HasForeignKey(ep => ep.PlatoonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<EventPlayer>()
+            .HasOne(ep => ep.Squad)
+            .WithMany(s => s.Players)
+            .HasForeignKey(ep => ep.SquadId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Platoon ordering
+        builder.Entity<Platoon>()
+            .HasIndex(p => new { p.FactionId, p.Order });
+
+        // Squad ordering
+        builder.Entity<Squad>()
+            .HasIndex(s => new { s.PlatoonId, s.Order });
     }
 }

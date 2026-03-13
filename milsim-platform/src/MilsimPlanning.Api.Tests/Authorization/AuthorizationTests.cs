@@ -16,6 +16,8 @@ using MilsimPlanning.Api.Tests.Fixtures;
 using Moq;
 using Xunit;
 
+// Event.Status is now EventStatus enum (Phase 2 schema). Tests use EventStatus.Draft.
+
 namespace MilsimPlanning.Api.Tests.Authorization;
 
 /// <summary>
@@ -126,7 +128,8 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         {
             Id = eventId,
             Name = $"Test Event {eventId:N}",
-            Status = "draft"
+            Status = EventStatus.Draft
+            // FactionId defaults to Guid.Empty — no FK constraint from Events→Factions in DB
         };
         db.Events.Add(newEvent);
 
@@ -279,7 +282,8 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             {
                 Id = eventBId,
                 Name = $"EventB {eventBId:N}",
-                Status = "draft"
+                Status = EventStatus.Draft,
+                FactionId = Guid.NewGuid()
             });
             await db.SaveChangesAsync();
         }
@@ -315,7 +319,8 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             {
                 Id = eventBId,
                 Name = $"EventB-Commander {eventBId:N}",
-                Status = "draft"
+                Status = EventStatus.Draft,
+                FactionId = Guid.NewGuid()
             });
             await db.SaveChangesAsync();
         }
@@ -481,7 +486,8 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             {
                 Id = eventId,
                 Name = $"Other Event {eventId:N}",
-                Status = "draft"
+                Status = EventStatus.Draft,
+                FactionId = Guid.NewGuid()
             });
             await db.SaveChangesAsync();
         }
