@@ -28,16 +28,19 @@ public class NotificationWorker : BackgroundService
             {
                 await using var scope = _services.CreateAsyncScope();
                 var resend = scope.ServiceProvider.GetRequiredService<IResend>();
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
                 switch (job)
                 {
                     case BlastNotificationJob blastJob:
+                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                         await ProcessBlastAsync(blastJob, resend, db, config, stoppingToken);
                         break;
                     case SquadChangeJob squadChangeJob:
                         await ProcessSquadChangeAsync(squadChangeJob, resend, config, stoppingToken);
+                        break;
+                    case RosterChangeDecisionJob rosterDecisionJob:
+                        await ProcessRosterChangeDecisionAsync(rosterDecisionJob, resend, config, stoppingToken);
                         break;
                     default:
                         _logger.LogWarning("Unknown notification job type {JobType}", job.GetType().Name);
@@ -64,6 +67,26 @@ public class NotificationWorker : BackgroundService
                $"<p>Your assignment has changed.</p>" +
                $"<p><strong>From:</strong> {job.OldSquadName}, {job.OldPlatoonName}</p>" +
                $"<p><strong>To:</strong> {job.NewSquadName}, {job.NewPlatoonName}</p>";
+    }
+
+    internal static string BuildRosterDecisionHtml(RosterChangeDecisionJob job)
+    {
+        var isApproved = string.Equals(job.Decision, "approved", StringComparison.OrdinalIgnoreCase);
+        var outcomeText = isApproved ? "approved" : "denied";
+        var actionText = isApproved
+            ? "Your roster change request has been approved."
+            : "Your roster change request has been denied.";
+        var commanderNote = string.IsNullOrWhiteSpace(job.CommanderNote)
+            ? string.Empty
+            : $"<p><strong>Commander note:</strong> {job.CommanderNote}</p>";
+
+        return $"<h1>Roster Change Decision</h1>" +
+               $"<p>Hello {job.RecipientName},</p>" +
+               $"<p>{actionText}</p>" +
+               $"<p><strong>Event:</strong> {job.EventName}</p>" +
+               $"<p><strong>Decision:</strong> {outcomeText}</p>" +
+               $"<p><strong>Requested change:</strong> {job.RequestedChangeSummary}</p>" +
+               commanderNote;
     }
 
     private static async Task ProcessBlastAsync(
@@ -121,6 +144,26 @@ public class NotificationWorker : BackgroundService
             From = fromAddress,
             Subject = "Your squad assignment has changed",
             HtmlBody = html
+        };
+        message.To.Add(job.RecipientEmail);
+
+        await resend.EmailSendAsync(message, ct);
+    }
+
+    private static async Task ProcessRosterChangeDecisionAsync(
+        RosterChangeDecisionJob job,
+        IResend resend,
+        IConfiguration config,
+        CancellationToken ct)
+    {
+        var fromAddress = config["Resend:FromAddress"] ?? "noreply@yourdomain.com";
+        var isApproved = string.Equals(job.Decision, "approved", StringComparison.OrdinalIgnoreCase);
+
+        var message = new EmailMessage
+        {
+            From = fromAddress,
+            Subject = $"Roster change request { (isApproved ? "approved" : "denied") }",
+            HtmlBody = BuildRosterDecisionHtml(job)
         };
         message.To.Add(job.RecipientEmail);
 

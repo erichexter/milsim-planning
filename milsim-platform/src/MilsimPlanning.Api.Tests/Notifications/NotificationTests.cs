@@ -343,6 +343,7 @@ public class RosterDecisionNotificationWorkerTests
         resendMock.Verify(r => r.EmailSendAsync(
                 It.Is<EmailMessage>(message =>
                     message.Subject.Contains("approved", StringComparison.OrdinalIgnoreCase) &&
+                    message.HtmlBody != null &&
                     message.HtmlBody.Contains("Alpha One") &&
                     message.HtmlBody.Contains("approved", StringComparison.OrdinalIgnoreCase) &&
                     message.HtmlBody.Contains("Move to recon element")),
@@ -373,6 +374,7 @@ public class RosterDecisionNotificationWorkerTests
         resendMock.Verify(r => r.EmailSendAsync(
                 It.Is<EmailMessage>(message =>
                     message.Subject.Contains("denied", StringComparison.OrdinalIgnoreCase) &&
+                    message.HtmlBody != null &&
                     message.HtmlBody.Contains("Bravo Two") &&
                     message.HtmlBody.Contains("denied", StringComparison.OrdinalIgnoreCase) &&
                     message.HtmlBody.Contains("Switch squads")),

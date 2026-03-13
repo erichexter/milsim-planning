@@ -19,4 +19,11 @@ public record SquadChangeJob(
     string NewSquadName
 ) : NotificationJob;
 
-// RosterChangeDecisionJob added in Phase 4 (RCHG)
+public record RosterChangeDecisionJob(
+    string RecipientEmail,
+    string RecipientName,
+    string EventName,
+    string Decision,
+    string RequestedChangeSummary,
+    string? CommanderNote
+) : NotificationJob;
