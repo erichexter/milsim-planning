@@ -16,12 +16,12 @@
 
 ### Authorization
 
-- [ ] **AUTHZ-01**: System enforces five roles: System Admin, Faction Commander, Platoon Leader, Squad Leader, Player
+- [x] **AUTHZ-01**: System enforces five roles: System Admin, Faction Commander, Platoon Leader, Squad Leader, Player
 - [ ] **AUTHZ-02**: Faction Commander has full administrative access to their event
 - [ ] **AUTHZ-03**: Platoon Leader and Squad Leader have read-only access to roster and event information
 - [ ] **AUTHZ-04**: Players can view roster, access event information, and submit roster change requests
 - [ ] **AUTHZ-05**: Email addresses are visible only to leadership roles (Platoon Leader and above)
-- [ ] **AUTHZ-06**: All data is scoped to the authenticated user event membership (no cross-event leakage)
+- [x] **AUTHZ-06**: All data is scoped to the authenticated user event membership (no cross-event leakage)
 
 ### Event Management
 
@@ -135,12 +135,12 @@
 | AUTH-04 | Phase 1 | Pending |
 | AUTH-05 | Phase 1 | Pending |
 | AUTH-06 | Phase 1 | Pending |
-| AUTHZ-01 | Phase 1 | Pending |
+| AUTHZ-01 | Phase 1 | Complete |
 | AUTHZ-02 | Phase 1 | Pending |
 | AUTHZ-03 | Phase 1 | Pending |
 | AUTHZ-04 | Phase 1 | Pending |
 | AUTHZ-05 | Phase 1 | Pending |
-| AUTHZ-06 | Phase 1 | Pending |
+| AUTHZ-06 | Phase 1 | Complete |
 | EVNT-01 | Phase 2 | Pending |
 | EVNT-02 | Phase 2 | Pending |
 | EVNT-03 | Phase 2 | Pending |
