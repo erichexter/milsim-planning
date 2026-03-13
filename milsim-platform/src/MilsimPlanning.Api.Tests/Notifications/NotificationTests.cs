@@ -427,7 +427,8 @@ public class RosterDecisionNotificationWorkerTests
                     message.HtmlBody != null &&
                     message.HtmlBody.Contains("Alpha One") &&
                     message.HtmlBody.Contains("approved", StringComparison.OrdinalIgnoreCase) &&
-                    message.HtmlBody.Contains("Move to recon element")),
+                    message.HtmlBody.Contains("Move to recon element") &&
+                    message.HtmlBody.Contains("Commander note", StringComparison.OrdinalIgnoreCase)),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -458,7 +459,8 @@ public class RosterDecisionNotificationWorkerTests
                     message.HtmlBody != null &&
                     message.HtmlBody.Contains("Bravo Two") &&
                     message.HtmlBody.Contains("denied", StringComparison.OrdinalIgnoreCase) &&
-                    message.HtmlBody.Contains("Switch squads")),
+                    message.HtmlBody.Contains("Switch squads") &&
+                    message.HtmlBody.Contains("Commander note", StringComparison.OrdinalIgnoreCase)),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
