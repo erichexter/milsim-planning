@@ -61,6 +61,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<MagicLinkService>();
+builder.Services.AddScoped<RosterService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();
