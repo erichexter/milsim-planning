@@ -9,6 +9,10 @@ using MilsimPlanning.Api.Models.Responses;
 
 namespace MilsimPlanning.Api.Services;
 
+public enum LoginResult { Success, InvalidCredentials, LockedOut }
+
+public record LoginOutcome(LoginResult Result, AuthResponse? Response = null);
+
 public class AuthService
 {
     private readonly UserManager<AppUser> _userManager;
@@ -28,22 +32,25 @@ public class AuthService
         _emailService = emailService;
     }
 
-    public async Task<AuthResponse?> LoginAsync(string email, string password)
+    public async Task<LoginOutcome> LoginAsync(string email, string password)
     {
         var result = await _signInManager.PasswordSignInAsync(
             email, password, isPersistent: false, lockoutOnFailure: true);
 
+        if (result.IsLockedOut)
+            return new LoginOutcome(LoginResult.LockedOut);
+
         if (!result.Succeeded)
-            return null;
+            return new LoginOutcome(LoginResult.InvalidCredentials);
 
         var user = await _userManager.FindByEmailAsync(email);
-        if (user is null) return null;
+        if (user is null) return new LoginOutcome(LoginResult.InvalidCredentials);
 
         var roles = await _userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? "player";
 
         var token = GenerateJwt(user, role);
-        return new AuthResponse(token, 604800); // 7 days in seconds
+        return new LoginOutcome(LoginResult.Success, new AuthResponse(token, 604800)); // 7 days in seconds
     }
 
     public string GenerateJwt(AppUser user, string role)
