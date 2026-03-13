@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-03-13T20:32:04.814Z"
-last_activity: 2026-03-13 — 03-06-PLAN.md complete (NOTF-03 roster decision queue + worker gap closure)
+status: in_progress
+stopped_at: Completed 03-07-PLAN.md
+last_updated: "2026-03-13T21:25:30.000Z"
+last_activity: 2026-03-13 — 03-07-PLAN.md complete (Phase2 status migration cast-path gap closure)
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
-  percent: 100
+  completed_phases: 2
+  total_plans: 17
+  completed_plans: 16
+  percent: 94
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Faction commanders can publish a complete event briefing — roster, assignments, information sections, and maps — and every player receives it without anything falling through the cracks.
-**Current focus:** Phase 4 — Player Experience & Change Requests
+**Current focus:** Phase 3 — Content, Maps & Notifications gap closure
 
 ## Current Position
 
-Phase: 4 of 4 (Player Experience & Change Requests) — **Ready to Start**
-Plan: 0 of 2 in Phase 4 complete
-Status: Phase 3 complete; next plan is 04-01
-Last activity: 2026-03-13 — 03-06-PLAN.md complete (NOTF-03 roster decision queue + worker gap closure)
+Phase: 3 of 4 (Content, Maps & Notifications) — **In Progress**
+Plan: 7 of 8 in Phase 3 complete
+Status: Phase 3 gap closure in progress; next plan is 03-08
+Last activity: 2026-03-13 — 03-07-PLAN.md complete (Phase2 status migration cast-path gap closure)
 
-Progress: [██████████] 100% (15 of 15 plans complete)
+Progress: [█████████░] 94% (16 of 17 plans complete)
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [██████████] 100% (15 of 15 plans complete)
 | Phase 03-content-maps-notifications P04 | 4 min | 2 tasks | 10 files |
 | Phase 03-content-maps-notifications P05 | 7 min | 2 tasks | 17 files |
 | Phase 03-content-maps-notifications P06 | 9 min | 2 tasks | 5 files |
+| Phase 03 P07 | 3 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,8 @@ Recent decisions affecting current work:
 - [Phase 03-content-maps-notifications]: Notification queue toast is shown only when POST /notification-blasts returns HTTP 202.
 - [Phase 03-content-maps-notifications]: Kept roster decision delivery on the existing Channel + BackgroundService pipeline to match blast/squad notification behavior.
 - [Phase 03-content-maps-notifications]: Returned 422 for unregistered EventPlayer targets so commanders get actionable non-delivery feedback.
+- [Phase 03]: Patched Phase2Schema in place with explicit USING CASE status conversion so historical migration replay from InitialSchema is deterministic on PostgreSQL.
+- [Phase 03]: Added Phase2StatusMigrationTests to assert both physical integer column type and EventStatus enum round-trip after MigrateAsync.
 
 ### Pending Todos
 
@@ -126,9 +129,10 @@ None yet.
 
 - **Phase 2 flag**: Drag-and-drop hierarchy builder — assess dnd-kit vs select-and-confirm fallback during Phase 2 planning
 - **Phase 3 flag**: Verify Resend batch API rate limits for 800-recipient events before designing notification dispatch
+- **Phase 3 gap closure:** `Category~CONT|Category~MAPS` regression currently fails with widespread 401 Unauthorized responses in existing test host setup (outside 03-07 migration scope)
 
 ## Session Continuity
 
-Last session: 2026-03-13T20:32:04.806Z
-Stopped at: Completed 03-06-PLAN.md
+Last session: 2026-03-13T21:24:06.827Z
+Stopped at: Completed 03-07-PLAN.md
 Resume file: None
