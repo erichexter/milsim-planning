@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-content-maps-notifications-03-PLAN.md
-last_updated: "2026-03-13T19:31:39.153Z"
-last_activity: 2026-03-13 — 03-03-PLAN.md complete (MapResourceService, MapResourcesController, MAPS integration tests)
+stopped_at: Completed 03-content-maps-notifications-04-PLAN.md
+last_updated: "2026-03-13T19:34:32.189Z"
+last_activity: 2026-03-13 — 03-04-PLAN.md complete (NotificationWorker queue pipeline, NotificationBlastsController, NOTF integration tests)
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 14
-  completed_plans: 12
-  percent: 86
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 3 of 4 (Content, Maps & Notifications) — **In Progress**
-Plan: 3 of 5 in Phase 3 complete
-Status: 03-01 through 03-03 complete; next plan is 03-04 (Notifications pipeline)
-Last activity: 2026-03-13 — 03-03-PLAN.md complete (MapResourceService, MapResourcesController, MAPS integration tests)
+Plan: 4 of 5 in Phase 3 complete
+Status: 03-01 through 03-04 complete; next plan is 03-05
+Last activity: 2026-03-13 — 03-04-PLAN.md complete (NotificationWorker queue pipeline, NotificationBlastsController, NOTF integration tests)
 
-Progress: [█████████░] 86% (12 of 14 plans complete)
+Progress: [█████████░] 93% (13 of 14 plans complete)
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 86% (12 of 14 plans complete)
 | Phase 03-content-maps-notifications P01 | 7 min | 3 tasks | 20 files |
 | Phase 03-content-maps-notifications P02 | 12 min | 2 tasks | 10 files |
 | Phase 03-content-maps-notifications P03 | 26 min | 2 tasks | 6 files |
+| Phase 03-content-maps-notifications P04 | 4 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,8 @@ Recent decisions affecting current work:
 - [Phase 03-content-maps-notifications]: Use full 0..N order reassignment for info section reorder endpoint
 - [Phase 03-content-maps-notifications]: GET /map-resources list omits both R2Key and pre-signed URLs; clients use dedicated download-url endpoint
 - [Phase 03-content-maps-notifications]: Map file upload endpoint uses caller-provided map resource ID so confirm/download operate on stable resource identity
+- [Phase 03-content-maps-notifications]: Resend v0.2.2 is registered via AddHttpClient/Configure/AddTransient because AddResend extension is unavailable
+- [Phase 03-content-maps-notifications]: Notification blasts persist NotificationBlast synchronously and return 202 after enqueue; RecipientCount is finalized by worker delivery
 
 ### Pending Todos
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T19:31:39.145Z
-Stopped at: Completed 03-content-maps-notifications-03-PLAN.md
+Last session: 2026-03-13T19:34:32.181Z
+Stopped at: Completed 03-content-maps-notifications-04-PLAN.md
 Resume file: None
