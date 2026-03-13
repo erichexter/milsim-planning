@@ -86,28 +86,28 @@ public class EventService
     /// <summary>EVNT-02: Duplicate event — always copies Platoon/Squad structure; never copies roster or dates.</summary>
     public async Task<EventDto> DuplicateEventAsync(Guid sourceEventId, DuplicateEventRequest request)
     {
-        var source = await _db.Events
+        var sourceEvent = await _db.Events
             .Include(e => e.Faction)
                 .ThenInclude(f => f.Platoons)
                     .ThenInclude(p => p.Squads)
             .FirstOrDefaultAsync(e => e.Id == sourceEventId)
             ?? throw new KeyNotFoundException($"Event {sourceEventId} not found");
 
-        AssertCommanderAccess(source.Faction);
+        AssertCommanderAccess(sourceEvent.Faction);
 
         var newEvent = new Event
         {
-            Name = $"{source.Name} (Copy)",
-            Location = source.Location,
-            Description = source.Description,
+            Name = $"{sourceEvent.Name} (Copy)",
+            Location = sourceEvent.Location,
+            Description = sourceEvent.Description,
             StartDate = null,       // LOCKED: dates never copied (EVNT-02)
             EndDate = null,         // LOCKED: dates never copied (EVNT-02)
             Status = EventStatus.Draft,   // LOCKED: always Draft (EVNT-04)
             Faction = new Faction
             {
-                CommanderId = source.Faction.CommanderId,
-                Name = source.Faction.Name,
-                Platoons = source.Faction.Platoons.Select(p => new Platoon
+                CommanderId = sourceEvent.Faction.CommanderId,
+                Name = sourceEvent.Faction.Name,
+                Platoons = sourceEvent.Faction.Platoons.Select(p => new Platoon
                 {
                     Name = p.Name,
                     Order = p.Order,
@@ -120,9 +120,28 @@ public class EventService
             }
         };
 
-        // Phase 3 forward compat: CopyInfoSectionIds accepted but not acted on
-        // (no info sections exist in Phase 2 — implement in Phase 3 when InfoSection entity exists)
-        _ = request.CopyInfoSectionIds;
+        // Phase 3: Copy selected InfoSections (+ their Attachments) when CopyInfoSectionIds is non-empty
+        if (request.CopyInfoSectionIds.Any())
+        {
+            var sectionsToClone = await _db.InfoSections
+                .Include(s => s.Attachments)
+                .Where(s => request.CopyInfoSectionIds.Contains(s.Id) && s.EventId == sourceEventId)
+                .ToListAsync();
+
+            newEvent.InfoSections = sectionsToClone.Select(s => new InfoSection
+            {
+                Title = s.Title,
+                BodyMarkdown = s.BodyMarkdown,
+                Order = s.Order,
+                Attachments = s.Attachments.Select(a => new InfoSectionAttachment
+                {
+                    R2Key = a.R2Key,          // shared R2 object — no R2 copy
+                    FriendlyName = a.FriendlyName,
+                    ContentType = a.ContentType,
+                    FileSizeBytes = a.FileSizeBytes
+                }).ToList()
+            }).ToList();
+        }
 
         _db.Events.Add(newEvent);
         await _db.SaveChangesAsync();
