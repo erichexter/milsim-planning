@@ -25,30 +25,30 @@
 
 ### Event Management
 
-- [ ] **EVNT-01**: Faction Commander can create a new event with name, location, description, start date, end date
-- [ ] **EVNT-02**: Faction Commander can duplicate an existing event as a template for a new event
-- [ ] **EVNT-03**: Faction Commander can view a list of all events they manage
-- [ ] **EVNT-04**: Event has a status lifecycle: Draft to Published
-- [ ] **EVNT-05**: Faction Commander can publish an event (making it visible to players)
-- [ ] **EVNT-06**: Publishing an event is decoupled from sending notifications
+- [x] **EVNT-01**: Faction Commander can create a new event with name, location, description, start date, end date
+- [x] **EVNT-02**: Faction Commander can duplicate an existing event as a template for a new event
+- [x] **EVNT-03**: Faction Commander can view a list of all events they manage
+- [x] **EVNT-04**: Event has a status lifecycle: Draft to Published
+- [x] **EVNT-05**: Faction Commander can publish an event (making it visible to players)
+- [x] **EVNT-06**: Publishing an event is decoupled from sending notifications
 
 ### Roster Import
 
-- [ ] **ROST-01**: Faction Commander can upload a CSV file to import players into an event
-- [ ] **ROST-02**: CSV import validates all rows and shows a preview before committing (two-phase: validate then commit)
-- [ ] **ROST-03**: CSV import errors are reported per-row before any data is saved
-- [ ] **ROST-04**: Imported fields include: Name, Email, Callsign, Team Affiliation
-- [ ] **ROST-05**: Re-importing a CSV updates existing players by email (upsert, not duplicate)
-- [ ] **ROST-06**: Players not yet registered receive an invitation email after import
+- [x] **ROST-01**: Faction Commander can upload a CSV file to import players into an event
+- [x] **ROST-02**: CSV import validates all rows and shows a preview before committing (two-phase: validate then commit)
+- [x] **ROST-03**: CSV import errors are reported per-row before any data is saved
+- [x] **ROST-04**: Imported fields include: Name, Email, Callsign, Team Affiliation
+- [x] **ROST-05**: Re-importing a CSV updates existing players by email (upsert, not duplicate)
+- [x] **ROST-06**: Players not yet registered receive an invitation email after import
 
 ### Hierarchy Management
 
-- [ ] **HIER-01**: Faction Commander can create Platoons within an event Faction
-- [ ] **HIER-02**: Faction Commander can create Squads within a Platoon
-- [ ] **HIER-03**: Faction Commander can assign players to Platoons
-- [ ] **HIER-04**: Faction Commander can assign players to Squads
-- [ ] **HIER-05**: Faction Commander can move players between Squads
-- [ ] **HIER-06**: Full faction roster is visible to all faction members
+- [x] **HIER-01**: Faction Commander can create Platoons within an event Faction
+- [x] **HIER-02**: Faction Commander can create Squads within a Platoon
+- [x] **HIER-03**: Faction Commander can assign players to Platoons
+- [x] **HIER-04**: Faction Commander can assign players to Squads
+- [x] **HIER-05**: Faction Commander can move players between Squads
+- [x] **HIER-06**: Full faction roster is visible to all faction members
 
 ### Content Management
 
@@ -141,24 +141,24 @@
 | AUTHZ-04 | Phase 1 | Complete |
 | AUTHZ-05 | Phase 1 | Complete |
 | AUTHZ-06 | Phase 1 | Complete |
-| EVNT-01 | Phase 2 | Pending |
-| EVNT-02 | Phase 2 | Pending |
-| EVNT-03 | Phase 2 | Pending |
-| EVNT-04 | Phase 2 | Pending |
-| EVNT-05 | Phase 2 | Pending |
-| EVNT-06 | Phase 2 | Pending |
-| ROST-01 | Phase 2 | Pending |
-| ROST-02 | Phase 2 | Pending |
-| ROST-03 | Phase 2 | Pending |
-| ROST-04 | Phase 2 | Pending |
-| ROST-05 | Phase 2 | Pending |
-| ROST-06 | Phase 2 | Pending |
-| HIER-01 | Phase 2 | Pending |
-| HIER-02 | Phase 2 | Pending |
-| HIER-03 | Phase 2 | Pending |
-| HIER-04 | Phase 2 | Pending |
-| HIER-05 | Phase 2 | Pending |
-| HIER-06 | Phase 2 | Pending |
+| EVNT-01 | Phase 2 | Complete |
+| EVNT-02 | Phase 2 | Complete |
+| EVNT-03 | Phase 2 | Complete |
+| EVNT-04 | Phase 2 | Complete |
+| EVNT-05 | Phase 2 | Complete |
+| EVNT-06 | Phase 2 | Complete |
+| ROST-01 | Phase 2 | Complete |
+| ROST-02 | Phase 2 | Complete |
+| ROST-03 | Phase 2 | Complete |
+| ROST-04 | Phase 2 | Complete |
+| ROST-05 | Phase 2 | Complete |
+| ROST-06 | Phase 2 | Complete |
+| HIER-01 | Phase 2 | Complete |
+| HIER-02 | Phase 2 | Complete |
+| HIER-03 | Phase 2 | Complete |
+| HIER-04 | Phase 2 | Complete |
+| HIER-05 | Phase 2 | Complete |
+| HIER-06 | Phase 2 | Complete |
 | CONT-01 | Phase 3 | Pending |
 | CONT-02 | Phase 3 | Pending |
 | CONT-03 | Phase 3 | Pending |
