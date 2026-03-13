@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MilsimPlanning.Api.Authorization;
+using MilsimPlanning.Api.Authorization.Handlers;
+using MilsimPlanning.Api.Authorization.Requirements;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
 using MilsimPlanning.Api.Domain;
@@ -42,9 +45,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // ── Authorization ─────────────────────────────────────────────────────────────
-// NOTE: MinimumRoleRequirement handlers are wired in Plan 01-03.
-// Policies are registered here because they depend only on AppRoles (defined in this plan).
-// Registering now prevents policy-not-found runtime errors when tested in Plan 01-02.
+// MinimumRoleHandler is the single source of truth for all role hierarchy checks.
+// All 5 policies use the same handler — numeric comparison via AppRoles.Hierarchy.
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequirePlayer",           p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.Player)));
@@ -53,11 +55,16 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireFactionCommander", p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.FactionCommander)));
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
 });
+builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
 
 // ── Application Services ──────────────────────────────────────────────────────
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<MagicLinkService>();
+
+// ── Current User (scoped — one instance per HTTP request) ─────────────────────
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 
 // ── MVC + Swagger ─────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -85,6 +92,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Convert ForbiddenException (thrown by ScopeGuard) to HTTP 403
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    catch (ForbiddenException ex)
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = ex.Message });
+    }
+});
+
 app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
@@ -92,8 +114,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-// ── Authorization requirement stub ────────────────────────────────────────────
-// Full handler (MinimumRoleHandler) is implemented in Plan 01-03.
-// This stub allows Program.cs to compile with policy registrations already in place.
-public record MinimumRoleRequirement(string MinimumRole) : IAuthorizationRequirement;
