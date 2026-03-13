@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Secure authentication, 5-role RBAC, and full database schema (completed 2026-03-13)
 - [x] **Phase 2: Commander Workflow** - Event management, CSV roster import, and platoon/squad hierarchy (completed 2026-03-13)
-- [ ] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery (gap closure in progress)
+- [x] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery (completed 2026-03-13)
 - [ ] **Phase 4: Player Experience & Change Requests** - Player dashboard, mobile UI, and roster change workflow
 
 ## Phase Details
@@ -76,7 +76,7 @@ Plans:
 - [x] 03-05-PLAN.md — React UI: BriefingPage (DnD editor), MapResourcesPage, NotificationBlastPage + real component tests
 - [x] 03-06-PLAN.md — NOTF-03 gap closure: roster decision queue contract, worker branch, commander enqueue endpoint, regression verification
 - [x] 03-07-PLAN.md — Gap closure: fix PostgreSQL status migration cast path and add migration replay regression test for CONT/MAPS suites
-- [ ] 03-08-PLAN.md — Gap closure: stabilize notification test host DI/queue setup and rerun NOTF regression categories
+- [x] 03-08-PLAN.md — Gap closure: stabilize notification test host DI/queue setup and rerun NOTF regression categories
 
 ### Phase 4: Player Experience & Change Requests
 **Goal**: Every player can find their assignment, access all event materials on a mobile phone, and submit roster change requests that commanders can act on
@@ -103,5 +103,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
-| 3. Content, Maps & Notifications | 7/8 | In Progress | - |
+| 3. Content, Maps & Notifications | 8/8 | Complete | 2026-03-13 |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |

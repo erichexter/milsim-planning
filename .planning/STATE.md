@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed 03-07-PLAN.md
-last_updated: "2026-03-13T21:25:30.000Z"
-last_activity: 2026-03-13 — 03-07-PLAN.md complete (Phase2 status migration cast-path gap closure)
+status: completed
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-03-13T21:29:49.456Z"
+last_activity: 2026-03-13 — 03-08-PLAN.md complete (notification test-host stability + NOTF regression)
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Faction commanders can publish a complete event briefing — roster, assignments, information sections, and maps — and every player receives it without anything falling through the cracks.
-**Current focus:** Phase 3 — Content, Maps & Notifications gap closure
+**Current focus:** Phase 4 — Player Experience & Change Requests
 
 ## Current Position
 
-Phase: 3 of 4 (Content, Maps & Notifications) — **In Progress**
-Plan: 7 of 8 in Phase 3 complete
-Status: Phase 3 gap closure in progress; next plan is 03-08
-Last activity: 2026-03-13 — 03-07-PLAN.md complete (Phase2 status migration cast-path gap closure)
+Phase: 4 of 4 (Player Experience & Change Requests) — **Ready to Start**
+Plan: 0 of 2 in Phase 4 complete
+Status: Phase 3 complete; next plan is 04-01
+Last activity: 2026-03-13 — 03-08-PLAN.md complete (notification test-host stability + NOTF regression)
 
-Progress: [█████████░] 94% (16 of 17 plans complete)
+Progress: [██████████] 100% (17 of 17 plans complete)
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 94% (16 of 17 plans complete)
 | Phase 03-content-maps-notifications P05 | 7 min | 2 tasks | 17 files |
 | Phase 03-content-maps-notifications P06 | 9 min | 2 tasks | 5 files |
 | Phase 03 P07 | 3 min | 2 tasks | 2 files |
+| Phase 03-content-maps-notifications P08 | 25 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,8 @@ Recent decisions affecting current work:
 - [Phase 03-content-maps-notifications]: Returned 422 for unregistered EventPlayer targets so commanders get actionable non-delivery feedback.
 - [Phase 03]: Patched Phase2Schema in place with explicit USING CASE status conversion so historical migration replay from InitialSchema is deterministic on PostgreSQL.
 - [Phase 03]: Added Phase2StatusMigrationTests to assert both physical integer column type and EventStatus enum round-trip after MigrateAsync.
+- [Phase 03-content-maps-notifications]: Notification API integration tests now use deterministic test-auth headers to avoid env-sensitive JWT failures in NOTF assertions.
+- [Phase 03-content-maps-notifications]: NotificationWorker hosted registration is removed for notification API harness runs while worker behavior remains covered in NOTF_Decision_Worker tests.
 
 ### Pending Todos
 
@@ -133,6 +136,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:24:06.827Z
-Stopped at: Completed 03-07-PLAN.md
+Last session: 2026-03-13T21:29:49.435Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None
