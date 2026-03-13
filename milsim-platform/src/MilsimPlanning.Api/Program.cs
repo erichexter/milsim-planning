@@ -1,3 +1,5 @@
+using Amazon.Runtime;
+using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -56,6 +58,24 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
 });
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
+
+// ── R2 / Cloudflare S3-compatible storage ────────────────────────────────────
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new AmazonS3Client(
+        new BasicAWSCredentials(
+            config["R2:AccessKeyId"],
+            config["R2:SecretAccessKey"]
+        ),
+        new AmazonS3Config
+        {
+            ServiceURL = $"https://{config["R2:AccountId"]}.r2.cloudflarestorage.com",
+            ForcePathStyle = true  // REQUIRED for R2 — custom domains do NOT work with pre-signed URLs
+        }
+    );
+});
+builder.Services.AddScoped<IFileService, FileService>();
 
 // ── Application Services ──────────────────────────────────────────────────────
 builder.Services.AddScoped<IEmailService, EmailService>();
