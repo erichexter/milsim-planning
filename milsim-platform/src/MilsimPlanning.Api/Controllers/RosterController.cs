@@ -1,62 +1,72 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MilsimPlanning.Api.Authorization;
-using MilsimPlanning.Api.Domain;
+using MilsimPlanning.Api.Models.CsvImport;
 using MilsimPlanning.Api.Services;
 
 namespace MilsimPlanning.Api.Controllers;
 
 /// <summary>
-/// Stub roster controller — Phase 2 will replace this with real roster data.
-///
-/// Demonstrates:
-/// 1. RequirePlayer authorization policy (minimum role check via MinimumRoleHandler)
-/// 2. ScopeGuard.AssertEventAccess (IDOR prevention for AUTHZ-06)
-/// 3. Service-layer email projection (AUTHZ-05): email stripped for Player/SquadLeader callers
+/// Roster import endpoints for faction commanders.
+/// POST validate — per-row CSV validation, NO database writes (ROST-01, ROST-02, ROST-03)
+/// POST commit  — upsert players by email, preserve squad assignments, trigger invites (ROST-04, ROST-05, ROST-06)
 /// </summary>
 [ApiController]
-[Route("api/roster")]
-[Authorize(Policy = "RequirePlayer")]
+[Route("api/events/{eventId:guid}/roster")]
+[Authorize(Policy = "RequireFactionCommander")]
 public class RosterController : ControllerBase
 {
-    private readonly ICurrentUser _currentUser;
+    private readonly RosterService _rosterService;
 
-    public RosterController(ICurrentUser currentUser)
+    public RosterController(RosterService rosterService)
+        => _rosterService = rosterService;
+
+    /// <summary>
+    /// POST /api/events/{eventId}/roster/validate
+    /// Validate all CSV rows and return structured errors. Never writes to DB.
+    /// </summary>
+    [HttpPost("validate")]
+    [RequestSizeLimit(10 * 1024 * 1024)]  // 10MB — 400 rows is well under 1MB
+    public async Task<ActionResult<CsvValidationResult>> Validate(
+        Guid eventId,
+        IFormFile file)
     {
-        _currentUser = currentUser;
+        if (file is null || file.Length == 0)
+            return BadRequest(new { error = "No file uploaded" });
+
+        if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { error = "File must be a .csv" });
+
+        var result = await _rosterService.ValidateRosterCsvAsync(file, eventId);
+        return Ok(result);
     }
 
     /// <summary>
-    /// GET /api/roster/{eventId}
-    ///
-    /// Returns a mock roster for the event. Real implementation comes in Phase 2.
-    /// - Players and SquadLeaders: email field is omitted from response (AUTHZ-05)
-    /// - PlatoonLeader and above: email field is included
+    /// POST /api/events/{eventId}/roster/commit
+    /// Upsert players by email, preserve squad assignments, trigger invitation emails.
+    /// Returns 422 if CSV has errors (defense-in-depth re-validation).
     /// </summary>
-    [HttpGet("{eventId:guid}")]
-    public IActionResult GetRoster(Guid eventId)
+    [HttpPost("commit")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> Commit(Guid eventId, IFormFile file)
     {
-        // IDOR check — must be called at top of every service method taking eventId
-        ScopeGuard.AssertEventAccess(_currentUser, eventId);
+        if (file is null || file.Length == 0)
+            return BadRequest(new { error = "No file uploaded" });
 
-        // Determine whether to include email based on role (AUTHZ-05)
-        var callerLevel = AppRoles.Hierarchy.GetValueOrDefault(_currentUser.Role, 0);
-        var platoonLeaderLevel = AppRoles.Hierarchy.GetValueOrDefault(AppRoles.PlatoonLeader, 0);
-        var includeEmail = callerLevel >= platoonLeaderLevel;
-
-        // Mock roster — Phase 2 replaces with real EventMembership query
-        object[] users = includeEmail
-            ? new object[]
-              {
-                  new { name = "Alpha One", email = "alpha1@example.com" },
-                  new { name = "Bravo Two", email = "bravo2@example.com" }
-              }
-            : new object[]
-              {
-                  new { name = "Alpha One" },
-                  new { name = "Bravo Two" }
-              };
-
-        return Ok(new { eventId, users });
+        try
+        {
+            await _rosterService.CommitRosterCsvAsync(file, eventId);
+            return NoContent();
+        }
+        catch (RosterValidationException)
+        {
+            // Re-validate found errors — return full validation result for the client
+            var result = await _rosterService.ValidateRosterCsvAsync(file, eventId);
+            return UnprocessableEntity(result);
+        }
+        catch (ForbiddenException)
+        {
+            return Forbid();
+        }
     }
 }
