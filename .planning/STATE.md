@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-content-maps-notifications-01-PLAN.md
-last_updated: "2026-03-13T18:27:30.343Z"
-last_activity: 2026-03-13 — 02-05-PLAN.md complete (HierarchyService, HierarchyController, HierarchyBuilder UI, RosterView UI)
+stopped_at: Completed 03-content-maps-notifications-02-PLAN.md
+last_updated: "2026-03-13T19:22:41.507Z"
+last_activity: 2026-03-13 — 03-02-PLAN.md complete (ContentService, InfoSectionsController, CONT integration tests)
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 14
-  completed_plans: 10
-  percent: 100
+  completed_plans: 11
+  percent: 79
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Faction commanders can publish a complete event briefing — roster, assignments, information sections, and maps — and every player receives it without anything falling through the cracks.
-**Current focus:** Phase 2 — Commander Workflow (Phase 1 complete)
+**Current focus:** Phase 3 — Content, Maps & Notifications
 
 ## Current Position
 
-Phase: 2 of 4 (Commander Workflow) — **Complete**
-Plan: 5 of 5 in Phase 2 (all complete)
-Status: Phase 2 fully complete — 02-01 through 02-05 done; ready for Phase 3
-Last activity: 2026-03-13 — 02-05-PLAN.md complete (HierarchyService, HierarchyController, HierarchyBuilder UI, RosterView UI)
+Phase: 3 of 4 (Content, Maps & Notifications) — **In Progress**
+Plan: 2 of 5 in Phase 3 complete
+Status: 03-01 and 03-02 complete; next plan is 03-03 (Maps API)
+Last activity: 2026-03-13 — 03-02-PLAN.md complete (ContentService, InfoSectionsController, CONT integration tests)
 
-Progress: [██████████] 100% (Phase 2 of 4 complete)
+Progress: [████████░░] 79% (11 of 14 plans complete)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [██████████] 100% (Phase 2 of 4 complete)
 | Phase 02-commander-workflow P04 | ~20 min | 1 task | 35+ files |
 | Phase 02-commander-workflow P05 | ~15 min | 1 task | 8 files |
 | Phase 03-content-maps-notifications P01 | 7 min | 3 tasks | 20 files |
+| Phase 03-content-maps-notifications P02 | 12 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
   - [Phase 02-commander-workflow]: MSW mocks created from scratch (server.ts + handlers.ts) — plans assumed they existed; wired into vitest via test-setup.ts and vite.config.ts setupFiles
 - [Phase 03-content-maps-notifications]: AWSSDK v4 used for R2 integration — GetPreSignedURL/ForcePathStyle/HttpVerb all confirmed present in v4 API
 - [Phase 03-content-maps-notifications]: IFileService scoped + IAmazonS3 singleton — S3 client is thread-safe and expensive to construct; scoped FileService reads IConfiguration singleton cleanly
+- [Phase 03-content-maps-notifications]: Mock IFileService in integration tests to isolate content API behavior from S3 credentials and infrastructure
+- [Phase 03-content-maps-notifications]: Generate attachment download URLs on demand from R2Key; never persist pre-signed URLs
+- [Phase 03-content-maps-notifications]: Use full 0..N order reassignment for info section reorder endpoint
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T18:27:30.336Z
-Stopped at: Completed 03-content-maps-notifications-01-PLAN.md
+Last session: 2026-03-13T19:22:12.354Z
+Stopped at: Completed 03-content-maps-notifications-02-PLAN.md
 Resume file: None

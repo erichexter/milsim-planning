@@ -69,8 +69,8 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Wave 0 test stubs + EF Core Phase 3 entities (InfoSection, InfoSectionAttachment, MapResource, NotificationBlast) + Phase3Schema migration + FileService (R2 pre-signed URLs)
-- [ ] 03-02-PLAN.md — Content API: InfoSectionsController + ContentService (CRUD, reorder, attachment upload flow) + EventService DuplicateEventAsync info-section copy
+- [x] 03-01-PLAN.md — Wave 0 test stubs + EF Core Phase 3 entities (InfoSection, InfoSectionAttachment, MapResource, NotificationBlast) + Phase3Schema migration + FileService (R2 pre-signed URLs)
+- [x] 03-02-PLAN.md — Content API: InfoSectionsController + ContentService (CRUD, reorder, attachment upload flow) + EventService DuplicateEventAsync info-section copy
 - [ ] 03-03-PLAN.md — Maps API: MapResourcesController + MapResourceService (external links, private file upload/download)
 - [ ] 03-04-PLAN.md — Notifications pipeline: Channel queue + BackgroundService NotificationWorker + NotificationBlastsController + HierarchyService squad-change email trigger
 - [ ] 03-05-PLAN.md — React UI: BriefingPage (DnD editor), MapResourcesPage, NotificationBlastPage + real component tests
@@ -100,5 +100,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
-| 3. Content, Maps & Notifications | 0/5 | Not started | - |
+| 3. Content, Maps & Notifications | 2/5 | In Progress | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
