@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 02-05-PLAN.md — Phase 2 fully complete
-last_updated: "2026-03-13T15:42:46.915Z"
+stopped_at: Completed 03-content-maps-notifications-01-PLAN.md
+last_updated: "2026-03-13T18:27:30.343Z"
 last_activity: 2026-03-13 — 02-05-PLAN.md complete (HierarchyService, HierarchyController, HierarchyBuilder UI, RosterView UI)
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 14
+  completed_plans: 10
   percent: 100
 ---
 
@@ -63,6 +63,7 @@ Progress: [██████████] 100% (Phase 2 of 4 complete)
 | Phase 02-commander-workflow P03 | 9 min | 2 tasks | 4 files |
 | Phase 02-commander-workflow P04 | ~20 min | 1 task | 35+ files |
 | Phase 02-commander-workflow P05 | ~15 min | 1 task | 8 files |
+| Phase 03-content-maps-notifications P01 | 7 min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
   - [Phase 02-commander-workflow]: ScopeGuard.AssertEventAccess overload for Faction does not exist — used AssertCommanderAccess private method pattern (same as EventService) for hierarchy write ops
   - [Phase 02-commander-workflow]: shadcn CLI writes to web/@/ (literal @ dir) — shadcn components copied manually to web/src/components/ui/
   - [Phase 02-commander-workflow]: MSW mocks created from scratch (server.ts + handlers.ts) — plans assumed they existed; wired into vitest via test-setup.ts and vite.config.ts setupFiles
+- [Phase 03-content-maps-notifications]: AWSSDK v4 used for R2 integration — GetPreSignedURL/ForcePathStyle/HttpVerb all confirmed present in v4 API
+- [Phase 03-content-maps-notifications]: IFileService scoped + IAmazonS3 singleton — S3 client is thread-safe and expensive to construct; scoped FileService reads IConfiguration singleton cleanly
 
 ### Pending Todos
 
@@ -109,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T17:00:00.000Z
-Stopped at: Completed 02-05-PLAN.md — Phase 2 fully complete
+Last session: 2026-03-13T18:27:30.336Z
+Stopped at: Completed 03-content-maps-notifications-01-PLAN.md
 Resume file: None

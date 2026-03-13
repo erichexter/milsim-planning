@@ -52,27 +52,27 @@
 
 ### Content Management
 
-- [ ] **CONT-01**: Faction Commander can create custom information sections within an event
-- [ ] **CONT-02**: Each information section supports Markdown text content
-- [ ] **CONT-03**: Each information section supports file attachments (PDF, images)
-- [ ] **CONT-04**: Faction Commander can reorder information sections
-- [ ] **CONT-05**: Faction Commander can edit or delete information sections
+- [x] **CONT-01**: Faction Commander can create custom information sections within an event
+- [x] **CONT-02**: Each information section supports Markdown text content
+- [x] **CONT-03**: Each information section supports file attachments (PDF, images)
+- [x] **CONT-04**: Faction Commander can reorder information sections
+- [x] **CONT-05**: Faction Commander can edit or delete information sections
 
 ### Map Resources
 
-- [ ] **MAPS-01**: Faction Commander can add external map platform links to an event
-- [ ] **MAPS-02**: Faction Commander can add setup instructions for each external map link
-- [ ] **MAPS-03**: Faction Commander can upload downloadable map files (PDF, JPEG, PNG, KMZ)
-- [ ] **MAPS-04**: Players can download map files for offline use
-- [ ] **MAPS-05**: Uploaded files are stored privately with authenticated time-limited download links
+- [x] **MAPS-01**: Faction Commander can add external map platform links to an event
+- [x] **MAPS-02**: Faction Commander can add setup instructions for each external map link
+- [x] **MAPS-03**: Faction Commander can upload downloadable map files (PDF, JPEG, PNG, KMZ)
+- [x] **MAPS-04**: Players can download map files for offline use
+- [x] **MAPS-05**: Uploaded files are stored privately with authenticated time-limited download links
 
 ### Notifications
 
-- [ ] **NOTF-01**: Faction Commander can send an email notification blast to all event participants
-- [ ] **NOTF-02**: Email notifications are sent when squad assignments change
-- [ ] **NOTF-03**: Email notifications are sent when a roster change request is approved or denied
-- [ ] **NOTF-04**: Notification emails are delivered via a transactional email provider
-- [ ] **NOTF-05**: Bulk notification send is processed asynchronously
+- [x] **NOTF-01**: Faction Commander can send an email notification blast to all event participants
+- [x] **NOTF-02**: Email notifications are sent when squad assignments change
+- [x] **NOTF-03**: Email notifications are sent when a roster change request is approved or denied
+- [x] **NOTF-04**: Notification emails are delivered via a transactional email provider
+- [x] **NOTF-05**: Bulk notification send is processed asynchronously
 
 ### Roster Change Requests
 
@@ -159,21 +159,21 @@
 | HIER-04 | Phase 2 | Complete |
 | HIER-05 | Phase 2 | Complete |
 | HIER-06 | Phase 2 | Complete |
-| CONT-01 | Phase 3 | Pending |
-| CONT-02 | Phase 3 | Pending |
-| CONT-03 | Phase 3 | Pending |
-| CONT-04 | Phase 3 | Pending |
-| CONT-05 | Phase 3 | Pending |
-| MAPS-01 | Phase 3 | Pending |
-| MAPS-02 | Phase 3 | Pending |
-| MAPS-03 | Phase 3 | Pending |
-| MAPS-04 | Phase 3 | Pending |
-| MAPS-05 | Phase 3 | Pending |
-| NOTF-01 | Phase 3 | Pending |
-| NOTF-02 | Phase 3 | Pending |
-| NOTF-03 | Phase 3 | Pending |
-| NOTF-04 | Phase 3 | Pending |
-| NOTF-05 | Phase 3 | Pending |
+| CONT-01 | Phase 3 | Complete |
+| CONT-02 | Phase 3 | Complete |
+| CONT-03 | Phase 3 | Complete |
+| CONT-04 | Phase 3 | Complete |
+| CONT-05 | Phase 3 | Complete |
+| MAPS-01 | Phase 3 | Complete |
+| MAPS-02 | Phase 3 | Complete |
+| MAPS-03 | Phase 3 | Complete |
+| MAPS-04 | Phase 3 | Complete |
+| MAPS-05 | Phase 3 | Complete |
+| NOTF-01 | Phase 3 | Complete |
+| NOTF-02 | Phase 3 | Complete |
+| NOTF-03 | Phase 3 | Complete |
+| NOTF-04 | Phase 3 | Complete |
+| NOTF-05 | Phase 3 | Complete |
 | RCHG-01 | Phase 4 | Pending |
 | RCHG-02 | Phase 4 | Pending |
 | RCHG-03 | Phase 4 | Pending |
