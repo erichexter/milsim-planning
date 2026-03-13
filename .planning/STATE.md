@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 02-commander-workflow-01-PLAN.md
-last_updated: "2026-03-13T15:11:35Z"
-last_activity: "2026-03-13 — 02-01-PLAN.md complete (Phase 2 entities, Phase2Schema migration, DTOs, Wave 0 test stubs)"
+stopped_at: Completed 02-commander-workflow-02-PLAN.md
+last_updated: "2026-03-13T15:17:20.136Z"
+last_activity: 2026-03-13 — 02-01-PLAN.md complete (Phase 2 entities, Phase2Schema migration, DTOs, Wave 0 test stubs)
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 5
+  completed_plans: 7
   percent: 56
 ---
 
@@ -59,6 +59,7 @@ Progress: [█████░░░░░] 56%
 | Phase 01-foundation P03 | 6 min | 1 task (TDD) | 8 files |
 | Phase 01-foundation P04 | 9 min | 2 tasks | 27 files |
 | Phase 02-commander-workflow P01 | 7 min | 2 tasks | 23 files |
+| Phase 02-commander-workflow P02 | 11min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: useAuth localStorage persistence via useState initializer (not useEffect) — guarantees session on mount without flicker, implements AUTH-04
 - [Phase 02-commander-workflow]: Phase2Schema migration over drop-and-recreate — keeps InitialSchema intact, adds delta migration; Event.FactionId is data column (no DB FK), Faction.EventId owns the 1:1 FK
 - [Phase 02-commander-workflow]: CopyInfoSectionIds: Guid[] in DuplicateEventRequest — Phase 3 forward compat field accepted at API level even in Phase 2 (no info sections yet)
+- [Phase 02-commander-workflow]: AssertCommanderAccess checks Faction.CommanderId (not EventMembership) for event write ops — faction ownership check distinct from ScopeGuard membership check
+- [Phase 02-commander-workflow]: EVNT-06 contract enforced: PublishEventAsync has zero IEmailService references — publish is status-flip only; notifications are Phase 3
 
 ### Pending Todos
 
@@ -97,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T15:11:35Z
-Stopped at: Completed 02-commander-workflow-01-PLAN.md
+Last session: 2026-03-13T15:17:20.128Z
+Stopped at: Completed 02-commander-workflow-02-PLAN.md
 Resume file: None
