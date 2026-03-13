@@ -12,7 +12,7 @@ Four phases that build from identity to delivery: first, a secure auth and RBAC 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Secure authentication, 5-role RBAC, and full database schema
+- [x] **Phase 1: Foundation** - Secure authentication, 5-role RBAC, and full database schema (completed 2026-03-13)
 - [ ] **Phase 2: Commander Workflow** - Event management, CSV roster import, and platoon/squad hierarchy
 - [ ] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery
 - [ ] **Phase 4: Player Experience & Change Requests** - Player dashboard, mobile UI, and roster change workflow
@@ -96,7 +96,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete | 2026-03-13 |
+| 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 0/5 | Planned | - |
 | 3. Content, Maps & Notifications | 0/3 | Not started | - |
 | 4. Player Experience & Change Requests | 0/2 | Not started | - |
