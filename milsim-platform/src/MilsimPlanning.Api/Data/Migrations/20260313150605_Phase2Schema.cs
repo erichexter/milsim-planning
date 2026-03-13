@@ -19,14 +19,13 @@ namespace MilsimPlanning.Api.Data.Migrations
                 name: "UpdatedAt",
                 table: "Events");
 
-            migrationBuilder.AlterColumn<int>(
-                name: "Status",
-                table: "Events",
-                type: "integer",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldDefaultValue: "draft");
+            migrationBuilder.Sql("ALTER TABLE \"Events\" ALTER COLUMN \"Status\" DROP DEFAULT;");
+            migrationBuilder.Sql(@"ALTER TABLE ""Events"" ALTER COLUMN ""Status"" TYPE integer USING CASE
+                WHEN lower(trim(""Status"")) = 'published' OR trim(""Status"") = '1' THEN 1
+                WHEN lower(trim(""Status"")) = 'draft' OR trim(""Status"") = '0' THEN 0
+                ELSE 0
+            END;");
+            migrationBuilder.Sql("ALTER TABLE \"Events\" ALTER COLUMN \"Status\" SET DEFAULT 0;");
 
             migrationBuilder.AlterColumn<DateOnly>(
                 name: "StartDate",
