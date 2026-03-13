@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-foundation-03-PLAN.md
-last_updated: "2026-03-13T13:50:06.000Z"
+stopped_at: Completed 01-foundation-04-PLAN.md
+last_updated: "2026-03-13T13:55:44.500Z"
 last_activity: 2026-03-13 — 01-03-PLAN.md complete (RBAC handler, scope guard, IDOR protection, authorization tests)
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 9
-  completed_plans: 3
-  percent: 22
+  completed_plans: 4
+  percent: 44
 ---
 
 # Project State
@@ -21,32 +21,32 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Faction commanders can publish a complete event briefing — roster, assignments, information sections, and maps — and every player receives it without anything falling through the cracks.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 2 — Commander Workflow (Phase 1 complete)
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-03-13 — 01-03-PLAN.md complete (RBAC handler, scope guard, IDOR protection, authorization tests)
+Phase: 1 of 4 (Foundation) — COMPLETE
+Plan: 4 of 4 in current phase (all plans complete)
+Status: Phase 1 complete, ready for Phase 2
+Last activity: 2026-03-13 — 01-04-PLAN.md complete (React SPA: auth helpers, API client, useAuth hook, ProtectedRoute, 5 auth pages)
 
-Progress: [██░░░░░░░░] 22%
+Progress: [████░░░░░░] 44%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 7 min
-- Total execution time: ~0.3 hours
+- Total execution time: ~0.5 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 3 | 20 min | 7 min |
+| 01-foundation | 4 | 29 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4 min), 01-02 (10 min), 01-03 (6 min)
+- Last 5 plans: 01-01 (4 min), 01-02 (10 min), 01-03 (6 min), 01-04 (9 min)
 - Trend: Fast
 
 *Updated after each plan completion*
@@ -56,6 +56,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 01-foundation P01 | 4 min | 2 tasks | 15 files |
 | Phase 01-foundation P02 | 10 min | 3 tasks | 18 files |
 | Phase 01-foundation P03 | 6 min | 1 task (TDD) | 8 files |
+| Phase 01-foundation P04 | 9 min | 2 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: MinimumRoleHandler is ONLY place role hierarchy evaluated — no raw role string comparisons in business logic; AppRoles.Hierarchy.GetValueOrDefault pattern
 - [Phase 01-foundation]: ScopeGuard.AssertEventAccess as first line of every service method with eventId — IDOR prevention contract for all Phase 2+ service methods
 - [Phase 01-foundation]: ICurrentUser/CurrentUserService scoped per request, EventMembershipIds cached in _cachedEventIds field — single DB query per request, no N+1
+- [Phase 01-foundation]: shadcn/ui components scaffolded manually (not via CLI) — pnpm dlx shadcn init is interactive; components created directly from source
+- [Phase 01-foundation]: useAuth localStorage persistence via useState initializer (not useEffect) — guarantees session on mount without flicker, implements AUTH-04
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T13:50:06Z
-Stopped at: Completed 01-foundation-03-PLAN.md
+Last session: 2026-03-13T13:55:44.492Z
+Stopped at: Completed 01-foundation-04-PLAN.md
 Resume file: None
