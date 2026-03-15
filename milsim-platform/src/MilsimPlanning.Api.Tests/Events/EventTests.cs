@@ -2,9 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MilsimPlanning.Api.Data;
@@ -51,6 +53,16 @@ public class EventTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Jwt:Secret"] = "dev-placeholder-secret-32-chars!!",
+                        ["Jwt:Issuer"] = "milsim-tests",
+                        ["Jwt:Audience"] = "milsim-tests"
+                    });
+                });
+
                 builder.ConfigureServices(services =>
                 {
                     services.RemoveAll<DbContextOptions<AppDbContext>>();
@@ -61,6 +73,12 @@ public class EventTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
                     services.RemoveAll<IEmailService>();
                     services.AddSingleton(_emailMock.Object);
                     services.AddSingleton(_emailMock); // so tests can access mock for Verify()
+
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationTestAuthHandler.SchemeName;
+                        options.DefaultChallengeScheme = IntegrationTestAuthHandler.SchemeName;
+                    }).AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthHandler>(IntegrationTestAuthHandler.SchemeName, _ => { });
                 });
             });
 
@@ -130,11 +148,8 @@ public class EventTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
 
     protected HttpClient CreateAuthenticatedClient(AppUser user, string role)
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-        var jwt = authService.GenerateJwt(user, role);
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        IntegrationTestAuthHandler.ApplyTestIdentity(client, user.Id, role);
         return client;
     }
 }

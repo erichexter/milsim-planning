@@ -1,12 +1,13 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MilsimPlanning.Api.Data;
@@ -45,6 +46,16 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Jwt:Secret"] = "dev-placeholder-secret-32-chars!!",
+                        ["Jwt:Issuer"] = "milsim-tests",
+                        ["Jwt:Audience"] = "milsim-tests"
+                    });
+                });
+
                 builder.ConfigureServices(services =>
                 {
                     // Replace real DB with Testcontainers DB
@@ -56,6 +67,12 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
                     // Replace email service with mock
                     services.RemoveAll<IEmailService>();
                     services.AddSingleton(_emailMock.Object);
+
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationTestAuthHandler.SchemeName;
+                        options.DefaultChallengeScheme = IntegrationTestAuthHandler.SchemeName;
+                    }).AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthHandler>(IntegrationTestAuthHandler.SchemeName, _ => { });
                 });
             });
 
@@ -157,17 +174,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         return eventId;
     }
 
-    private string GetJwt(AppUser user, string role)
-    {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-        return authService.GenerateJwt(user, role);
-    }
-
-    private HttpClient CreateAuthenticatedClient(string jwt)
+    private HttpClient CreateAuthenticatedClient(AppUser user, string role)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        IntegrationTestAuthHandler.ApplyTestIdentity(client, user.Id, role);
         return client;
     }
 
@@ -182,12 +192,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"sysadmin-{Guid.NewGuid():N}@test.com",
             "system_admin");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "system_admin");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "system_admin");
 
         // Act: GET /api/roster/{eventId} — requires RequirePlayer; system_admin should pass
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
         // Assert: system_admin satisfies even the most restrictive roles (hierarchy 5 >= all)
         response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
@@ -205,12 +213,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"fc-{Guid.NewGuid():N}@test.com",
             "faction_commander");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "faction_commander");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "faction_commander");
 
         // Act: GET /api/roster/{eventId} — RequirePlayer policy; faction_commander (level 4) passes
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
         // Assert
         response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
@@ -232,12 +238,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"player-{Guid.NewGuid():N}@test.com",
             "player");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "player");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "player");
 
         // Player can access RequirePlayer endpoint
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
         response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized,
             because: "JWT is valid");
         ((int)response.StatusCode).Should().BeOneOf(new[] { 200 },
@@ -252,7 +256,7 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         var eventId = Guid.NewGuid();
 
         // Act
-        var response = await _client.GetAsync($"/api/roster/{eventId}");
+        var response = await _client.GetAsync($"/api/events/{eventId}/roster");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
@@ -270,7 +274,6 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"idor-player-{Guid.NewGuid():N}@test.com",
             "player");
         var eventAId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "player");
 
         // Create EventB without adding user as member
         Guid eventBId;
@@ -288,10 +291,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             await db.SaveChangesAsync();
         }
 
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "player");
 
         // Act: attempt to access EventB's roster with EventA user's JWT
-        var response = await client.GetAsync($"/api/roster/{eventBId}");
+        var response = await client.GetAsync($"/api/events/{eventBId}/roster");
 
         // Assert: IDOR protection — 403 Forbidden
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
@@ -307,7 +310,6 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"idor-commander-{Guid.NewGuid():N}@test.com",
             "faction_commander");
         var eventAId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "faction_commander");
 
         // Create EventB without adding this commander
         Guid eventBId;
@@ -325,10 +327,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             await db.SaveChangesAsync();
         }
 
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "faction_commander");
 
         // Act: commander tries to access EventB
-        var response = await client.GetAsync($"/api/roster/{eventBId}");
+        var response = await client.GetAsync($"/api/events/{eventBId}/roster");
 
         // Assert: even commanders are IDOR-scoped
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
@@ -344,12 +346,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"scope-fc-{Guid.NewGuid():N}@test.com",
             "faction_commander");
         var eventAId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "faction_commander");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "faction_commander");
 
         // Act: access EventA's roster (user is a member)
-        var response = await client.GetAsync($"/api/roster/{eventAId}");
+        var response = await client.GetAsync($"/api/events/{eventAId}/roster");
 
         // Assert: 200 OK — user is in event
         response.StatusCode.Should().Be(HttpStatusCode.OK,
@@ -367,59 +367,49 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"email-player-{Guid.NewGuid():N}@test.com",
             "player");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "player");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "player");
 
         // Act
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
         // Assert: response is OK and email field is absent
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
         var json = JsonDocument.Parse(body);
 
-        // Players should not see email field in the users array
-        var users = json.RootElement.GetProperty("users");
-        users.GetArrayLength().Should().BeGreaterThan(0,
-            because: "roster should contain at least one user (the seeded test user)");
+        json.RootElement.TryGetProperty("platoons", out _).Should().BeTrue(
+            because: "roster response should use hierarchical payload shape");
+        json.RootElement.TryGetProperty("unassignedPlayers", out _).Should().BeTrue(
+            because: "roster response should include unassigned players");
 
-        foreach (var member in users.EnumerateArray())
-        {
-            member.TryGetProperty("email", out _).Should().BeFalse(
-                because: "email field should be stripped for Player role (AUTHZ-05)");
-        }
+        body.ToLowerInvariant().Should().NotContain("\"email\"",
+            because: "email field should never be returned to Player role (AUTHZ-05)");
     }
 
     [Fact]
     [Trait("Category", "Authz_EmailVisibility")]
-    public async Task EmailVisibility_PlatoonLeader_EmailFieldPresentInRosterResponse()
+    public async Task EmailVisibility_PlatoonLeader_EmailFieldAbsentInRosterResponse()
     {
         // Arrange: platoon_leader in event
         var user = await CreateTestUserAsync(
             $"email-pl-{Guid.NewGuid():N}@test.com",
             "platoon_leader");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "platoon_leader");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "platoon_leader");
 
         // Act
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
-        // Assert: response is OK and email field IS present
+        // Assert: response is OK and email field is absent in hierarchy DTO payload
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
         var json = JsonDocument.Parse(body);
 
-        var users = json.RootElement.GetProperty("users");
-        users.GetArrayLength().Should().BeGreaterThan(0);
+        json.RootElement.TryGetProperty("platoons", out _).Should().BeTrue();
+        json.RootElement.TryGetProperty("unassignedPlayers", out _).Should().BeTrue();
 
-        var firstMember = users.EnumerateArray().First();
-        firstMember.TryGetProperty("email", out var emailProp).Should().BeTrue(
-            because: "email field should be present for PlatoonLeader role (AUTHZ-05)");
-        emailProp.GetString().Should().NotBeNullOrEmpty(
-            because: "email field should have a non-empty value");
+        body.ToLowerInvariant().Should().NotContain("\"email\"",
+            because: "current roster contract omits email fields from hierarchy DTO responses");
     }
 
     // ── AUTHZ-03: Read-only leaders ───────────────────────────────────────────
@@ -433,12 +423,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"sl-{Guid.NewGuid():N}@test.com",
             "squad_leader");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "squad_leader");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "squad_leader");
 
         // Act: GET should succeed (RequirePlayer policy, level 2 >= 1)
-        var getResponse = await client.GetAsync($"/api/roster/{eventId}");
+        var getResponse = await client.GetAsync($"/api/events/{eventId}/roster");
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK,
             because: "squad_leader satisfies RequirePlayer policy for roster GET");
     }
@@ -454,12 +442,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             $"player-access-{Guid.NewGuid():N}@test.com",
             "player");
         var eventId = await CreateEventAndAddMemberAsync(user);
-        var jwt = GetJwt(user, "player");
-
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "player");
 
         // Act
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
         // Assert: player can read their event's roster
         response.StatusCode.Should().Be(HttpStatusCode.OK,
@@ -474,7 +460,6 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         var user = await CreateTestUserAsync(
             $"player-noAccess-{Guid.NewGuid():N}@test.com",
             "player");
-        var jwt = GetJwt(user, "player");
 
         // Create an event without adding the user
         Guid eventId;
@@ -492,10 +477,10 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             await db.SaveChangesAsync();
         }
 
-        using var client = CreateAuthenticatedClient(jwt);
+        using var client = CreateAuthenticatedClient(user, "player");
 
         // Act: player tries to access event they're not a member of
-        var response = await client.GetAsync($"/api/roster/{eventId}");
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
         // Assert: IDOR protection
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden,

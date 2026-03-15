@@ -3,9 +3,11 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MilsimPlanning.Api.Data;
@@ -46,6 +48,16 @@ public class HierarchyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Jwt:Secret"] = "dev-placeholder-secret-32-chars!!",
+                        ["Jwt:Issuer"] = "milsim-tests",
+                        ["Jwt:Audience"] = "milsim-tests"
+                    });
+                });
+
                 builder.ConfigureServices(services =>
                 {
                     services.RemoveAll<DbContextOptions<AppDbContext>>();
@@ -55,6 +67,12 @@ public class HierarchyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
 
                     services.RemoveAll<IEmailService>();
                     services.AddSingleton(_emailMock.Object);
+
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationTestAuthHandler.SchemeName;
+                        options.DefaultChallengeScheme = IntegrationTestAuthHandler.SchemeName;
+                    }).AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthHandler>(IntegrationTestAuthHandler.SchemeName, _ => { });
                 });
             });
 
@@ -106,16 +124,12 @@ public class HierarchyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         await db.SaveChangesAsync();
 
         // Create authenticated clients
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         _commanderClient = _factory.CreateClient();
-        _commanderClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(commander, "faction_commander"));
+        IntegrationTestAuthHandler.ApplyTestIdentity(_commanderClient, commander.Id, "faction_commander");
         _playerClient = _factory.CreateClient();
-        _playerClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(player, "player"));
+        IntegrationTestAuthHandler.ApplyTestIdentity(_playerClient, player.Id, "player");
         _outsiderPlayerClient = _factory.CreateClient();
-        _outsiderPlayerClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", authService.GenerateJwt(outsider, "player"));
+        IntegrationTestAuthHandler.ApplyTestIdentity(_outsiderPlayerClient, outsider.Id, "player");
     }
 
     public Task DisposeAsync()

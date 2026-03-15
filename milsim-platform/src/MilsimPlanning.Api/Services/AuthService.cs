@@ -87,7 +87,8 @@ public class AuthService
             EmailConfirmed = false
         };
 
-        var tempPassword = Guid.NewGuid().ToString();
+        // Must satisfy Identity password policy so invited users can be created reliably.
+        var tempPassword = $"Temp{Guid.NewGuid():N}!aA1";
         var createResult = await _userManager.CreateAsync(user, tempPassword);
         if (!createResult.Succeeded)
             throw new InvalidOperationException(

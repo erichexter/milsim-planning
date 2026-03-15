@@ -3,9 +3,11 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MilsimPlanning.Api.Data;
@@ -46,6 +48,16 @@ public class RosterImportTests : IClassFixture<PostgreSqlFixture>, IAsyncLifetim
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Jwt:Secret"] = "dev-placeholder-secret-32-chars!!",
+                        ["Jwt:Issuer"] = "milsim-tests",
+                        ["Jwt:Audience"] = "milsim-tests"
+                    });
+                });
+
                 builder.ConfigureServices(services =>
                 {
                     // Replace DB with Testcontainers DB
@@ -58,6 +70,12 @@ public class RosterImportTests : IClassFixture<PostgreSqlFixture>, IAsyncLifetim
                     services.RemoveAll<IEmailService>();
                     services.AddSingleton(_emailMock.Object);
                     services.AddSingleton(_emailMock); // expose mock for Verify() calls
+
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationTestAuthHandler.SchemeName;
+                        options.DefaultChallengeScheme = IntegrationTestAuthHandler.SchemeName;
+                    }).AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthHandler>(IntegrationTestAuthHandler.SchemeName, _ => { });
                 });
             });
 
@@ -131,11 +149,8 @@ public class RosterImportTests : IClassFixture<PostgreSqlFixture>, IAsyncLifetim
         await db.SaveChangesAsync();
 
         // Build authenticated client for commander
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-        var commanderJwt = authService.GenerateJwt(commander, "faction_commander");
         _commanderClient = _factory.CreateClient();
-        _commanderClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", commanderJwt);
+        IntegrationTestAuthHandler.ApplyTestIdentity(_commanderClient, commander.Id, "faction_commander");
     }
 
     public Task DisposeAsync()
