@@ -35,6 +35,8 @@ services:
       R2__AccessKeyId: placeholder
       R2__SecretAccessKey: placeholder
       R2__BucketName: milsim-dev
+    volumes:
+      - devuploads:/app/dev-uploads
     depends_on:
       db:
         condition: service_healthy
@@ -57,3 +59,4 @@ services:
 
 volumes:
   pgdata:
+  devuploads:
