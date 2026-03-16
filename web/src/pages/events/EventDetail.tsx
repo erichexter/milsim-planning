@@ -1,12 +1,15 @@
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 
 export function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isCommander = user?.role === 'faction_commander';
 
   const { data: events } = useQuery({
     queryKey: ['events'],
@@ -49,6 +52,11 @@ export function EventDetail() {
         <Button variant="outline" asChild>
           <Link to={`/events/${id}/roster`}>View Roster</Link>
         </Button>
+        {isCommander && (
+          <Button variant="outline" asChild>
+            <Link to={`/events/${id}/change-requests`}>Change Requests</Link>
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -12,6 +12,8 @@ import { PasswordResetConfirmPage } from './pages/auth/PasswordResetConfirmPage'
 import { DashboardPage } from './pages/DashboardPage';
 import { EventList } from './pages/events/EventList';
 import { EventDetail } from './pages/events/EventDetail';
+import { PlayerEventPage } from './pages/events/PlayerEventPage';
+import { ChangeRequestsPage } from './pages/events/ChangeRequestsPage';
 import { BriefingPage } from './pages/events/BriefingPage';
 import { MapResourcesPage } from './pages/events/MapResourcesPage';
 import { NotificationBlastPage } from './pages/events/NotificationBlastPage';
@@ -23,24 +25,41 @@ import './index.css';
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
+  // ── Public auth routes ────────────────────────────────────────────────────
   { path: '/auth/login', element: <LoginPage /> },
   { path: '/auth/magic-link', element: <MagicLinkRequestPage /> },
   { path: '/auth/magic-link/confirm', element: <MagicLinkConfirmPage /> },
   { path: '/auth/reset-password', element: <PasswordResetConfirmPage /> },
   { path: '/auth/forgot-password', element: <PasswordResetRequestPage /> },
+
+  // ── Authenticated routes ───────────────────────────────────────────────────
   {
     element: <ProtectedRoute />,
     children: [
-      { index: true, path: '/', element: <DashboardPage /> },
+      // Redirect root to dashboard
+      { index: true, path: '/', element: <Navigate to="/dashboard" replace /> },
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/events', element: <EventList /> },
       { path: '/events/:id', element: <EventDetail /> },
-      { path: '/events/:id/roster/import', element: <CsvImportPage /> },
-      { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
-      { path: '/events/:id/roster', element: <RosterView /> },
+
+      // Player-facing event view (all authenticated roles can access)
+      { path: '/events/:id/player', element: <PlayerEventPage /> },
+
+      // Event content pages (all authenticated users)
       { path: '/events/:id/briefing', element: <BriefingPage /> },
       { path: '/events/:id/maps', element: <MapResourcesPage /> },
+      { path: '/events/:id/roster', element: <RosterView /> },
       { path: '/events/:id/notifications', element: <NotificationBlastPage /> },
+
+      // Commander-only routes — redirect non-commanders to /dashboard
+      {
+        element: <ProtectedRoute requiredRole="faction_commander" />,
+        children: [
+          { path: '/events/:id/change-requests', element: <ChangeRequestsPage /> },
+          { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
+          { path: '/events/:id/roster/import', element: <CsvImportPage /> },
+        ],
+      },
     ],
   },
 ]);
