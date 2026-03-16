@@ -62,22 +62,40 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
 
 // ── R2 / Cloudflare S3-compatible storage ────────────────────────────────────
-builder.Services.AddSingleton<IAmazonS3>(sp =>
+// Use LocalFileService in dev when real R2 credentials are not configured.
+var r2AccountId = builder.Configuration["R2:AccountId"];
+var useLocalStorage = string.IsNullOrWhiteSpace(r2AccountId)
+    || r2AccountId == "your-account-id";
+
+// LocalFileService is always registered so DevUploadController can resolve it.
+// In production it is never used for IFileService and no presigned URLs point at it.
+builder.Services.AddSingleton<LocalFileService>();
+
+if (useLocalStorage)
 {
-    var config = sp.GetRequiredService<IConfiguration>();
-    return new AmazonS3Client(
-        new BasicAWSCredentials(
-            config["R2:AccessKeyId"],
-            config["R2:SecretAccessKey"]
-        ),
-        new AmazonS3Config
-        {
-            ServiceURL = $"https://{config["R2:AccountId"]}.r2.cloudflarestorage.com",
-            ForcePathStyle = true  // REQUIRED for R2 — custom domains do NOT work with pre-signed URLs
-        }
-    );
-});
-builder.Services.AddScoped<IFileService, FileService>();
+    // Dev: wire IFileService to local disk implementation
+    builder.Services.AddSingleton<IFileService>(sp => sp.GetRequiredService<LocalFileService>());
+}
+else
+{
+    // Production: real Cloudflare R2
+    builder.Services.AddSingleton<IAmazonS3>(sp =>
+    {
+        var config = sp.GetRequiredService<IConfiguration>();
+        return new AmazonS3Client(
+            new BasicAWSCredentials(
+                config["R2:AccessKeyId"],
+                config["R2:SecretAccessKey"]
+            ),
+            new AmazonS3Config
+            {
+                ServiceURL = $"https://{config["R2:AccountId"]}.r2.cloudflarestorage.com",
+                ForcePathStyle = true  // REQUIRED for R2 — custom domains do NOT work with pre-signed URLs
+            }
+        );
+    });
+    builder.Services.AddScoped<IFileService, FileService>();
+}
 
 // ── Application Services ──────────────────────────────────────────────────────
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -154,6 +172,7 @@ app.Use(async (context, next) =>
 
 app.UseRouting();
 app.UseCors();
+app.UseStaticFiles();   // serves wwwroot/dev-uploads/ in local dev
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
