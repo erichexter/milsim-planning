@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
@@ -59,6 +60,14 @@ export function EventDetail() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-4">
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link to="/dashboard" className="hover:text-foreground transition-colors">
+          Dashboard
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+        <span className="text-foreground font-medium max-w-[300px] truncate">{event.name}</span>
+      </nav>
+
       {editing ? (
         <div className="space-y-3 rounded border p-4">
           <h2 className="font-semibold">Edit Event</h2>
