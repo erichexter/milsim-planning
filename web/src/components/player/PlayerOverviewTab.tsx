@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, MapPin, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { CalendarDays, MapPin, ChevronDown, ChevronUp, ExternalLink, ClipboardList } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { api, type MapResource } from '../../lib/api';
@@ -8,8 +8,6 @@ import { EventBreadcrumb } from '../EventBreadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { ChangeRequestForm } from './ChangeRequestForm';
-import { PendingRequestCard } from './PendingRequestCard';
 
 interface AssignmentDto {
   id: string;
@@ -32,7 +30,7 @@ interface ChangeRequestDto {
 
 interface Props {
   eventId: string;
-  onNavigate: (tab: 'roster' | 'briefing' | 'maps') => void;
+  onNavigate: (tab: 'roster' | 'briefing' | 'maps' | 'change-request') => void;
 }
 
 function formatDate(d: string | null) {
@@ -96,7 +94,8 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
       return next;
     });
 
-  const isUnassigned = !assignment?.isAssigned;
+  const isAssigned = assignment?.isAssigned ?? false;
+  const hasPendingRequest = myRequest?.status === 'Pending';
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -148,7 +147,7 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
             <div className="font-mono text-2xl font-bold text-muted-foreground">[—]</div>
           )}
 
-          {isUnassigned ? (
+          {!isAssigned ? (
             <div className="rounded-md bg-muted p-3">
               <p className="text-sm font-medium">Unassigned</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -184,36 +183,29 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
             </div>
           )}
 
-          {/* Change request inline */}
-          <div className="pt-1 border-t">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-              Roster Change Request
-            </p>
-            {myRequest?.status === 'Pending' ? (
-              <PendingRequestCard eventId={eventId} request={myRequest} />
-            ) : (
-              <ChangeRequestForm eventId={eventId} isUnassigned={isUnassigned} />
-            )}
-          </div>
+          {/* Change request link — only shown when assigned */}
+          {isAssigned && (
+            <div className="pt-1 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground gap-1.5"
+                onClick={() => onNavigate('change-request')}
+              >
+                <ClipboardList className="h-3.5 w-3.5" />
+                {hasPendingRequest ? (
+                  <span className="flex items-center gap-1.5">
+                    Change request
+                    <Badge variant="secondary" className="text-xs">Pending</Badge>
+                  </span>
+                ) : (
+                  'Request a change'
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* ── Maps ───────────────────────────────────────────────────────── */}
-      {mapResources.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Maps</h2>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate('maps')}>
-              View all
-            </Button>
-          </div>
-          <div className="space-y-3">
-            {mapResources.slice().sort((a, b) => a.order - b.order).map((resource) => (
-              <MapResourcePreview key={resource.id} eventId={eventId} resource={resource} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Briefing sections ──────────────────────────────────────────── */}
       {sections.length > 0 && (
@@ -250,6 +242,23 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
                 </Card>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Maps ───────────────────────────────────────────────────────── */}
+      {mapResources.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Maps</h2>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate('maps')}>
+              View all
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {mapResources.slice().sort((a, b) => a.order - b.order).map((resource) => (
+              <MapResourcePreview key={resource.id} eventId={eventId} resource={resource} />
+            ))}
           </div>
         </div>
       )}
