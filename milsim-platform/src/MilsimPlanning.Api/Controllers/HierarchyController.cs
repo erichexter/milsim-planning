@@ -95,6 +95,22 @@ public class HierarchyController : ControllerBase
         catch (ForbiddenException) { return Forbid(); }
     }
 
+    // ── Bulk assign players to a squad or platoon slot ───────────────────────
+
+    [HttpPost("api/events/{eventId:guid}/players/bulk-assign")]
+    [Authorize(Policy = "RequireFactionCommander")]
+    public async Task<IActionResult> BulkAssign(Guid eventId, [FromBody] BulkAssignRequest request)
+    {
+        try
+        {
+            await _hierarchyService.BulkAssignAsync(eventId, request.PlayerIds, request.Destination);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
     // ── HIER-06: Get Roster Hierarchy (available to all faction members) ──────
 
     [HttpGet("api/events/{eventId:guid}/roster")]

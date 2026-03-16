@@ -93,6 +93,8 @@ export const api = {
     request<void>(`/event-players/${playerId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   assignPlayerToPlatoon: (playerId: string, platoonId: string | null) =>
     request<void>(`/event-players/${playerId}/platoon`, { method: 'PUT', body: JSON.stringify({ platoonId }) }),
+  bulkAssign: (eventId: string, playerIds: string[], destination: string) =>
+    request<void>(`/events/${eventId}/players/bulk-assign`, { method: 'POST', body: JSON.stringify({ playerIds, destination }) }),
 
   // Info sections + attachments
   getInfoSections: (eventId: string) =>

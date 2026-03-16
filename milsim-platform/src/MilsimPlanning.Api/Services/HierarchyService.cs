@@ -185,6 +185,40 @@ public class HierarchyService
         await _db.SaveChangesAsync();
     }
 
+    // ── Bulk assign players to a squad or platoon slot ───────────────────────
+    // destination encoding: "squad:{id}" | "platoon:{id}"
+
+    public async Task BulkAssignAsync(Guid eventId, IEnumerable<Guid> playerIds, string destination)
+    {
+        // Verify the destination belongs to this event before touching any players
+        if (destination.StartsWith("squad:"))
+        {
+            var squadId = Guid.Parse(destination["squad:".Length..]);
+            var squadBelongsToEvent = await _db.Squads
+                .AnyAsync(s => s.Id == squadId && s.Platoon.Faction.EventId == eventId);
+            if (!squadBelongsToEvent)
+                throw new ForbiddenException($"Squad {squadId} does not belong to event {eventId}");
+
+            foreach (var playerId in playerIds)
+                await AssignSquadAsync(playerId, squadId);
+        }
+        else if (destination.StartsWith("platoon:"))
+        {
+            var platoonId = Guid.Parse(destination["platoon:".Length..]);
+            var platoonBelongsToEvent = await _db.Platoons
+                .AnyAsync(p => p.Id == platoonId && p.Faction.EventId == eventId);
+            if (!platoonBelongsToEvent)
+                throw new ForbiddenException($"Platoon {platoonId} does not belong to event {eventId}");
+
+            foreach (var playerId in playerIds)
+                await AssignToPlatoonAsync(playerId, platoonId);
+        }
+        else
+        {
+            throw new ArgumentException($"Unknown destination format: {destination}");
+        }
+    }
+
     // ── HIER-06: Get Roster Hierarchy (accessible to all faction members) ─────
 
     public async Task<RosterHierarchyDto> GetRosterHierarchyAsync(Guid eventId)
