@@ -52,6 +52,17 @@ export function EventDetail() {
         <Button variant="outline" asChild>
           <Link to={`/events/${id}/roster`}>View Roster</Link>
         </Button>
+        <Button variant="outline" asChild>
+          <Link to={`/events/${id}/briefing`}>Briefing</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to={`/events/${id}/maps`}>Maps</Link>
+        </Button>
+        {isCommander && (
+          <Button variant="outline" asChild>
+            <Link to={`/events/${id}/notifications`}>Notifications</Link>
+          </Button>
+        )}
         {isCommander && (
           <Button variant="outline" asChild>
             <Link to={`/events/${id}/change-requests`}>Change Requests</Link>
