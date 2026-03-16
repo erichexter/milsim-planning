@@ -243,6 +243,7 @@ export interface MapResource {
   r2Key: string | null;
   friendlyName: string | null;
   contentType: string | null;
+  isFile: boolean;
   order: number;
 }
 
