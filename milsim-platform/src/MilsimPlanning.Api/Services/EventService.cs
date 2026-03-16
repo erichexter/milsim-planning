@@ -78,6 +78,29 @@ public class EventService
         return ToDto(evt);
     }
 
+    /// <summary>EVNT-01b: Update editable fields on an existing event.</summary>
+    public async Task<EventDto> UpdateEventAsync(Guid eventId, UpdateEventRequest request)
+    {
+        var evt = await _db.Events
+            .Include(e => e.Faction)
+            .FirstOrDefaultAsync(e => e.Id == eventId)
+            ?? throw new KeyNotFoundException($"Event {eventId} not found");
+
+        AssertCommanderAccess(evt.Faction);
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new ArgumentException("Name is required");
+
+        evt.Name = request.Name;
+        evt.Location = request.Location;
+        evt.Description = request.Description;
+        evt.StartDate = request.StartDate;
+        evt.EndDate = request.EndDate;
+
+        await _db.SaveChangesAsync();
+        return ToDto(evt);
+    }
+
     /// <summary>EVNT-05: Publish event — status flip only, no email (EVNT-06).</summary>
     public async Task PublishEventAsync(Guid eventId)
     {

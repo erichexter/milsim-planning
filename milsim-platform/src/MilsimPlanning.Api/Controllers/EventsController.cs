@@ -44,6 +44,20 @@ public class EventsController : ControllerBase
         return Ok(dto);
     }
 
+    // EVNT-01b: Update event
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<EventDto>> Update(Guid id, UpdateEventRequest request)
+    {
+        try
+        {
+            var dto = await _eventService.UpdateEventAsync(id, request);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
     // EVNT-05: Publish event
     [HttpPut("{id:guid}/publish")]
     public async Task<IActionResult> Publish(Guid id)

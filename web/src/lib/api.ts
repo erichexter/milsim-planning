@@ -57,6 +57,8 @@ export const api = {
   getEvents: () => request<EventDto[]>('/events'),
   createEvent: (req: CreateEventRequest) =>
     request<EventDto>('/events', { method: 'POST', body: JSON.stringify(req) }),
+  updateEvent: (id: string, req: UpdateEventRequest) =>
+    request<EventDto>(`/events/${id}`, { method: 'PUT', body: JSON.stringify(req) }),
   publishEvent: (id: string) =>
     request<void>(`/events/${id}/publish`, { method: 'PUT' }),
   duplicateEvent: (id: string, req: DuplicateEventRequest) =>
@@ -143,6 +145,14 @@ export interface CreateEventRequest {
   description?: string;
   startDate?: string;
   endDate?: string;
+}
+
+export interface UpdateEventRequest {
+  name: string;
+  location: string | null;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export interface DuplicateEventRequest {
