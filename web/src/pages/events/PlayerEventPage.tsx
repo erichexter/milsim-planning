@@ -1,36 +1,35 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
-import { MyAssignmentTab } from '../../components/player/MyAssignmentTab';
+import { PlayerOverviewTab } from '../../components/player/PlayerOverviewTab';
 import { RosterView } from '../roster/RosterView';
 import { BriefingPage } from './BriefingPage';
 import { MapResourcesPage } from './MapResourcesPage';
 
-type TabId = 'assignment' | 'roster' | 'briefing' | 'maps';
+type TabId = 'overview' | 'roster' | 'briefing' | 'maps';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'assignment', label: 'My Assignment' },
-  { id: 'roster', label: 'Roster' },
-  { id: 'briefing', label: 'Briefing' },
-  { id: 'maps', label: 'Maps' },
+  { id: 'overview',  label: 'Overview'  },
+  { id: 'roster',   label: 'Roster'    },
+  { id: 'briefing', label: 'Briefing'  },
+  { id: 'maps',     label: 'Maps'      },
 ];
 
 export function PlayerEventPage() {
   const { id: eventId } = useParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState<TabId>('assignment');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
 
   function renderContent() {
     switch (activeTab) {
-      case 'assignment':
+      case 'overview':
         return (
-          <div className="mx-auto max-w-4xl space-y-6 p-6">
-            <MyAssignmentTab eventId={eventId!} />
-          </div>
+          <PlayerOverviewTab
+            eventId={eventId!}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
         );
       case 'roster':
-        // RosterView uses useParams internally (reads 'id') — works because we're under /events/:id
         return <RosterView />;
       case 'briefing':
-        // BriefingPage reads useParams for 'id' or 'eventId'
         return <BriefingPage />;
       case 'maps':
         return <MapResourcesPage />;
@@ -39,7 +38,7 @@ export function PlayerEventPage() {
 
   return (
     <div className="flex flex-col">
-      {/* ── Desktop top nav (hidden on mobile) ─────────────────────────── */}
+      {/* ── Desktop top nav ──────────────────────────────────────────────── */}
       <nav className="hidden md:flex border-b bg-background shrink-0">
         {TABS.map((tab) => (
           <button
@@ -56,12 +55,12 @@ export function PlayerEventPage() {
         ))}
       </nav>
 
-      {/* ── Content area ─────────────────────────────────────────────────── */}
+      {/* ── Content ──────────────────────────────────────────────────────── */}
       <div className="pb-16 md:pb-0">
         {renderContent()}
       </div>
 
-      {/* ── Mobile bottom tab bar (hidden on desktop) ─────────────────── */}
+      {/* ── Mobile bottom tab bar ─────────────────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-background z-50 flex">
         {TABS.map((tab) => (
           <button
