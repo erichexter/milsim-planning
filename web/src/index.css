@@ -144,6 +144,30 @@
   }
 }
 
+/* ── Prose (markdown) dark-mode overrides ────────────────────────────────── */
+/*
+   @tailwindcss/typography uses hardcoded light colors. We override them here
+   so all prose content respects the RP0 dark theme tokens.
+*/
+.dark .prose {
+  --tw-prose-body:          oklch(var(--foreground));
+  --tw-prose-headings:      oklch(var(--foreground));
+  --tw-prose-lead:          oklch(var(--muted-foreground));
+  --tw-prose-links:         oklch(var(--primary));
+  --tw-prose-bold:          oklch(var(--foreground));
+  --tw-prose-counters:      oklch(var(--muted-foreground));
+  --tw-prose-bullets:       oklch(var(--muted-foreground));
+  --tw-prose-hr:            oklch(var(--border));
+  --tw-prose-quotes:        oklch(var(--foreground));
+  --tw-prose-quote-borders: oklch(var(--border));
+  --tw-prose-captions:      oklch(var(--muted-foreground));
+  --tw-prose-code:          oklch(var(--foreground));
+  --tw-prose-pre-code:      oklch(var(--foreground));
+  --tw-prose-pre-bg:        oklch(var(--card));
+  --tw-prose-th-borders:    oklch(var(--border));
+  --tw-prose-td-borders:    oklch(var(--border));
+}
+
 /* ── RP0 utility classes ─────────────────────────────────────────────────── */
 @layer utilities {
   /* Pulsing live dot */
