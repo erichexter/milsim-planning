@@ -53,9 +53,9 @@ export function MapResourceCard({
   };
 
   return (
-    <div className="space-y-3 rounded border p-4">
+    <div className="rounded border overflow-hidden">
       {/* Header row */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold">{resource.friendlyName || 'Untitled resource'}</h3>
           <Badge variant="secondary">{isExternalLink ? 'External Link' : fileLabel(resource)}</Badge>
@@ -83,12 +83,12 @@ export function MapResourceCard({
 
       {/* External link */}
       {isExternalLink && (
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm border-t px-4 py-3">
           <a
             href={resource.externalUrl ?? '#'}
             target="_blank"
             rel="noreferrer"
-            className="text-blue-600 underline"
+            className="text-primary underline"
           >
             {resource.externalUrl}
           </a>
@@ -100,12 +100,12 @@ export function MapResourceCard({
         </div>
       )}
 
-      {/* Inline image preview */}
+      {/* Inline image preview — full-width, no height cap, bleeds to card edges */}
       {isImage && downloadUrlData?.downloadUrl && (
         <img
           src={downloadUrlData.downloadUrl}
           alt={resource.friendlyName ?? 'Map image'}
-          className="w-full rounded border object-contain max-h-[600px]"
+          className="w-full block border-t"
         />
       )}
 
@@ -114,14 +114,14 @@ export function MapResourceCard({
         <iframe
           src={downloadUrlData.downloadUrl}
           title={resource.friendlyName ?? 'Map PDF'}
-          className="w-full rounded border"
+          className="w-full block border-t"
           style={{ height: '600px' }}
         />
       )}
 
       {/* Non-viewable file — just show name + open button (already in header) */}
       {resource.isFile && !isViewable && (
-        <p className="text-sm text-muted-foreground">{resource.friendlyName}</p>
+        <p className="text-sm text-muted-foreground border-t px-4 py-3">{resource.friendlyName}</p>
       )}
     </div>
   );
