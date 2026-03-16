@@ -128,7 +128,7 @@ export function EventDetail() {
           <div className="space-y-2">
             <label className="text-sm font-medium block">Description</label>
             <textarea
-              className="min-h-[80px] w-full rounded border p-2 text-sm"
+              className="min-h-[80px] w-full rounded-[8px] border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional event description"
@@ -159,7 +159,7 @@ export function EventDetail() {
           {/* ── Event header ───────────────────────────────────────────── */}
           <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold">{event.name}</h1>
+              <h1 className="text-xl font-semibold">{event.name}</h1>
               <Badge variant={event.status === 'Published' ? 'default' : 'secondary'}>
                 {event.status}
               </Badge>

@@ -1,82 +1,172 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* ── RP0 Design Tokens ───────────────────────────────────────────────────────
+   Soft Modern theme: warm off-white surfaces, sage-green accent, DM Sans/Mono.
+   Light and dark modes share the same token names; values swap via .dark class.
+─────────────────────────────────────────────────────────────────────────────*/
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Surfaces */
+    --background:        97% 0.005 90;    /* #F5F5F2 — warm off-white page */
+    --foreground:        18% 0.01  90;    /* #2C2C28 — near-black text */
+    --card:              100% 0    0;     /* #FFFFFF — card surface */
+    --card-foreground:   18% 0.01  90;
+    --popover:           100% 0    0;
+    --popover-foreground:18% 0.01  90;
+
+    /* Primary — sage green */
+    --primary:           38% 0.12  140;  /* #2d6a2d */
+    --primary-foreground:99% 0     0;    /* white */
+
+    /* Secondary — warm neutral */
+    --secondary:         94% 0.005 90;   /* #EEEDE8 */
+    --secondary-foreground: 18% 0.01 90;
+
+    /* Muted */
+    --muted:             94% 0.005 90;
+    --muted-foreground:  52% 0.008 90;   /* #888882 */
+
+    /* Accent — amber */
+    --accent:            58% 0.14  80;   /* #C8940A */
+    --accent-foreground: 18% 0.01  90;
+
+    /* Destructive */
+    --destructive:       50% 0.22  25;
+    --destructive-foreground: 99% 0 0;
+
+    /* Border / input / ring */
+    --border:            88% 0.008 90;   /* #E2E0DB */
+    --input:             88% 0.008 90;
+    --ring:              38% 0.12  140;  /* primary */
+
+    /* Radius */
+    --radius: 0.625rem;                  /* 10px — RP0 default */
+
+    /* RP0 custom tokens (used directly in components) */
+    --primary-soft:      93% 0.04  140;  /* #E8F5E8 — pill / icon bg */
+    --primary-border:    80% 0.07  140;  /* #C5E0C5 — pill border */
+    --info:              55% 0.12  240;  /* #4a8aba — BLUFOR blue */
+    --info-soft:         93% 0.03  240;  /* #E8F0FB */
+    --info-border:       75% 0.07  240;  /* #B8D0F0 */
+    --amber-soft:        96% 0.04  80;   /* #FEF3E0 */
+    --amber-border:      85% 0.09  80;   /* #F5D898 */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background:        12% 0.005 270;  /* #18181B */
+    --foreground:        90% 0.005 90;   /* #E4E4E7 */
+    --card:              16% 0.005 270;  /* #27272A */
+    --card-foreground:   90% 0.005 90;
+    --popover:           16% 0.005 270;
+    --popover-foreground:90% 0.005 90;
+
+    /* Primary — bright sage green for dark */
+    --primary:           68% 0.15  140;  /* #6abf6a */
+    --primary-foreground:15% 0.05  140;
+
+    --secondary:         20% 0.005 270;  /* #2e2e33 */
+    --secondary-foreground: 90% 0.005 90;
+
+    --muted:             20% 0.005 270;
+    --muted-foreground:  50% 0.006 270;  /* #71717A */
+
+    --accent:            80% 0.16  85;   /* #F5C542 */
+    --accent-foreground: 12% 0.005 270;
+
+    --destructive:       40% 0.22  25;
+    --destructive-foreground: 99% 0 0;
+
+    --border:            26% 0.005 270;  /* #3F3F46 */
+    --input:             26% 0.005 270;
+    --ring:              68% 0.15  140;
+
+    --primary-soft:      12% 0.06  140;  /* #1e3a1e */
+    --primary-border:    20% 0.07  140;  /* #2d4f2d */
+    --info:              65% 0.12  240;  /* #7eb8f5 */
+    --info-soft:         10% 0.04  240;  /* #0f1f38 */
+    --info-border:       22% 0.07  240;  /* #1e3a60 */
+    --amber-soft:        14% 0.04  80;   /* #2a1f00 */
+    --amber-border:      25% 0.09  80;   /* #4a3800 */
   }
 }
 
+/* ── Map token names to Tailwind's OKLCH color vars ─────────────────────── */
+@theme inline {
+  --color-background:        oklch(var(--background));
+  --color-foreground:        oklch(var(--foreground));
+  --color-card:              oklch(var(--card));
+  --color-card-foreground:   oklch(var(--card-foreground));
+  --color-popover:           oklch(var(--popover));
+  --color-popover-foreground:oklch(var(--popover-foreground));
+  --color-primary:           oklch(var(--primary));
+  --color-primary-foreground:oklch(var(--primary-foreground));
+  --color-secondary:         oklch(var(--secondary));
+  --color-secondary-foreground:oklch(var(--secondary-foreground));
+  --color-muted:             oklch(var(--muted));
+  --color-muted-foreground:  oklch(var(--muted-foreground));
+  --color-accent:            oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-destructive:       oklch(var(--destructive));
+  --color-destructive-foreground:oklch(var(--destructive-foreground));
+  --color-border:            oklch(var(--border));
+  --color-input:             oklch(var(--input));
+  --color-ring:              oklch(var(--ring));
+  --radius:                  var(--radius);
+
+  /* RP0 extras */
+  --color-primary-soft:      oklch(var(--primary-soft));
+  --color-primary-border:    oklch(var(--primary-border));
+  --color-info:              oklch(var(--info));
+  --color-info-soft:         oklch(var(--info-soft));
+  --color-info-border:       oklch(var(--info-border));
+  --color-amber-soft:        oklch(var(--amber-soft));
+  --color-amber-border:      oklch(var(--amber-border));
+}
+
+/* ── Base styles ─────────────────────────────────────────────────────────── */
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    border-color: oklch(var(--border));
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: oklch(var(--background));
+    color: oklch(var(--foreground));
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* DM Mono for all data / tactical elements */
+  .font-mono {
+    font-family: 'DM Mono', 'Courier New', monospace;
   }
 }
 
-@theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --radius: var(--radius);
+/* ── RP0 utility classes ─────────────────────────────────────────────────── */
+@layer utilities {
+  /* Pulsing live dot */
+  .rp0-dot-pulse {
+    animation: rp0-blink 2s ease-in-out infinite;
+  }
+  @keyframes rp0-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* Section label — DM Mono 9px uppercase */
+  .rp0-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: oklch(var(--muted-foreground));
+  }
+
+  /* Scrollbar thinning */
+  .rp0-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(var(--border)) transparent;
+  }
 }

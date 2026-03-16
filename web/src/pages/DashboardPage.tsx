@@ -27,11 +27,11 @@ export function DashboardPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-xl font-semibold">Dashboard</h1>
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Your Events</h2>
+          <span className="rp0-label">Your Events</span>
           {isCommander && <CreateEventDialog />}
         </div>
         {isLoading && <p className="text-muted-foreground">Loading events...</p>}
@@ -42,7 +42,7 @@ export function DashboardPage() {
           {events.map((event) => (
             <Card
               key={event.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className="cursor-pointer hover:bg-muted/30 transition-colors"
               onClick={() => handleEventClick(event.id)}
             >
               <CardHeader className="pb-2">

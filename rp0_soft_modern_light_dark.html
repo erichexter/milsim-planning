@@ -1,0 +1,421 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  .themes-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 4px 0 16px; }
+
+  .rp0-soft {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid;
+  }
+
+  .light { background: #f5f5f2; border-color: #e2e0db; color: #2c2c28; }
+  .dark  { background: #18181b; border-color: #2e2e33; color: #e4e4e7; }
+
+  .rp0-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-bottom: 1px solid;
+  }
+  .light .rp0-header { background: #ffffff; border-color: #e2e0db; }
+  .dark  .rp0-header { background: #1f1f24; border-color: #2e2e33; }
+
+  .logo-row { display: flex; align-items: center; gap: 8px; }
+  .logo-pill {
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+    padding: 3px 8px; border-radius: 20px; letter-spacing: 1px;
+  }
+  .light .logo-pill { background: #e8f5e8; color: #2d6a2d; border: 1px solid #c5e0c5; }
+  .dark  .logo-pill { background: #1e3a1e; color: #7ec87e; border: 1px solid #2d4f2d; }
+
+  .logo-name { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+  .light .logo-name { color: #2c2c28; }
+  .dark  .logo-name { color: #e4e4e7; }
+
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  .live-dot {
+    display: flex; align-items: center; gap: 5px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+  }
+  .light .live-dot { color: #4a8a4a; }
+  .dark  .live-dot { color: #6abf6a; }
+  .dot-pulse { width: 6px; height: 6px; border-radius: 50%; animation: blink 2s infinite; }
+  .light .dot-pulse { background: #4a8a4a; }
+  .dark  .dot-pulse { background: #6abf6a; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .avatar-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 4px; border-radius: 20px; border: 1px solid;
+  }
+  .light .avatar-chip { background: #f5f5f2; border-color: #e2e0db; }
+  .dark  .avatar-chip { background: #27272a; border-color: #3f3f46; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; }
+  .light .avatar { background: #e8f5e8; color: #2d6a2d; }
+  .dark  .avatar { background: #1e3a1e; color: #7ec87e; }
+  .callsign { font-family: 'DM Mono', monospace; font-size: 10px; }
+  .light .callsign { color: #666660; }
+  .dark  .callsign { color: #a1a1aa; }
+
+  .rp0-body { display: grid; grid-template-columns: 52px 1fr; }
+
+  .sidebar { padding: 12px 0; border-right: 1px solid; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .light .sidebar { background: #ffffff; border-color: #e2e0db; }
+  .dark  .sidebar { background: #1f1f24; border-color: #2e2e33; }
+
+  .nav-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none; background: transparent;
+  }
+  .nav-btn svg { width: 16px; height: 16px; }
+  .light .nav-btn svg { stroke: #9999911; }
+  .dark  .nav-btn svg { stroke: #71717a; }
+  .light .nav-btn.active { background: #e8f5e8; }
+  .dark  .nav-btn.active { background: #1e3a1e; }
+  .light .nav-btn.active svg { stroke: #2d6a2d; }
+  .dark  .nav-btn.active svg { stroke: #7ec87e; }
+
+  .nav-divider { width: 24px; height: 1px; margin: 4px 0; }
+  .light .nav-divider { background: #e2e0db; }
+  .dark  .nav-divider { background: #2e2e33; }
+
+  .main { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  .section-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .light .section-label { color: #b0b0a8; }
+  .dark  .section-label { color: #52525b; }
+
+  .unit-card {
+    border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; border: 1px solid;
+  }
+  .light .unit-card { background: #ffffff; border-color: #e2e0db; }
+  .dark  .unit-card { background: #27272a; border-color: #3f3f46; }
+
+  .unit-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .light .unit-icon { background: #e8f5e8; }
+  .dark  .unit-icon { background: #1e3a1e; }
+  .unit-icon svg { width: 18px; height: 18px; }
+  .light .unit-icon svg { stroke: #2d6a2d; }
+  .dark  .unit-icon svg { stroke: #7ec87e; }
+
+  .unit-text { flex: 1; min-width: 0; }
+  .unit-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .light .unit-name { color: #2c2c28; }
+  .dark  .unit-name { color: #e4e4e7; }
+  .unit-sub { font-family: 'DM Mono', monospace; font-size: 9px; margin-top: 2px; }
+  .light .unit-sub { color: #9999911; }
+  .dark  .unit-sub { color: #71717a; }
+
+  .tag-row { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .tag { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 7px; border-radius: 20px; border: 1px solid; }
+  .light .tag-green { color: #2d6a2d; background: #e8f5e8; border-color: #c5e0c5; }
+  .dark  .tag-green { color: #7ec87e; background: #1a311a; border-color: #2d4f2d; }
+  .light .tag-amber { color: #7a4f0a; background: #fef3e0; border-color: #f5d898; }
+  .dark  .tag-amber { color: #f5c542; background: #2a1f00; border-color: #4a3800; }
+  .light .tag-blue  { color: #1a4a8a; background: #e8f0fb; border-color: #b8d0f0; }
+  .dark  .tag-blue  { color: #7eb8f5; background: #0f1f38; border-color: #1e3a60; }
+
+  .faction-badge { text-align: right; flex-shrink: 0; }
+  .faction-label { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .light .faction-label { color: #b0b0a8; }
+  .dark  .faction-label { color: #52525b; }
+  .faction-val { font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .light .faction-val { color: #2d6a2d; }
+  .dark  .faction-val { color: #7ec87e; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .mini-card { border-radius: 10px; padding: 10px; border: 1px solid; }
+  .light .mini-card { background: #ffffff; border-color: #e2e0db; }
+  .dark  .mini-card { background: #27272a; border-color: #3f3f46; }
+
+  .mini-title { font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+  .light .mini-title { color: #2c2c28; }
+  .dark  .mini-title { color: #e4e4e7; }
+
+  .tl-row { display: flex; gap: 6px; padding: 4px 0; align-items: flex-start; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; width: 8px; padding-top: 4px; }
+  .tl-dot-s { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid; }
+  .light .tl-dot-s.done  { background: #c5e0c5; border-color: #4a8a4a; }
+  .light .tl-dot-s.now   { background: #4a8a4a; border-color: #4a8a4a; }
+  .light .tl-dot-s.next  { background: transparent; border-color: #c5d0c5; }
+  .dark  .tl-dot-s.done  { background: #2d4f2d; border-color: #6abf6a; }
+  .dark  .tl-dot-s.now   { background: #6abf6a; border-color: #6abf6a; }
+  .dark  .tl-dot-s.next  { background: transparent; border-color: #3f3f46; }
+  .tl-line-s { width: 1px; flex: 1; min-height: 10px; margin-top: 2px; }
+  .light .tl-line-s { background: #e2e0db; }
+  .dark  .tl-line-s { background: #2e2e33; }
+  .tl-text { flex: 1; }
+  .tl-time-s { font-family: 'DM Mono', monospace; font-size: 9px; }
+  .light .tl-time-s { color: #9999911; }
+  .dark  .tl-time-s { color: #71717a; }
+  .tl-event { font-size: 11px; font-weight: 500; }
+  .light .tl-event { color: #2c2c28; }
+  .dark  .tl-event { color: #e4e4e7; }
+  .light .tl-event.active { color: #2d6a2d; }
+  .dark  .tl-event.active { color: #7ec87e; }
+
+  .comms-row-s { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid; }
+  .light .comms-row-s { border-color: #f0eeea; }
+  .dark  .comms-row-s  { border-color: #2e2e33; }
+  .comms-row-s:last-child { border-bottom: none; }
+  .comms-name { font-family: 'DM Mono', monospace; font-size: 10px; }
+  .light .comms-name { color: #888882; }
+  .dark  .comms-name  { color: #71717a; }
+  .comms-ch-s { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; }
+  .light .comms-ch-s { color: #2d6a2d; }
+  .dark  .comms-ch-s  { color: #7ec87e; }
+
+  .checklist-s { display: flex; flex-direction: column; gap: 4px; }
+  .check-row { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+  .light .check-row { color: #666660; }
+  .dark  .check-row  { color: #a1a1aa; }
+  .check-box-s { width: 13px; height: 13px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; border: 1px solid; }
+  .light .check-box-s.done { background: #e8f5e8; border-color: #4a8a4a; color: #2d6a2d; }
+  .light .check-box-s.open { background: #f5f5f2; border-color: #d5d3ce; }
+  .dark  .check-box-s.done { background: #1e3a1e; border-color: #6abf6a; color: #7ec87e; }
+  .dark  .check-box-s.open { background: #27272a; border-color: #3f3f46; }
+
+  .countdown-s { text-align: center; padding: 8px 0 4px; }
+  .ct-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+  .light .ct-label { color: #b0b0a8; }
+  .dark  .ct-label  { color: #52525b; }
+  .ct-time { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; margin-top: 4px; }
+  .light .ct-time { color: #2d6a2d; }
+  .dark  .ct-time  { color: #7ec87e; }
+  .ct-event { font-size: 11px; margin-top: 2px; }
+  .light .ct-event { color: #888882; }
+  .dark  .ct-event  { color: #71717a; }
+
+  .ready-btn-s {
+    width: 100%; padding: 9px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; margin-top: 2px;
+  }
+  .light .ready-btn-s { background: #2d6a2d; color: #ffffff; }
+  .dark  .ready-btn-s { background: #2a5a2a; color: #c8e8c8; border: 1px solid #3d7a3d; }
+
+  .theme-label { text-align: center; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; color: var(--color-text-secondary); }
+</style>
+
+<div class="themes-wrap">
+
+  <div>
+    <div class="theme-label">Light</div>
+    <div class="rp0-soft light">
+      <div class="rp0-header">
+        <div class="logo-row">
+          <span class="logo-pill">RP0</span>
+          <span class="logo-name">Rally Point Zero</span>
+        </div>
+        <div class="header-right">
+          <div class="live-dot"><div class="dot-pulse"></div>Live</div>
+          <div class="avatar-chip">
+            <div class="avatar">EK</div>
+            <span class="callsign">SGT_ECHO</span>
+          </div>
+        </div>
+      </div>
+      <div class="rp0-body">
+        <div class="sidebar">
+          <div class="nav-btn active">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1.5"/><rect x="9" y="2" width="5" height="5" rx="1.5"/><rect x="2" y="9" width="5" height="5" rx="1.5"/><rect x="9" y="9" width="5" height="5" rx="1.5"/></svg>
+          </div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M8 2l-5 3v6l5 3 5-3V5L8 2z"/></svg>
+          </div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="nav-divider"></div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><rect x="2" y="2" width="12" height="10" rx="1.5"/><path d="M2 6h12M5 2v4M11 2v4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M2 8h3l2-5 2 10 2-6 1 1h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="main">
+          <div>
+            <div class="section-label">Unit assignment</div>
+            <div class="unit-card">
+              <div class="unit-icon">
+                <svg viewBox="0 0 18 18" fill="none" stroke-width="1.5"><path d="M9 2L3 5v6c0 3.5 2.5 6 6 7 3.5-1 6-3.5 6-7V5L9 2z"/><circle cx="9" cy="9" r="2" fill="currentColor" opacity=".3"/></svg>
+              </div>
+              <div class="unit-text">
+                <div class="unit-name">Bravo Platoon</div>
+                <div class="unit-sub">2ND SQD · RIFLEMAN · B-2-04</div>
+                <div class="tag-row">
+                  <span class="tag tag-green">OPFOR</span>
+                  <span class="tag tag-amber">MECH INF</span>
+                  <span class="tag tag-blue">CONFIRMED</span>
+                </div>
+              </div>
+              <div class="faction-badge">
+                <div class="faction-label">Faction</div>
+                <div class="faction-val">OPFOR</div>
+              </div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="mini-card">
+              <div class="mini-title">Event timeline</div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s done"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">07:00</div><div class="tl-event">Gate open</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s done"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">08:30</div><div class="tl-event">Safety brief</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s now"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">09:00</div><div class="tl-event active">Unit staging</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s next"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">10:00</div><div class="tl-event">Op begins</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s next"></div></div><div class="tl-text"><div class="tl-time-s">16:00</div><div class="tl-event">Endex / AAR</div></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="mini-card">
+                <div class="mini-title">Comms plan</div>
+                <div class="comms-row-s"><span class="comms-name">CMD</span><span class="comms-ch-s">CH 1</span></div>
+                <div class="comms-row-s"><span class="comms-name">BRV PLT</span><span class="comms-ch-s">CH 3</span></div>
+                <div class="comms-row-s"><span class="comms-name">2ND SQD</span><span class="comms-ch-s">CH 5</span></div>
+                <div class="comms-row-s"><span class="comms-name">MEDEVAC</span><span class="comms-ch-s">CH 9</span></div>
+              </div>
+              <div class="mini-card">
+                <div class="mini-title">Pre-op checklist</div>
+                <div class="checklist-s">
+                  <div class="check-row"><div class="check-box-s done">✓</div>Waiver signed</div>
+                  <div class="check-row"><div class="check-box-s done">✓</div>Chrono cleared</div>
+                  <div class="check-row"><div class="check-box-s done">✓</div>Unit assigned</div>
+                  <div class="check-row"><div class="check-box-s open"></div>OPORD reviewed</div>
+                  <div class="check-row"><div class="check-box-s open"></div>Loadout confirmed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mini-card">
+            <div class="countdown-s">
+              <div class="ct-label">Op starts in</div>
+              <div class="ct-time" id="ct-light">14:22:07</div>
+              <div class="ct-event">Revolt 2026 · Apr 05</div>
+            </div>
+            <button class="ready-btn-s">Mark ready</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="theme-label">Dark</div>
+    <div class="rp0-soft dark">
+      <div class="rp0-header">
+        <div class="logo-row">
+          <span class="logo-pill">RP0</span>
+          <span class="logo-name">Rally Point Zero</span>
+        </div>
+        <div class="header-right">
+          <div class="live-dot"><div class="dot-pulse"></div>Live</div>
+          <div class="avatar-chip">
+            <div class="avatar">EK</div>
+            <span class="callsign">SGT_ECHO</span>
+          </div>
+        </div>
+      </div>
+      <div class="rp0-body">
+        <div class="sidebar">
+          <div class="nav-btn active">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1.5"/><rect x="9" y="2" width="5" height="5" rx="1.5"/><rect x="2" y="9" width="5" height="5" rx="1.5"/><rect x="9" y="9" width="5" height="5" rx="1.5"/></svg>
+          </div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M8 2l-5 3v6l5 3 5-3V5L8 2z"/></svg>
+          </div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="nav-divider"></div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><rect x="2" y="2" width="12" height="10" rx="1.5"/><path d="M2 6h12M5 2v4M11 2v4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="nav-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M2 8h3l2-5 2 10 2-6 1 1h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="main">
+          <div>
+            <div class="section-label">Unit assignment</div>
+            <div class="unit-card">
+              <div class="unit-icon">
+                <svg viewBox="0 0 18 18" fill="none" stroke-width="1.5"><path d="M9 2L3 5v6c0 3.5 2.5 6 6 7 3.5-1 6-3.5 6-7V5L9 2z"/><circle cx="9" cy="9" r="2" fill="currentColor" opacity=".3"/></svg>
+              </div>
+              <div class="unit-text">
+                <div class="unit-name">Bravo Platoon</div>
+                <div class="unit-sub">2ND SQD · RIFLEMAN · B-2-04</div>
+                <div class="tag-row">
+                  <span class="tag tag-green">OPFOR</span>
+                  <span class="tag tag-amber">MECH INF</span>
+                  <span class="tag tag-blue">CONFIRMED</span>
+                </div>
+              </div>
+              <div class="faction-badge">
+                <div class="faction-label">Faction</div>
+                <div class="faction-val">OPFOR</div>
+              </div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="mini-card">
+              <div class="mini-title">Event timeline</div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s done"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">07:00</div><div class="tl-event">Gate open</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s done"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">08:30</div><div class="tl-event">Safety brief</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s now"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">09:00</div><div class="tl-event active">Unit staging</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s next"></div><div class="tl-line-s"></div></div><div class="tl-text"><div class="tl-time-s">10:00</div><div class="tl-event">Op begins</div></div></div>
+              <div class="tl-row"><div class="tl-left"><div class="tl-dot-s next"></div></div><div class="tl-text"><div class="tl-time-s">16:00</div><div class="tl-event">Endex / AAR</div></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="mini-card">
+                <div class="mini-title">Comms plan</div>
+                <div class="comms-row-s"><span class="comms-name">CMD</span><span class="comms-ch-s">CH 1</span></div>
+                <div class="comms-row-s"><span class="comms-name">BRV PLT</span><span class="comms-ch-s">CH 3</span></div>
+                <div class="comms-row-s"><span class="comms-name">2ND SQD</span><span class="comms-ch-s">CH 5</span></div>
+                <div class="comms-row-s"><span class="comms-name">MEDEVAC</span><span class="comms-ch-s">CH 9</span></div>
+              </div>
+              <div class="mini-card">
+                <div class="mini-title">Pre-op checklist</div>
+                <div class="checklist-s">
+                  <div class="check-row"><div class="check-box-s done">✓</div>Waiver signed</div>
+                  <div class="check-row"><div class="check-box-s done">✓</div>Chrono cleared</div>
+                  <div class="check-row"><div class="check-box-s done">✓</div>Unit assigned</div>
+                  <div class="check-row"><div class="check-box-s open"></div>OPORD reviewed</div>
+                  <div class="check-row"><div class="check-box-s open"></div>Loadout confirmed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mini-card">
+            <div class="countdown-s">
+              <div class="ct-label">Op starts in</div>
+              <div class="ct-time" id="ct-dark">14:22:07</div>
+              <div class="ct-event">Revolt 2026 · Apr 05</div>
+            </div>
+            <button class="ready-btn-s">Mark ready</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function tickBoth() {
+    ['ct-light','ct-dark'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const parts = el.textContent.split(':').map(Number);
+      let [h,m,s] = parts;
+      s--;
+      if(s<0){s=59;m--;}
+      if(m<0){m=59;h--;}
+      if(h<0) return;
+      el.textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    });
+  }
+  setInterval(tickBoth, 1000);
+</script>

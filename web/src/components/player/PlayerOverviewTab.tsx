@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, MapPin, ChevronDown, ChevronUp, ExternalLink, ClipboardList } from 'lucide-react';
+import {
+  MapPin,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  ClipboardList,
+  Shield,
+  CalendarDays,
+} from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { api, type MapResource } from '../../lib/api';
 import { EventBreadcrumb } from '../EventBreadcrumb';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 
@@ -33,6 +41,45 @@ interface Props {
   onNavigate: (tab: 'roster' | 'briefing' | 'maps' | 'change-request') => void;
 }
 
+// ── Countdown helpers ───────────────────────────────────────────────────────
+
+function parseEventDate(dateOnly: string): Date {
+  // dateOnly = "YYYY-MM-DD" → treat as midnight local
+  return new Date(dateOnly + 'T00:00:00');
+}
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return 'NOW';
+  const totalSecs = Math.floor(ms / 1000);
+  const days = Math.floor(totalSecs / 86400);
+  if (days >= 1) return `D-${days}`;
+  const h = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
+  const m = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
+  const s = (totalSecs % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function useCountdown(startDate: string | null | undefined) {
+  const [display, setDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!startDate) { setDisplay(null); return; }
+    const target = parseEventDate(startDate);
+
+    function tick() {
+      const ms = target.getTime() - Date.now();
+      setDisplay(formatCountdown(ms));
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [startDate]);
+
+  return display;
+}
+
+// ── Date display ────────────────────────────────────────────────────────────
+
 function formatDate(d: string | null) {
   if (!d) return null;
   return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
@@ -40,10 +87,11 @@ function formatDate(d: string | null) {
   });
 }
 
+// ── Component ───────────────────────────────────────────────────────────────
+
 export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  // ── Data fetches (all parallel) ──────────────────────────────────────────
   const { data: events } = useQuery({
     queryKey: ['events'],
     queryFn: () => api.getEvents(),
@@ -87,6 +135,8 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
     queryFn: () => api.getMapResources(eventId),
   });
 
+  const countdown = useCountdown(event?.startDate);
+
   const toggleSection = (id: string) =>
     setExpandedSections((prev) => {
       const next = new Set(prev);
@@ -98,105 +148,134 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
   const hasPendingRequest = myRequest?.status === 'Pending';
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-5 p-5">
       <EventBreadcrumb eventId={eventId} page="Overview" />
 
-      {/* ── Event hero ─────────────────────────────────────────────────── */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{event?.name ?? '…'}</h1>
+      {/* ── Event header ──────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-semibold">{event?.name ?? '…'}</h1>
           {event?.status && (
             <Badge variant={event.status === 'Published' ? 'default' : 'secondary'}>
               {event.status}
             </Badge>
           )}
         </div>
-        {(event?.location || event?.startDate) && (
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            {event.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                {event.location}
-              </span>
-            )}
-            {event?.startDate && (
-              <span className="flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                {formatDate(event.startDate)}
-                {event.endDate ? ` — ${formatDate(event.endDate)}` : ''}
-              </span>
-            )}
-          </div>
-        )}
+
+        {/* Meta row */}
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          {event?.location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {event.location}
+            </span>
+          )}
+          {event?.startDate && (
+            <span className="flex items-center gap-1">
+              <CalendarDays className="h-3 w-3 shrink-0" />
+              {formatDate(event.startDate)}
+              {event.endDate ? ` — ${formatDate(event.endDate)}` : ''}
+            </span>
+          )}
+        </div>
+
         {event?.description && (
-          <p className="text-sm text-muted-foreground pt-1">{event.description}</p>
+          <p className="text-sm text-muted-foreground">{event.description}</p>
+        )}
+
+        {/* Countdown */}
+        {countdown && (
+          <div className="flex items-center gap-2 pt-1">
+            <span className="rp0-label">T-minus</span>
+            <span
+              className="font-mono font-medium"
+              style={{ fontSize: 20, color: 'oklch(var(--primary))' }}
+            >
+              {countdown}
+            </span>
+          </div>
         )}
       </div>
 
-      {/* ── Assignment ─────────────────────────────────────────────────── */}
+      {/* ── Assignment unit card ───────────────────────────────────────── */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">My Assignment</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {assignment?.callsign ? (
-            <div className="font-mono text-2xl font-bold text-orange-500">
-              [{assignment.callsign}]
-            </div>
-          ) : (
-            <div className="font-mono text-2xl font-bold text-muted-foreground">[—]</div>
-          )}
+        <CardContent className="p-4 space-y-3">
+          {/* Card header row */}
+          <div className="flex items-center gap-2">
+            <span
+              className="h-7 w-7 rounded-[8px] flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: 'oklch(var(--primary-soft))',
+                border: '1px solid oklch(var(--primary-border))',
+              }}
+            >
+              <Shield className="h-3.5 w-3.5" style={{ color: 'oklch(var(--primary))' }} />
+            </span>
+            <span className="rp0-label">My Assignment</span>
+          </div>
 
+          {/* Callsign / slot code */}
+          <div
+            className="font-mono font-medium text-2xl leading-none"
+            style={{ color: isAssigned ? 'oklch(var(--primary))' : 'oklch(var(--muted-foreground))' }}
+          >
+            {assignment?.callsign ? `[${assignment.callsign}]` : '[—]'}
+          </div>
+
+          {/* Assignment details or unassigned notice */}
           {!isAssigned ? (
-            <div className="rounded-md bg-muted p-3">
-              <p className="text-sm font-medium">Unassigned</p>
-              <p className="text-xs text-muted-foreground mt-1">
+            <div
+              className="rounded-[8px] p-3"
+              style={{ backgroundColor: 'oklch(var(--muted))' }}
+            >
+              <p className="text-xs font-medium">Unassigned</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 You have not been assigned to a platoon and squad yet.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
               {assignment?.platoon && (
                 <>
-                  <span className="text-muted-foreground">Platoon</span>
-                  <span className="font-medium">{assignment.platoon.name}</span>
+                  <span className="rp0-label self-center">Platoon</span>
+                  <span className="text-sm font-medium">{assignment.platoon.name}</span>
                 </>
               )}
               {assignment?.squad && (
                 <>
-                  <span className="text-muted-foreground">Squad</span>
-                  <span className="font-medium">{assignment.squad.name}</span>
+                  <span className="rp0-label self-center">Squad</span>
+                  <span className="text-sm font-medium">{assignment.squad.name}</span>
                 </>
               )}
               {assignment?.teamAffiliation && (
                 <>
-                  <span className="text-muted-foreground">Team</span>
-                  <span className="font-medium">{assignment.teamAffiliation}</span>
+                  <span className="rp0-label self-center">Team</span>
+                  <Badge variant="info" className="w-fit">{assignment.teamAffiliation}</Badge>
                 </>
               )}
               {assignment?.role && (
                 <>
-                  <span className="text-muted-foreground">Role</span>
-                  <span className="font-medium">{assignment.role}</span>
+                  <span className="rp0-label self-center">Role</span>
+                  <span className="text-sm">{assignment.role}</span>
                 </>
               )}
             </div>
           )}
 
-          {/* Change request link — only shown when assigned */}
+          {/* Change request link */}
           {isAssigned && (
-            <div className="pt-1 border-t">
+            <div className="pt-2 border-t">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground gap-1.5"
+                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground gap-1.5"
                 onClick={() => onNavigate('change-request')}
               >
                 <ClipboardList className="h-3.5 w-3.5" />
                 {hasPendingRequest ? (
                   <span className="flex items-center gap-1.5">
                     Change request
-                    <Badge variant="secondary" className="text-xs">Pending</Badge>
+                    <Badge variant="secondary" className="text-[9px]">Pending</Badge>
                   </span>
                 ) : (
                   'Request a change'
@@ -207,16 +286,16 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
         </CardContent>
       </Card>
 
-      {/* ── Briefing sections ──────────────────────────────────────────── */}
+      {/* ── Briefing mini-cards ────────────────────────────────────────── */}
       {sections.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Briefing</h2>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate('briefing')}>
+            <span className="rp0-label">Briefing</span>
+            <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={() => onNavigate('briefing')}>
               View all
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {sections.slice().sort((a, b) => a.order - b.order).map((section) => {
               const expanded = expandedSections.has(section.id);
               return (
@@ -224,13 +303,13 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
                   <CardContent className="p-0">
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between p-4 text-left"
+                      className="flex w-full items-center justify-between px-4 py-3 text-left"
                       onClick={() => toggleSection(section.id)}
                     >
-                      <span className="font-semibold text-sm">{section.title}</span>
+                      <span className="text-sm font-medium">{section.title}</span>
                       {expanded
-                        ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        ? <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       }
                     </button>
                     {expanded && section.bodyMarkdown && (
@@ -246,16 +325,16 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
         </div>
       )}
 
-      {/* ── Maps ───────────────────────────────────────────────────────── */}
+      {/* ── Maps ──────────────────────────────────────────────────────── */}
       {mapResources.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Maps</h2>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate('maps')}>
+            <span className="rp0-label">Maps</span>
+            <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={() => onNavigate('maps')}>
               View all
             </Button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {mapResources.slice().sort((a, b) => a.order - b.order).map((resource) => (
               <MapResourcePreview key={resource.id} eventId={eventId} resource={resource} />
             ))}
@@ -289,13 +368,14 @@ function MapResourcePreview({ eventId, resource }: MapResourcePreviewProps) {
     <Card className="overflow-hidden">
       {/* Header row */}
       <div className="flex items-center justify-between gap-2 px-4 py-3">
-        <span className="font-medium text-sm">{resource.friendlyName ?? 'Untitled'}</span>
+        <span className="text-sm font-medium">{resource.friendlyName ?? 'Untitled'}</span>
         {resource.externalUrl && (
           <a
             href={resource.externalUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+            className="flex items-center gap-1 text-xs hover:underline"
+            style={{ color: 'oklch(var(--primary))' }}
           >
             Open <ExternalLink className="h-3 w-3" />
           </a>
@@ -305,14 +385,14 @@ function MapResourcePreview({ eventId, resource }: MapResourcePreviewProps) {
             href={urlData.downloadUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+            className="flex items-center gap-1 text-xs hover:underline"
+            style={{ color: 'oklch(var(--primary))' }}
           >
             Open <ExternalLink className="h-3 w-3" />
           </a>
         )}
       </div>
 
-      {/* Full-width image — no padding, bleeds to card edges */}
       {isImage && urlData?.downloadUrl && (
         <img
           src={urlData.downloadUrl}
@@ -321,7 +401,6 @@ function MapResourcePreview({ eventId, resource }: MapResourcePreviewProps) {
         />
       )}
 
-      {/* PDF viewer */}
       {isPdf && urlData?.downloadUrl && (
         <iframe
           src={urlData.downloadUrl}
@@ -331,7 +410,6 @@ function MapResourcePreview({ eventId, resource }: MapResourcePreviewProps) {
         />
       )}
 
-      {/* External link instructions */}
       {resource.externalUrl && resource.instructions && (
         <div className="prose prose-sm max-w-none px-4 pb-4 text-muted-foreground">
           <Markdown remarkPlugins={[remarkGfm]}>{resource.instructions}</Markdown>
