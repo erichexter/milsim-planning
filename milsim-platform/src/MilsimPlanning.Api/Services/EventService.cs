@@ -53,12 +53,14 @@ public class EventService
         return ToDto(evt);
     }
 
-    /// <summary>EVNT-03: List events scoped to the current commander.</summary>
+    /// <summary>EVNT-03: List events the current user is a member of (commanders and players alike).</summary>
     public async Task<List<EventDto>> ListEventsAsync()
     {
+        var userId = _currentUser.UserId;
+
         var events = await _db.Events
             .Include(e => e.Faction)
-            .Where(e => e.Faction.CommanderId == _currentUser.UserId)
+            .Where(e => _db.EventMemberships.Any(m => m.EventId == e.Id && m.UserId == userId))
             .OrderByDescending(e => e.Id)   // newest first (no CreatedAt in Phase 2 model)
             .ToListAsync();
 

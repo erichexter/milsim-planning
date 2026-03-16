@@ -8,7 +8,7 @@ namespace MilsimPlanning.Api.Controllers;
 
 [ApiController]
 [Route("api/events")]
-[Authorize(Policy = "RequireFactionCommander")]
+[Authorize]
 public class EventsController : ControllerBase
 {
     private readonly EventService _eventService;
@@ -18,6 +18,7 @@ public class EventsController : ControllerBase
 
     // EVNT-01: Create event
     [HttpPost]
+    [Authorize(Policy = "RequireFactionCommander")]
     public async Task<ActionResult<EventDto>> Create(CreateEventRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
@@ -46,6 +47,7 @@ public class EventsController : ControllerBase
 
     // EVNT-01b: Update event
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "RequireFactionCommander")]
     public async Task<ActionResult<EventDto>> Update(Guid id, UpdateEventRequest request)
     {
         try
@@ -60,6 +62,7 @@ public class EventsController : ControllerBase
 
     // EVNT-05: Publish event
     [HttpPut("{id:guid}/publish")]
+    [Authorize(Policy = "RequireFactionCommander")]
     public async Task<IActionResult> Publish(Guid id)
     {
         try
@@ -74,6 +77,7 @@ public class EventsController : ControllerBase
 
     // EVNT-02: Duplicate event
     [HttpPost("{id:guid}/duplicate")]
+    [Authorize(Policy = "RequireFactionCommander")]
     public async Task<ActionResult<EventDto>> Duplicate(Guid id, DuplicateEventRequest request)
     {
         try
