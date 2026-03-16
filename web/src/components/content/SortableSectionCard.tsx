@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { InfoSection } from '@/lib/api';
@@ -67,8 +69,10 @@ export function SortableSectionCard({
               {isCommander ? (
                 <SectionEditor section={section} onSave={onSave} onDelete={onDelete} />
               ) : (
-                <div className="prose max-w-none rounded border p-3 text-sm">
-                  {section.bodyMarkdown || '*No content*'}
+                <div className="prose prose-sm max-w-none rounded border p-3">
+                  <Markdown remarkPlugins={[remarkGfm]}>
+                    {section.bodyMarkdown || '*No content*'}
+                  </Markdown>
                 </div>
               )}
 
