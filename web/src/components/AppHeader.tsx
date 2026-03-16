@@ -1,5 +1,7 @@
 import { Link } from 'react-router';
+import { Sun, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 
 function getInitials(callsign: string | null | undefined, email: string | null | undefined) {
   const name = callsign ?? email ?? '?';
@@ -8,6 +10,7 @@ function getInitials(callsign: string | null | undefined, email: string | null |
 
 export function AppHeader() {
   const { user, logout } = useAuth();
+  const { isDark, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 h-12 border-b bg-card flex items-center px-4 gap-3">
@@ -70,6 +73,15 @@ export function AppHeader() {
           </span>
         </Link>
       )}
+
+      {/* Theme toggle */}
+      <button
+        onClick={() => setTheme(isDark ? 'light' : 'dark')}
+        className="h-8 w-8 flex items-center justify-center rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      </button>
 
       {/* Logout — subtle text button */}
       <button
