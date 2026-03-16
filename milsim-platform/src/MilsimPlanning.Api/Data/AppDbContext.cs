@@ -25,6 +25,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<MapResource> MapResources => Set<MapResource>();
     public DbSet<NotificationBlast> NotificationBlasts => Set<NotificationBlast>();
 
+    // Phase 4 DbSets
+    public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -104,5 +107,29 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // MapResource ordering per event
         builder.Entity<MapResource>()
             .HasIndex(r => new { r.EventId, r.Order });
+
+        // === Phase 4 Configuration ===
+
+        // RosterChangeRequest: cascade delete from EventPlayer (Pitfall 3 — orphan prevention)
+        builder.Entity<RosterChangeRequest>()
+            .HasOne(r => r.EventPlayer)
+            .WithMany()
+            .HasForeignKey(r => r.EventPlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // RosterChangeRequest: cascade delete from Event
+        builder.Entity<RosterChangeRequest>()
+            .HasOne(r => r.Event)
+            .WithMany()
+            .HasForeignKey(r => r.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // RosterChangeRequest indexes: fast lookup for "player's pending request"
+        builder.Entity<RosterChangeRequest>()
+            .HasIndex(r => new { r.EventPlayerId, r.Status });
+
+        // RosterChangeRequest indexes: fast lookup for "all pending for event"
+        builder.Entity<RosterChangeRequest>()
+            .HasIndex(r => new { r.EventId, r.Status });
     }
 }
