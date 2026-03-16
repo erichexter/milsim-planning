@@ -202,6 +202,22 @@ public class HierarchyService
             .Where(ep => ep.EventId == eventId)
             .ToListAsync();
 
+        // Build a lookup of profile callsigns for players who have logged in.
+        // Profile callsign takes precedence over the roster CSV callsign.
+        var linkedUserIds = players
+            .Where(ep => ep.UserId is not null)
+            .Select(ep => ep.UserId!)
+            .ToHashSet();
+
+        var profileCallsigns = await _db.UserProfiles
+            .Where(p => linkedUserIds.Contains(p.UserId))
+            .ToDictionaryAsync(p => p.UserId, p => p.Callsign);
+
+        string? EffectiveCallsign(EventPlayer ep) =>
+            ep.UserId is not null && profileCallsigns.TryGetValue(ep.UserId, out var c) && !string.IsNullOrWhiteSpace(c)
+                ? c
+                : ep.Callsign;
+
         var platoonDtos = platoons.Select(p => new PlatoonDto(
             p.Id,
             p.Name,
@@ -209,21 +225,21 @@ public class HierarchyService
             // HQ players: assigned to this platoon but not to any squad
             players
                 .Where(ep => ep.PlatoonId == p.Id && ep.SquadId is null)
-                .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
+                .Select(ep => new PlayerDto(ep.Id, ep.Name, EffectiveCallsign(ep), ep.TeamAffiliation, ep.Role))
                 .ToList(),
             p.Squads.OrderBy(s => s.Order).Select(s => new SquadDto(
                 s.Id,
                 s.Name,
                 players
                     .Where(ep => ep.SquadId == s.Id)
-                    .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
+                    .Select(ep => new PlayerDto(ep.Id, ep.Name, EffectiveCallsign(ep), ep.TeamAffiliation, ep.Role))
                     .ToList()
             )).ToList()
         )).ToList();
 
         var unassigned = players
             .Where(ep => ep.SquadId is null && ep.PlatoonId is null)
-            .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
+            .Select(ep => new PlayerDto(ep.Id, ep.Name, EffectiveCallsign(ep), ep.TeamAffiliation, ep.Role))
             .ToList();
 
         return new RosterHierarchyDto(platoonDtos, unassigned);
