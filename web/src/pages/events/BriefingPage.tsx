@@ -8,7 +8,7 @@ export function BriefingPage() {
   const { eventId, id } = useParams<{ eventId: string; id: string }>();
   const resolvedEventId = eventId ?? id;
   const { user } = useAuth();
-  const isCommander = user?.role === 'Commander';
+  const isCommander = user?.role === 'faction_commander';
 
   const { data: sections = [], isLoading, refetch } = useQuery({
     queryKey: ['info-sections', resolvedEventId],

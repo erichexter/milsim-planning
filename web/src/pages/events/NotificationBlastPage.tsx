@@ -16,7 +16,7 @@ export function NotificationBlastPage() {
   const { eventId, id } = useParams<{ eventId: string; id: string }>();
   const resolvedEventId = eventId ?? id;
   const { user } = useAuth();
-  const isCommander = user?.role === 'Commander';
+  const isCommander = user?.role === 'faction_commander';
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
