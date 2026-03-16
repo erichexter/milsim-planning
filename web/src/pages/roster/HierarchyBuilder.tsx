@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { PlatoonDto } from '../../lib/api';
 import { Button } from '../../components/ui/button';
@@ -26,6 +26,45 @@ import {
   TableRow,
 } from '../../components/ui/table';
 
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+type EnrichedPlayer = {
+  id: string;
+  name: string;
+  callsign: string | null;
+  teamAffiliation: string | null;
+  role: string | null;
+  squadId: string | null;
+  platoonId: string | null;
+  eventId: string;
+};
+
+// ── Fill dots component ────────────────────────────────────────────────────────
+
+function FillDots({ count }: { count: number }) {
+  const DOTS = 10;
+  const filled = Math.min(count, DOTS);
+  const empty = Math.max(0, DOTS - count);
+  const overflow = count > DOTS ? count - DOTS : 0;
+
+  return (
+    <span className="inline-flex items-center gap-0.5 font-mono text-[10px]">
+      {Array.from({ length: filled }).map((_, i) => (
+        <span key={`f${i}`} style={{ color: 'oklch(var(--primary))' }}>●</span>
+      ))}
+      {Array.from({ length: empty }).map((_, i) => (
+        <span key={`e${i}`} className="text-muted-foreground opacity-25">●</span>
+      ))}
+      {overflow > 0 && (
+        <span className="ml-0.5 text-muted-foreground">+{overflow}</span>
+      )}
+      <span className="ml-1.5 text-muted-foreground">{count}</span>
+    </span>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export function HierarchyBuilder() {
   const { id: eventId } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -35,7 +74,7 @@ export function HierarchyBuilder() {
     queryFn: () => api.getRoster(eventId!),
   });
 
-  // ── Create platoon ────────────────────────────────────────────────────────
+  // ── Create platoon ──────────────────────────────────────────────────────────
   const [newPlatoonName, setNewPlatoonName] = useState('');
   const [isCommandElement, setIsCommandElement] = useState(false);
   const createPlatoonMutation = useMutation({
@@ -48,14 +87,14 @@ export function HierarchyBuilder() {
     },
   });
 
-  // ── Set player role ───────────────────────────────────────────────────────
+  // ── Set player role ─────────────────────────────────────────────────────────
   const setRoleMutation = useMutation({
     mutationFn: ({ playerId, role }: { playerId: string; role: string | null }) =>
       api.setPlayerRole(playerId, role),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['roster', eventId] }),
   });
 
-  // ── Create squad ──────────────────────────────────────────────────────────
+  // ── Create squad ────────────────────────────────────────────────────────────
   const [selectedPlatoonId, setSelectedPlatoonId] = useState('');
   const [newSquadName, setNewSquadName] = useState('');
   const createSquadMutation = useMutation({
@@ -67,24 +106,20 @@ export function HierarchyBuilder() {
     },
   });
 
-  // ── Player table data ─────────────────────────────────────────────────────
-  const allPlayers = useMemo(() => {
+  // ── Derived data ────────────────────────────────────────────────────────────
+  const allPlayers = useMemo((): EnrichedPlayer[] => {
     if (!roster) return [];
-    const assigned = roster.platoons.flatMap((p) =>
-      [
-        // HQ players (platoon-level, no squad)
-        ...p.hqPlayers.map((pl) => ({
-          ...pl,
-          squadId: null as string | null,
-          platoonId: p.id,
-          eventId: eventId!,
-        })),
-        // Squad players
-        ...p.squads.flatMap((s) =>
-          s.players.map((pl) => ({ ...pl, squadId: s.id, platoonId: p.id, eventId: eventId! }))
-        ),
-      ]
-    );
+    const assigned = roster.platoons.flatMap((p) => [
+      ...p.hqPlayers.map((pl) => ({
+        ...pl,
+        squadId: null as string | null,
+        platoonId: p.id,
+        eventId: eventId!,
+      })),
+      ...p.squads.flatMap((s) =>
+        s.players.map((pl) => ({ ...pl, squadId: s.id, platoonId: p.id, eventId: eventId! }))
+      ),
+    ]);
     const unassigned = roster.unassignedPlayers.map((pl) => ({
       ...pl,
       squadId: null as string | null,
@@ -94,21 +129,27 @@ export function HierarchyBuilder() {
     return [...assigned, ...unassigned];
   }, [roster, eventId]);
 
-  const allSquads = useMemo(
-    () => roster?.platoons.flatMap((p) => p.squads) ?? [],
-    [roster]
+  const unassignedPlayers = useMemo(
+    () => allPlayers.filter((p) => p.squadId === null && p.platoonId === null),
+    [allPlayers]
   );
 
-  const playersByAffiliation = useMemo(() => {
-    const groups = new Map<string, typeof allPlayers>();
-    for (const player of allPlayers) {
+  const assignedPlayers = useMemo(
+    () => allPlayers.filter((p) => p.squadId !== null || p.platoonId !== null),
+    [allPlayers]
+  );
+
+  // Unassigned grouped by team affiliation
+  const unassignedByAffiliation = useMemo(() => {
+    const groups = new Map<string, EnrichedPlayer[]>();
+    for (const player of unassignedPlayers) {
       const key = player.teamAffiliation ?? '(No Team)';
       const group = groups.get(key) ?? [];
       group.push(player);
       groups.set(key, group);
     }
     return groups;
-  }, [allPlayers]);
+  }, [unassignedPlayers]);
 
   if (!roster) return <div className="p-6">Loading hierarchy...</div>;
 
@@ -116,26 +157,28 @@ export function HierarchyBuilder() {
   const commandElements = platoons.filter((p) => p.isCommandElement);
   const regularPlatoons = platoons.filter((p) => !p.isCommandElement);
 
+  const handleRoleSave = (playerId: string, role: string | null) =>
+    setRoleMutation.mutate({ playerId, role });
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       <EventBreadcrumb eventId={eventId!} page="Hierarchy" />
-      <h1 className="text-2xl font-bold">Hierarchy Builder</h1>
+      <h1 className="text-xl font-semibold">Hierarchy Builder</h1>
 
       {/* ── Structure panel ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Create platoon / command element */}
-        <div className="border rounded-lg p-4 space-y-3">
-          <h2 className="font-semibold text-sm">Create Platoon / Command Element</h2>
+        <div className="border rounded-[12px] p-4 space-y-3">
+          <h2 className="font-medium text-sm">Create Platoon / Command Element</h2>
           <div className="flex gap-2">
             <Input
               placeholder={isCommandElement ? 'e.g. Battalion HQ' : 'e.g. Alpha Platoon'}
               value={newPlatoonName}
               onChange={(e) => setNewPlatoonName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && newPlatoonName.trim()) {
+                if (e.key === 'Enter' && newPlatoonName.trim())
                   createPlatoonMutation.mutate({ name: newPlatoonName.trim(), isCommandElement });
-                }
               }}
             />
             <Button
@@ -145,7 +188,6 @@ export function HierarchyBuilder() {
               Add
             </Button>
           </div>
-          {/* Command element checkbox */}
           <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
             <input
               type="checkbox"
@@ -156,13 +198,12 @@ export function HierarchyBuilder() {
             <span>Command Element <span className="text-muted-foreground text-xs">(no squads — for CO, XO, etc.)</span></span>
           </label>
 
-          {/* Command elements list */}
           {commandElements.length > 0 && (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Command Elements</p>
+              <p className="rp0-label">Command Elements</p>
               <ul className="text-sm space-y-1">
                 {commandElements.map((p) => (
-                  <li key={p.id} className="text-amber-600 font-medium">
+                  <li key={p.id} className="font-medium" style={{ color: 'oklch(var(--accent))' }}>
                     ★ {p.name}
                   </li>
                 ))}
@@ -170,12 +211,9 @@ export function HierarchyBuilder() {
             </div>
           )}
 
-          {/* Regular platoons list */}
           {regularPlatoons.length > 0 && (
             <div className="space-y-1">
-              {commandElements.length > 0 && (
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Platoons</p>
-              )}
+              {commandElements.length > 0 && <p className="rp0-label">Platoons</p>}
               <ul className="text-sm space-y-1">
                 {regularPlatoons.map((p) => (
                   <li key={p.id} className="text-muted-foreground">
@@ -190,17 +228,15 @@ export function HierarchyBuilder() {
           )}
         </div>
 
-        {/* Create squad — only under regular platoons */}
-        <div className="border rounded-lg p-4 space-y-3">
-          <h2 className="font-semibold text-sm">Create Squad</h2>
+        {/* Create squad */}
+        <div className="border rounded-[12px] p-4 space-y-3">
+          <h2 className="font-medium text-sm">Create Squad</h2>
           {regularPlatoons.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Create a platoon first.
-            </p>
+            <p className="text-sm text-muted-foreground">Create a platoon first.</p>
           ) : (
             <>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm"
                 value={selectedPlatoonId}
                 onChange={(e) => setSelectedPlatoonId(e.target.value)}
               >
@@ -215,31 +251,17 @@ export function HierarchyBuilder() {
                   value={newSquadName}
                   onChange={(e) => setNewSquadName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newSquadName.trim() && selectedPlatoonId) {
-                      createSquadMutation.mutate({
-                        platoonId: selectedPlatoonId,
-                        name: newSquadName.trim(),
-                      });
-                    }
+                    if (e.key === 'Enter' && newSquadName.trim() && selectedPlatoonId)
+                      createSquadMutation.mutate({ platoonId: selectedPlatoonId, name: newSquadName.trim() });
                   }}
                 />
                 <Button
-                  onClick={() =>
-                    createSquadMutation.mutate({
-                      platoonId: selectedPlatoonId,
-                      name: newSquadName.trim(),
-                    })
-                  }
-                  disabled={
-                    !newSquadName.trim() ||
-                    !selectedPlatoonId ||
-                    createSquadMutation.isPending
-                  }
+                  onClick={() => createSquadMutation.mutate({ platoonId: selectedPlatoonId, name: newSquadName.trim() })}
+                  disabled={!newSquadName.trim() || !selectedPlatoonId || createSquadMutation.isPending}
                 >
                   Add
                 </Button>
               </div>
-              {/* Show existing squads under each platoon */}
               {regularPlatoons.map((p) =>
                 p.squads.length > 0 ? (
                   <div key={p.id} className="text-sm">
@@ -253,82 +275,235 @@ export function HierarchyBuilder() {
         </div>
       </div>
 
-      {/* ── Player assignment table ───────────────────────────────────────── */}
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Assign Players to Squads</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Players are grouped by their Team Affiliation from the CSV. Use the dropdown to assign each player to a command element, platoon HQ slot, or squad.
-        </p>
+      {/* ── Unassigned players ────────────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-base font-semibold">Unassigned</h2>
+          <span className="font-mono text-xs text-muted-foreground">
+            {unassignedPlayers.length} player{unassignedPlayers.length !== 1 ? 's' : ''}
+          </span>
+        </div>
 
         {allPlayers.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No players yet. Import a roster first.
-          </p>
+          <p className="text-sm text-muted-foreground">No players yet. Import a roster first.</p>
         )}
 
-        {allSquads.length === 0 && commandElements.length === 0 && allPlayers.length > 0 && (
-          <p className="text-sm text-amber-600 mb-4">
+        {allPlayers.length > 0 && platoons.length === 0 && (
+          <p className="text-sm mb-2" style={{ color: 'oklch(var(--accent))' }}>
             Create platoons and squads above before assigning players.
           </p>
         )}
 
-        {[...playersByAffiliation.entries()].map(([affiliation, players]) => (
-          <div key={affiliation} className="mb-6">
-            <h3 className="text-base font-semibold mb-2">{affiliation}</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Callsign</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Assignment</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((player) => (
-                  <TableRow key={player.id}>
-                    <TableCell className="font-mono font-bold text-orange-500">
-                      [{player.callsign ?? '—'}]
-                    </TableCell>
-                    <TableCell>{player.name}</TableCell>
-                    <TableCell>
-                      <RoleCell
-                        playerId={player.id}
-                        role={player.role}
-                        onSave={(role) => setRoleMutation.mutate({ playerId: player.id, role })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <AssignmentCell
-                        player={player}
+        {unassignedPlayers.length === 0 && allPlayers.length > 0 ? (
+          <p className="text-sm text-muted-foreground">All players have been assigned.</p>
+        ) : (
+          [...unassignedByAffiliation.entries()].map(([affiliation, players]) => (
+            <div key={affiliation}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold">{affiliation}</span>
+                <span className="font-mono text-xs text-muted-foreground">{players.length}</span>
+              </div>
+              <PlayerTable
+                players={players}
+                platoons={platoons}
+                eventId={eventId!}
+                onRoleSave={handleRoleSave}
+              />
+            </div>
+          ))
+        )}
+      </section>
+
+      {/* ── Assigned players — platoon / squad tree ───────────────────────── */}
+      {assignedPlayers.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-semibold">Assigned</h2>
+            <span className="font-mono text-xs text-muted-foreground">
+              {assignedPlayers.length} player{assignedPlayers.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="space-y-5">
+            {platoons.map((platoon) => {
+              const hqPlayers: EnrichedPlayer[] = assignedPlayers.filter(
+                (p) => p.platoonId === platoon.id && p.squadId === null
+              );
+              const platoonTotal = assignedPlayers.filter(
+                (p) => p.platoonId === platoon.id
+              ).length;
+
+              if (platoonTotal === 0) return null;
+
+              return (
+                <div key={platoon.id}>
+                  {/* Platoon header */}
+                  <div className="flex items-center gap-3 pb-2 border-b mb-3">
+                    {platoon.isCommandElement ? (
+                      <span className="text-sm font-semibold" style={{ color: 'oklch(var(--accent))' }}>
+                        ★ {platoon.name}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold">{platoon.name}</span>
+                    )}
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {platoonTotal} player{platoonTotal !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 pl-3">
+                    {/* HQ / command element players — collapsible */}
+                    {hqPlayers.length > 0 && (
+                      <SquadBlock
+                        label={platoon.isCommandElement ? platoon.name : `${platoon.name} HQ`}
+                        players={hqPlayers}
                         platoons={platoons}
                         eventId={eventId!}
+                        onRoleSave={handleRoleSave}
                       />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    )}
+
+                    {/* Squad blocks — collapsible */}
+                    {platoon.squads.map((squad) => {
+                      const squadPlayers = assignedPlayers.filter(
+                        (p) => p.squadId === squad.id
+                      );
+                      return (
+                        <SquadBlock
+                          key={squad.id}
+                          label={squad.name}
+                          players={squadPlayers}
+                          platoons={platoons}
+                          eventId={eventId!}
+                          onRoleSave={handleRoleSave}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </section>
+      )}
     </div>
   );
 }
 
-// ── Assignment cell — grouped dropdown: command elements, platoon HQ, squads ──
+// ── SquadBlock — collapsible squad/HQ row with fill dots + player table ────────
 
-// Value encoding:
-//   ""                  = unassigned
-//   "platoon:{id}"      = platoon-level HQ slot (calls assignPlayerToPlatoon)
-//   "squad:{id}"        = squad assignment (calls assignSquad)
+function SquadBlock({
+  label,
+  players,
+  platoons,
+  eventId,
+  onRoleSave,
+}: {
+  label: string;
+  players: EnrichedPlayer[];
+  platoons: PlatoonDto[];
+  eventId: string;
+  onRoleSave: (playerId: string, role: string | null) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border rounded-[10px] overflow-hidden">
+      {/* Squad header row — always visible */}
+      <button
+        type="button"
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/40 transition-colors"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded
+          ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        }
+        <span className="text-sm font-medium min-w-[120px]">{label}</span>
+        <FillDots count={players.length} />
+      </button>
+
+      {/* Expanded player table */}
+      {expanded && players.length > 0 && (
+        <div className="border-t">
+          <PlayerTable
+            players={players}
+            platoons={platoons}
+            eventId={eventId}
+            onRoleSave={onRoleSave}
+            compact
+          />
+        </div>
+      )}
+
+      {expanded && players.length === 0 && (
+        <p className="text-xs text-muted-foreground px-4 py-3 border-t">No players assigned.</p>
+      )}
+    </div>
+  );
+}
+
+// ── PlayerTable — shared by both unassigned and assigned sections ──────────────
+
+function PlayerTable({
+  players,
+  platoons,
+  eventId,
+  onRoleSave,
+  compact = false,
+}: {
+  players: EnrichedPlayer[];
+  platoons: PlatoonDto[];
+  eventId: string;
+  onRoleSave: (playerId: string, role: string | null) => void;
+  compact?: boolean;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Callsign</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Assignment</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {players.map((player) => (
+          <TableRow key={player.id} className={compact ? 'text-xs' : ''}>
+            <TableCell className="font-mono font-bold" style={{ color: 'oklch(var(--primary))' }}>
+              [{player.callsign ?? '—'}]
+            </TableCell>
+            <TableCell>{player.name}</TableCell>
+            <TableCell>
+              <RoleCell
+                playerId={player.id}
+                role={player.role}
+                onSave={(role) => onRoleSave(player.id, role)}
+              />
+            </TableCell>
+            <TableCell>
+              <AssignmentCell
+                player={player}
+                platoons={platoons}
+                eventId={eventId}
+              />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+// ── AssignmentCell ─────────────────────────────────────────────────────────────
 
 function AssignmentCell({
   player,
   platoons,
   eventId,
 }: {
-  player: { id: string; squadId: string | null; platoonId: string | null; eventId: string };
+  player: EnrichedPlayer;
   platoons: PlatoonDto[];
   eventId: string;
 }) {
@@ -353,7 +528,6 @@ function AssignmentCell({
 
   const isPending = assignSquadMutation.isPending || assignPlatoonMutation.isPending;
 
-  // Determine current display label
   const currentLabel = (() => {
     if (player.squadId) {
       const squad = platoons.flatMap((p) => p.squads).find((s) => s.id === player.squadId);
@@ -369,14 +543,11 @@ function AssignmentCell({
 
   const handleSelect = (value: string) => {
     if (value === '') {
-      // Unassign — clear both squad and platoon
       assignPlatoonMutation.mutate(null);
     } else if (value.startsWith('platoon:')) {
-      const platoonId = value.slice('platoon:'.length);
-      assignPlatoonMutation.mutate(platoonId);
+      assignPlatoonMutation.mutate(value.slice('platoon:'.length));
     } else if (value.startsWith('squad:')) {
-      const squadId = value.slice('squad:'.length);
-      assignSquadMutation.mutate(squadId);
+      assignSquadMutation.mutate(value.slice('squad:'.length));
     }
   };
 
@@ -399,11 +570,9 @@ function AssignmentCell({
           role="combobox"
           aria-expanded={open}
           disabled={isPending}
-          className="w-[200px] justify-between text-sm font-normal"
+          className="w-[180px] justify-between text-sm font-normal"
         >
-          {currentLabel ?? (
-            <span className="text-muted-foreground">Assign…</span>
-          )}
+          {currentLabel ?? <span className="text-muted-foreground">Assign…</span>}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -411,11 +580,8 @@ function AssignmentCell({
         <Command>
           <CommandInput placeholder="Search…" />
           <CommandList>
-            {!hasAnyOptions && (
-              <CommandEmpty>No platoons or squads yet.</CommandEmpty>
-            )}
+            {!hasAnyOptions && <CommandEmpty>No platoons or squads yet.</CommandEmpty>}
 
-            {/* Command elements */}
             {commandElements.length > 0 && (
               <CommandGroup heading="Command">
                 {commandElements.map((p) => (
@@ -424,26 +590,20 @@ function AssignmentCell({
                     value={`cmd-${p.name}`}
                     onSelect={() => handleSelect(`platoon:${p.id}`)}
                   >
-                    <Check
-                      className={cn('mr-2 h-4 w-4', isSelected(`platoon:${p.id}`) ? 'opacity-100' : 'opacity-0')}
-                    />
-                    <span className="text-amber-600 font-medium">★ {p.name}</span>
+                    <Check className={cn('mr-2 h-4 w-4', isSelected(`platoon:${p.id}`) ? 'opacity-100' : 'opacity-0')} />
+                    <span className="font-medium" style={{ color: 'oklch(var(--accent))' }}>★ {p.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
 
-            {/* Regular platoons — HQ slot + squads */}
             {regularPlatoons.map((p) => (
               <CommandGroup key={p.id} heading={p.name}>
-                {/* Platoon HQ synthetic option */}
                 <CommandItem
                   value={`${p.name}-hq`}
                   onSelect={() => handleSelect(`platoon:${p.id}`)}
                 >
-                  <Check
-                    className={cn('mr-2 h-4 w-4', isSelected(`platoon:${p.id}`) ? 'opacity-100' : 'opacity-0')}
-                  />
+                  <Check className={cn('mr-2 h-4 w-4', isSelected(`platoon:${p.id}`) ? 'opacity-100' : 'opacity-0')} />
                   <span className="italic text-muted-foreground">[Platoon HQ]</span>
                 </CommandItem>
                 {p.squads.map((s) => (
@@ -452,16 +612,13 @@ function AssignmentCell({
                     value={`${p.name}-${s.name}`}
                     onSelect={() => handleSelect(`squad:${s.id}`)}
                   >
-                    <Check
-                      className={cn('mr-2 h-4 w-4', isSelected(`squad:${s.id}`) ? 'opacity-100' : 'opacity-0')}
-                    />
+                    <Check className={cn('mr-2 h-4 w-4', isSelected(`squad:${s.id}`) ? 'opacity-100' : 'opacity-0')} />
                     {s.name}
                   </CommandItem>
                 ))}
               </CommandGroup>
             ))}
 
-            {/* Unassign */}
             {(player.squadId || player.platoonId) && (
               <CommandGroup>
                 <CommandItem
@@ -480,7 +637,7 @@ function AssignmentCell({
   );
 }
 
-// ── Inline editable role cell ─────────────────────────────────────────────────
+// ── RoleCell ───────────────────────────────────────────────────────────────────
 
 function RoleCell({
   playerId: _playerId,
@@ -495,7 +652,6 @@ function RoleCell({
   const [value, setValue] = useState(role ?? '');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync if parent value changes (e.g. after mutation invalidates query)
   useEffect(() => { setValue(role ?? ''); }, [role]);
 
   const commit = () => {
@@ -524,7 +680,7 @@ function RoleCell({
 
   return (
     <button
-      onClick={() => { setEditing(true); }}
+      onClick={() => setEditing(true)}
       className="text-sm text-left w-full min-h-[28px] px-1 rounded hover:bg-muted/50 transition-colors"
       title="Click to edit role"
     >
