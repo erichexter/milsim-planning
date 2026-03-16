@@ -39,6 +39,7 @@ export function useAuth() {
     try { await api.post('/auth/logout'); } catch { /* ignore network errors on logout */ }
     clearToken();
     setUser(null);
+    window.location.href = '/auth/login';
   }, []);
 
   return {
