@@ -1,6 +1,7 @@
 using MilsimPlanning.Api.Authorization;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
+using MilsimPlanning.Api.Domain;
 using MilsimPlanning.Api.Models.Events;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,6 +38,18 @@ public class EventService
 
         _db.Events.Add(evt);
         await _db.SaveChangesAsync();
+
+        // Auto-enroll the commander so ScopeGuard.AssertEventAccess passes for all
+        // subsequent roster/hierarchy/content endpoints on this event.
+        _db.EventMemberships.Add(new EventMembership
+        {
+            UserId = _currentUser.UserId,
+            EventId = evt.Id,
+            Role = AppRoles.FactionCommander,
+            JoinedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
         return ToDto(evt);
     }
 
