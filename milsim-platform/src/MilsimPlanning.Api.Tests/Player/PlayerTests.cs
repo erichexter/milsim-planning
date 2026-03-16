@@ -184,7 +184,7 @@ public class Player_AssignmentTests : PlayerTestsBase
     public Player_AssignmentTests(PostgreSqlFixture fixture) : base(fixture) { }
 
     [Fact]
-    public async Task GetMyAssignment_ReturnsPlayerCallsignPlatoonSquad()
+    public async Task GetMyAssignment_ReturnsPlayerPlatoonSquad()
     {
         // Assign the player to a platoon + squad first
         using (var scope = _factory.Services.CreateScope())
@@ -200,7 +200,10 @@ public class Player_AssignmentTests : PlayerTestsBase
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-        body.GetProperty("callsign").GetString().Should().Be("WOLF-01");
+        // The player's UserProfile.Callsign (set to email in CreateUserAsync) takes precedence
+        // over the roster callsign "WOLF-01" per the callsign precedence rule.
+        var callsign = body.GetProperty("callsign").GetString();
+        callsign.Should().NotBeNullOrEmpty(because: "callsign should always be populated");
         body.GetProperty("isAssigned").GetBoolean().Should().BeTrue();
         body.GetProperty("platoon").GetProperty("id").GetGuid().Should().Be(_platoonId);
         body.GetProperty("squad").GetProperty("id").GetGuid().Should().Be(_squadId);
@@ -217,6 +220,41 @@ public class Player_AssignmentTests : PlayerTestsBase
         body.GetProperty("isAssigned").GetBoolean().Should().BeFalse();
         body.GetProperty("platoon").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
         body.GetProperty("squad").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task GetMyAssignment_ProfileCallsignOverridesRosterCallsign()
+    {
+        // Precondition: player's EventPlayer.Callsign is "WOLF-01" (set in seed data).
+        // Set the player's UserProfile.Callsign to "PHANTOM" — this should take precedence.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var profile = await db.UserProfiles
+                .FirstOrDefaultAsync(p => p.UserId == _playerUserId);
+
+            if (profile is null)
+            {
+                db.UserProfiles.Add(new MilsimPlanning.Api.Data.Entities.UserProfile
+                {
+                    UserId = _playerUserId,
+                    Callsign = "PHANTOM",
+                    DisplayName = "Phantom Player"
+                });
+            }
+            else
+            {
+                profile.Callsign = "PHANTOM";
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _playerClient.GetAsync($"/api/events/{_eventId}/my-assignment");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        body.GetProperty("callsign").GetString().Should().Be("PHANTOM",
+            because: "profile callsign takes precedence over roster callsign (WOLF-01)");
     }
 
 }

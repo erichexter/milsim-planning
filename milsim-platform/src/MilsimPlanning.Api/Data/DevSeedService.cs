@@ -68,8 +68,9 @@ public static class DevSeedService
     {
         var eventsWithoutMembership = await db.Events
             .Include(e => e.Faction)
-            .Where(e => !db.EventMemberships.Any(m =>
-                m.EventId == e.Id && m.UserId == e.Faction.CommanderId))
+            .Where(e => e.Faction != null &&
+                        !db.EventMemberships.Any(m =>
+                            m.EventId == e.Id && m.UserId == e.Faction.CommanderId))
             .ToListAsync();
 
         foreach (var evt in eventsWithoutMembership)

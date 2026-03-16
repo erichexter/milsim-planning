@@ -2,12 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http, HttpResponse } from "msw";
+import { server } from "../mocks/server";
 import { PlayerEventPage } from "../pages/events/PlayerEventPage";
 
 // Mock all child tabs so tests focus on PlayerEventPage navigation logic
 vi.mock("../components/player/MyAssignmentTab", () => ({
   MyAssignmentTab: ({ eventId }: { eventId: string }) => (
     <div data-testid="my-assignment-tab">Assignment tab for {eventId}</div>
+  ),
+}));
+
+// Mock PlayerOverviewTab — it makes 4+ API calls; not the subject of these tests
+vi.mock("../components/player/PlayerOverviewTab", () => ({
+  PlayerOverviewTab: ({ eventId }: { eventId: string }) => (
+    <div data-testid="player-overview-tab">Overview for {eventId}</div>
   ),
 }));
 
@@ -41,11 +50,17 @@ function renderPlayerEventPage(eventId = "test-event-123") {
 describe("PlayerEventPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // PlayerEventPage queries roster-change-requests/mine directly
+    server.use(
+      http.get("/api/events/:id/roster-change-requests/mine", () =>
+        HttpResponse.json(null, { status: 204 })
+      )
+    );
   });
 
-  it("renders_MyAssignmentTab_by_default", () => {
+  it("renders_overview_tab_by_default", () => {
     renderPlayerEventPage();
-    expect(screen.getByTestId("my-assignment-tab")).toBeInTheDocument();
+    expect(screen.getByTestId("player-overview-tab")).toBeInTheDocument();
   });
 
   it("renders_bottomTabBar_on_mobile", () => {
@@ -69,8 +84,8 @@ describe("PlayerEventPage", () => {
 
   it("switching_tabs_renders_correct_content", () => {
     renderPlayerEventPage();
-    // Assignment tab should be active by default
-    expect(screen.getByTestId("my-assignment-tab")).toBeInTheDocument();
+    // Overview tab should be active by default
+    expect(screen.getByTestId("player-overview-tab")).toBeInTheDocument();
     // Click "Roster" tab button (find one in mobile nav which has min-h-[56px])
     const allButtons = screen.getAllByRole("button");
     const mobileRosterBtn = allButtons.find(
@@ -87,13 +102,10 @@ describe("PlayerEventPage", () => {
     }
   });
 
-  it("callsign_displays_with_orange_monospace_style", () => {
-    // MyAssignmentTab handles callsign display — this test verifies it's rendered
+  it("overview_tab_renders_for_event", () => {
+    // PlayerOverviewTab is mocked; verify it receives the eventId
     renderPlayerEventPage();
-    // The mocked MyAssignmentTab is rendered as the default tab
-    expect(screen.getByTestId("my-assignment-tab")).toBeInTheDocument();
-    // The actual callsign styling (font-mono text-2xl font-bold text-orange-500) is in MyAssignmentTab
-    // which is tested separately. Here we verify the tab renders.
-    expect(screen.getByText(/Assignment tab for/)).toBeInTheDocument();
+    expect(screen.getByTestId("player-overview-tab")).toBeInTheDocument();
+    expect(screen.getByText(/Overview for test-event-123/)).toBeInTheDocument();
   });
 });

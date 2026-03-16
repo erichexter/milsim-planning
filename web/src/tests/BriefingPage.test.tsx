@@ -51,7 +51,7 @@ describe('BriefingPage', () => {
   });
 
   it('renders Add Section button for commander role', async () => {
-    setRoleToken('Commander');
+    setRoleToken('faction_commander');
     server.use(http.get('/api/events/evt-1/info-sections', () => HttpResponse.json([])));
 
     renderPage();

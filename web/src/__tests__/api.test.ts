@@ -48,13 +48,14 @@ describe('api client', () => {
 
   it('throws on non-ok response', async () => {
     clearToken();
+    // Use 403 Forbidden — 401 is handled specially (redirects, returns undefined, does not throw)
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      status: 401,
-      statusText: 'Unauthorized',
-      json: async () => ({ error: 'Unauthorized' }),
+      status: 403,
+      statusText: 'Forbidden',
+      json: async () => ({ error: 'Forbidden' }),
     });
 
-    await expect(api.get('/test')).rejects.toThrow('Unauthorized');
+    await expect(api.get('/test')).rejects.toThrow('Forbidden');
   });
 });

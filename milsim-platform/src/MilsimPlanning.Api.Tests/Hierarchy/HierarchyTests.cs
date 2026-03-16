@@ -33,6 +33,7 @@ public class HierarchyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
     protected HttpClient _playerClient = null!;
     protected HttpClient _outsiderPlayerClient = null!;
     protected Guid _eventId;
+    protected string _commanderUserId = string.Empty;
 
     public HierarchyTestsBase(PostgreSqlFixture fixture)
     {
@@ -94,6 +95,7 @@ public class HierarchyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         await userManager.CreateAsync(commander, "TestPass123!");
         await userManager.AddToRoleAsync(commander, "faction_commander");
         commander.Profile = new UserProfile { UserId = commander.Id, Callsign = "Commander", DisplayName = "Commander", User = commander };
+        _commanderUserId = commander.Id;
 
         // Create player (member of the event)
         var playerEmail = $"hier-player-{Guid.NewGuid():N}@test.com";
@@ -342,5 +344,327 @@ public class RosterViewTests : HierarchyTestsBase
         platoon.Squads.Should().ContainSingle(s => s.Name == "A-1");
         platoon.Squads[0].Players.Should().HaveCount(1);
         roster.UnassignedPlayers.Should().HaveCount(1);
+    }
+}
+
+// ── AssignToPlatoon ──────────────────────────────────────────────────────────
+
+[Trait("Category", "HIER_AssignPlatoon")]
+public class AssignPlatoonTests : HierarchyTestsBase
+{
+    public AssignPlatoonTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task AssignPlayerToPlatoon_SetsPlatoonId_ClearsSquadId()
+    {
+        // Seed a player and put them in a squad first
+        var playerId = await SeedEventPlayer(_eventId, $"pltn-{Guid.NewGuid():N}@test.com");
+        var squadId = await SeedSquad(_eventId, "Alpha-1");
+
+        await _commanderClient.PutAsJsonAsync(
+            $"/api/event-players/{playerId}/squad",
+            new { squadId });
+
+        // Get platoon that owns the squad
+        using var db = GetDb();
+        var player = await db.EventPlayers.FindAsync(playerId);
+        var platoonId = player!.PlatoonId!.Value;
+
+        // Now assign directly to the platoon (HQ slot) — squad should clear
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/event-players/{playerId}/platoon",
+            new { platoonId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent,
+            because: "assigning to a valid platoon slot should succeed");
+
+        using var db2 = GetDb();
+        var updated = await db2.EventPlayers.FindAsync(playerId);
+        updated!.PlatoonId.Should().Be(platoonId,
+            because: "player should be in the platoon HQ slot");
+        updated.SquadId.Should().BeNull(
+            because: "platoon-level assignment clears squad assignment");
+    }
+
+    [Fact]
+    public async Task AssignPlayerToPlatoon_WrongEvent_Returns403()
+    {
+        // Seed a player in our event
+        var playerId = await SeedEventPlayer(_eventId, $"pltn-idor-{Guid.NewGuid():N}@test.com");
+
+        // Create a platoon in a different event (no faction link for simplicity — use raw DB seed)
+        Guid foreignPlatoonId;
+        {
+            using var db = GetDb();
+            var foreignEventId = Guid.NewGuid();
+            var foreignFactionId = Guid.NewGuid();
+            // Reuse commander as the foreign faction's commander to satisfy FK on AspNetUsers
+            var foreignFaction = new Faction { Id = foreignFactionId, Name = "Foreign Faction", CommanderId = _commanderUserId, EventId = foreignEventId };
+            var foreignEvent = new Event { Id = foreignEventId, Name = "Foreign Event", Status = EventStatus.Draft, FactionId = foreignFactionId, Faction = foreignFaction };
+            db.Events.Add(foreignEvent);
+            var foreignPlatoon = new Platoon { FactionId = foreignFactionId, Name = "Foreign Platoon", Order = 1 };
+            db.Platoons.Add(foreignPlatoon);
+            await db.SaveChangesAsync();
+            foreignPlatoonId = foreignPlatoon.Id;
+        }
+
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/event-players/{playerId}/platoon",
+            new { platoonId = foreignPlatoonId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            because: "assigning to a platoon from a different event violates IDOR protection");
+    }
+}
+
+// ── SetRole ──────────────────────────────────────────────────────────────────
+
+[Trait("Category", "HIER_SetRole")]
+public class SetRoleTests : HierarchyTestsBase
+{
+    public SetRoleTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task SetRole_ValidLabel_PersistsRole()
+    {
+        var playerId = await SeedEventPlayer(_eventId, $"role-{Guid.NewGuid():N}@test.com");
+
+        var response = await _commanderClient.PatchAsJsonAsync(
+            $"/api/event-players/{playerId}/role",
+            new { role = "Platoon Sergeant" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var db = GetDb();
+        var player = await db.EventPlayers.FindAsync(playerId);
+        player!.Role.Should().Be("Platoon Sergeant");
+    }
+
+    [Fact]
+    public async Task SetRole_NullValue_ClearsRole()
+    {
+        // Seed player with a role already set
+        var playerId = await SeedEventPlayer(_eventId, $"role-clear-{Guid.NewGuid():N}@test.com");
+        await _commanderClient.PatchAsJsonAsync(
+            $"/api/event-players/{playerId}/role",
+            new { role = "Squad Leader" });
+
+        // Now clear it
+        var response = await _commanderClient.PatchAsJsonAsync(
+            $"/api/event-players/{playerId}/role",
+            new { role = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var db = GetDb();
+        var player = await db.EventPlayers.FindAsync(playerId);
+        player!.Role.Should().BeNull(because: "null role should clear the field");
+    }
+}
+
+// ── BulkAssign ───────────────────────────────────────────────────────────────
+
+[Trait("Category", "HIER_BulkAssign")]
+public class BulkAssignTests : HierarchyTestsBase
+{
+    public BulkAssignTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task BulkAssign_ToSquad_AssignsAllPlayers()
+    {
+        var p1 = await SeedEventPlayer(_eventId, $"bulk1-{Guid.NewGuid():N}@test.com");
+        var p2 = await SeedEventPlayer(_eventId, $"bulk2-{Guid.NewGuid():N}@test.com");
+        var p3 = await SeedEventPlayer(_eventId, $"bulk3-{Guid.NewGuid():N}@test.com");
+        var squadId = await SeedSquad(_eventId, "Alpha-1");
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/players/bulk-assign",
+            new { playerIds = new[] { p1, p2, p3 }, destination = $"squad:{squadId}" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var db = GetDb();
+        foreach (var pid in new[] { p1, p2, p3 })
+        {
+            var player = await db.EventPlayers.FindAsync(pid);
+            player!.SquadId.Should().Be(squadId,
+                because: $"player {pid} should be assigned to squad {squadId}");
+        }
+    }
+
+    [Fact]
+    public async Task BulkAssign_ToPlatoon_SetsPlatoonIdClearsSquad()
+    {
+        var p1 = await SeedEventPlayer(_eventId, $"bulkpltn1-{Guid.NewGuid():N}@test.com");
+        var p2 = await SeedEventPlayer(_eventId, $"bulkpltn2-{Guid.NewGuid():N}@test.com");
+
+        // Get the event's faction platoon (seeded in HierarchyTestsBase)
+        using var db = GetDb();
+        var faction = await db.Factions.FirstAsync(f => f.EventId == _eventId);
+        var platoon = new Platoon { FactionId = faction.Id, Name = "HQ Platoon", Order = 99 };
+        db.Platoons.Add(platoon);
+        await db.SaveChangesAsync();
+        var platoonId = platoon.Id;
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/players/bulk-assign",
+            new { playerIds = new[] { p1, p2 }, destination = $"platoon:{platoonId}" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var db2 = GetDb();
+        foreach (var pid in new[] { p1, p2 })
+        {
+            var player = await db2.EventPlayers.FindAsync(pid);
+            player!.PlatoonId.Should().Be(platoonId);
+            player.SquadId.Should().BeNull(
+                because: "platoon assignment clears squad");
+        }
+    }
+
+    [Fact]
+    public async Task BulkAssign_SquadFromAnotherEvent_Returns403()
+    {
+        var playerId = await SeedEventPlayer(_eventId, $"bulk-idor-{Guid.NewGuid():N}@test.com");
+
+        // Create a squad in a foreign event
+        Guid foreignSquadId;
+        {
+            using var db = GetDb();
+            var foreignEventId = Guid.NewGuid();
+            var foreignFactionId = Guid.NewGuid();
+            // Reuse commander as the foreign faction's commander to satisfy FK on AspNetUsers
+            var foreignFaction = new Faction { Id = foreignFactionId, Name = "Foreign Faction", CommanderId = _commanderUserId, EventId = foreignEventId };
+            var foreignEvent = new Event { Id = foreignEventId, Name = "Foreign Event", Status = EventStatus.Draft, FactionId = foreignFactionId, Faction = foreignFaction };
+            db.Events.Add(foreignEvent);
+            var foreignPlatoon = new Platoon { FactionId = foreignFactionId, Name = "Foreign Platoon", Order = 1 };
+            db.Platoons.Add(foreignPlatoon);
+            await db.SaveChangesAsync();
+            var foreignSquad = new Squad { PlatoonId = foreignPlatoon.Id, Name = "Foreign Squad", Order = 1 };
+            db.Squads.Add(foreignSquad);
+            await db.SaveChangesAsync();
+            foreignSquadId = foreignSquad.Id;
+        }
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/players/bulk-assign",
+            new { playerIds = new[] { playerId }, destination = $"squad:{foreignSquadId}" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            because: "squad belongs to a different event (IDOR protection)");
+    }
+
+    [Fact]
+    public async Task BulkAssign_InvalidDestinationFormat_Returns400()
+    {
+        var playerId = await SeedEventPlayer(_eventId, $"bulk-bad-{Guid.NewGuid():N}@test.com");
+
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/players/bulk-assign",
+            new { playerIds = new[] { playerId }, destination = "invalid:abc123" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            because: "destination format must be 'squad:{id}' or 'platoon:{id}'");
+    }
+}
+
+// ── Callsign Precedence (HierarchyService) ───────────────────────────────────
+
+[Trait("Category", "HIER_CallsignPrecedence")]
+public class CallsignPrecedenceTests : HierarchyTestsBase
+{
+    public CallsignPrecedenceTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetRoster_ProfileCallsignOverridesRosterCallsign()
+    {
+        // Seed an EventPlayer with a roster callsign and link them to an AppUser
+        // whose UserProfile has a different callsign — profile callsign should win.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var email = $"profile-cs-{Guid.NewGuid():N}@test.com";
+        var appUser = new AppUser { UserName = email, Email = email, EmailConfirmed = true };
+        await userManager.CreateAsync(appUser, "TestPass123!");
+        await userManager.AddToRoleAsync(appUser, "player");
+
+        // UserProfile callsign = "GHOSTRIDER" (the one that should win)
+        appUser.Profile = new UserProfile
+        {
+            UserId = appUser.Id,
+            Callsign = "GHOSTRIDER",
+            DisplayName = "Ghost",
+            User = appUser
+        };
+        await db.SaveChangesAsync();
+
+        // EventPlayer with roster callsign "ALPHA-1" (should be overridden)
+        var eventPlayer = new EventPlayer
+        {
+            EventId = _eventId,
+            Email = email,
+            Name = "Profile User",
+            Callsign = "ALPHA-1",     // roster callsign — should NOT appear in roster output
+            UserId = appUser.Id       // linked to AppUser
+        };
+        db.EventPlayers.Add(eventPlayer);
+        db.EventMemberships.Add(new EventMembership { EventId = _eventId, UserId = appUser.Id, Role = "player" });
+        await db.SaveChangesAsync();
+
+        // GET roster — player callsign should be profile callsign
+        var response = await _playerClient.GetAsync($"/api/events/{_eventId}/roster");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var roster = await response.Content.ReadFromJsonAsync<RosterHierarchyDto>();
+        var player = roster!.UnassignedPlayers.FirstOrDefault(p => p.Name == "Profile User");
+        player.Should().NotBeNull(because: "player should appear in the unassigned list");
+        player!.Callsign.Should().Be("GHOSTRIDER",
+            because: "profile callsign takes precedence over roster CSV callsign");
+    }
+
+    [Fact]
+    public async Task GetRoster_BlankProfileCallsign_FallsBackToRosterCallsign()
+    {
+        // Seed an EventPlayer linked to a user whose profile has no callsign set.
+        // Roster callsign should be used as the fallback.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var email = $"blank-cs-{Guid.NewGuid():N}@test.com";
+        var appUser = new AppUser { UserName = email, Email = email, EmailConfirmed = true };
+        await userManager.CreateAsync(appUser, "TestPass123!");
+        await userManager.AddToRoleAsync(appUser, "player");
+
+        // UserProfile with blank callsign
+        appUser.Profile = new UserProfile
+        {
+            UserId = appUser.Id,
+            Callsign = "",    // blank — should not override roster callsign
+            DisplayName = "Blank CS User",
+            User = appUser
+        };
+        await db.SaveChangesAsync();
+
+        var eventPlayer = new EventPlayer
+        {
+            EventId = _eventId,
+            Email = email,
+            Name = "Blank CS User",
+            Callsign = "BRAVO-2",   // roster callsign — should be used as fallback
+            UserId = appUser.Id
+        };
+        db.EventPlayers.Add(eventPlayer);
+        db.EventMemberships.Add(new EventMembership { EventId = _eventId, UserId = appUser.Id, Role = "player" });
+        await db.SaveChangesAsync();
+
+        var response = await _playerClient.GetAsync($"/api/events/{_eventId}/roster");
+        var roster = await response.Content.ReadFromJsonAsync<RosterHierarchyDto>();
+
+        var player = roster!.UnassignedPlayers.FirstOrDefault(p => p.Name == "Blank CS User");
+        player.Should().NotBeNull();
+        player!.Callsign.Should().Be("BRAVO-2",
+            because: "blank profile callsign falls back to the roster CSV callsign");
     }
 }

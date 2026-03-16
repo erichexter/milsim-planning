@@ -54,7 +54,7 @@ describe('MapResourcesPage', () => {
     expect(screen.getByText('route alpha')).toBeInTheDocument();
   });
 
-  it('renders file resource card with download button', async () => {
+  it('renders file resource card with open button', async () => {
     setRoleToken('Player');
     server.use(
       http.get('/api/events/evt-1/map-resources', () =>
@@ -63,9 +63,10 @@ describe('MapResourcesPage', () => {
             id: 'res-file',
             externalUrl: null,
             instructions: null,
-            r2Key: null,
+            r2Key: 'maps/satellite.jpg',
             friendlyName: 'satellite.jpg',
-            contentType: 'image/jpeg',
+            contentType: 'application/octet-stream', // non-viewable: no eager download-url fetch
+            isFile: true,
             order: 0,
           },
         ])
@@ -75,6 +76,6 @@ describe('MapResourcesPage', () => {
     renderPage();
     const fileNameMatches = await screen.findAllByText('satellite.jpg');
     expect(fileNameMatches.length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Download' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument();
   });
 });

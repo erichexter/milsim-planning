@@ -31,7 +31,7 @@ function renderPage() {
 
 describe('NotificationBlastPage', () => {
   it('renders subject and body inputs', async () => {
-    setRoleToken('Commander');
+    setRoleToken('faction_commander');
     server.use(
       http.get('/api/events/evt-1/notification-blasts', () => HttpResponse.json([]))
     );
@@ -42,7 +42,7 @@ describe('NotificationBlastPage', () => {
   });
 
   it('keeps Send button disabled when subject is empty', async () => {
-    setRoleToken('Commander');
+    setRoleToken('faction_commander');
     server.use(
       http.get('/api/events/evt-1/notification-blasts', () => HttpResponse.json([]))
     );
@@ -53,7 +53,7 @@ describe('NotificationBlastPage', () => {
   });
 
   it('renders blast history table with data', async () => {
-    setRoleToken('Commander');
+    setRoleToken('faction_commander');
     server.use(
       http.get('/api/events/evt-1/notification-blasts', () =>
         HttpResponse.json([
