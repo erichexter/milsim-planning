@@ -89,11 +89,11 @@ Plans:
   3. Player can download maps and documents for offline use from a mobile phone (44px touch targets, responsive layout)
   4. Player can submit a roster change request and receive an email when it is approved or denied
   5. Commander can view all pending change requests, approve or deny each, and the roster updates automatically on approval
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Player event dashboard and roster view (mobile-first, callsign-prominent)
-- [ ] 04-02: Roster change request workflow (submit, review, approve/deny, notify)
+- [ ] 04-01-PLAN.md — RosterChangeRequest entity + Phase4Schema migration + RosterChangeRequestsController (RCHG-01..05) + PlayerController /my-assignment (PLAY-01) + Wave 0 integration test stubs
+- [ ] 04-02-PLAN.md — main.tsx full routing setup + PlayerEventPage mobile tab bar + MyAssignmentTab + ChangeRequestsPage commander review + DashboardPage player extension (PLAY-02..06) + Wave 0 component test stubs
 
 ## Progress
 
