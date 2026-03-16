@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { EventBreadcrumb } from '../EventBreadcrumb';
 import { ChangeRequestForm } from './ChangeRequestForm';
 import { PendingRequestCard } from './PendingRequestCard';
 
@@ -80,6 +81,8 @@ export function MyAssignmentTab({ eventId }: MyAssignmentTabProps) {
 
   return (
     <div className="space-y-4">
+      <EventBreadcrumb eventId={eventId} page="My Assignment" />
+
       {/* Assignment Card */}
       <Card>
         <CardHeader className="pb-2">
