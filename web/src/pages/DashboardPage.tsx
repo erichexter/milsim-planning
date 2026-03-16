@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { CreateEventDialog } from './events/CreateEventDialog';
 
 export function DashboardPage() {
   const { user, logout } = useAuth();
@@ -45,7 +46,10 @@ export function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">Your Events</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Your Events</h2>
+          {isCommander && <CreateEventDialog />}
+        </div>
         {isLoading && <p className="text-muted-foreground">Loading events...</p>}
         {!isLoading && events.length === 0 && (
           <p className="text-muted-foreground">You are not enrolled in any events.</p>
