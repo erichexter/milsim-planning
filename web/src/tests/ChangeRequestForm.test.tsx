@@ -120,7 +120,7 @@ describe("ChangeRequestForm", () => {
     ]);
     vi.mocked(api.getRoster).mockResolvedValue({
       platoons: [
-        { id: "p-1", name: "Alpha Platoon", squads: [{ id: "s-1", name: "Alpha-1", players: [] }] },
+        { id: "p-1", name: "Alpha Platoon", isCommandElement: false, hqPlayers: [], squads: [{ id: "s-1", name: "Alpha-1", players: [] }] },
       ],
       unassignedPlayers: [],
     });

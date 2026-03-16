@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { api, PlatoonDto, PlayerDto } from '../../lib/api';
+import { api } from '../../lib/api';
+import type { PlatoonDto, PlayerDto } from '../../lib/api';
 import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 import {
   Accordion,

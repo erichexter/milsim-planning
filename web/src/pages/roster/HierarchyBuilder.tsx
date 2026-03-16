@@ -2,7 +2,8 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { api, PlatoonDto } from '../../lib/api';
+import { api } from '../../lib/api';
+import type { PlatoonDto } from '../../lib/api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { EventBreadcrumb } from '../../components/EventBreadcrumb';
@@ -482,7 +483,7 @@ function AssignmentCell({
 // ── Inline editable role cell ─────────────────────────────────────────────────
 
 function RoleCell({
-  playerId,
+  playerId: _playerId,
   role,
   onSave,
 }: {
