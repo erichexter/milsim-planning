@@ -62,10 +62,12 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
 
 // ── R2 / Cloudflare S3-compatible storage ────────────────────────────────────
-// Use LocalFileService in dev when real R2 credentials are not configured.
-var r2AccountId = builder.Configuration["R2:AccountId"];
+// Use LocalFileService when R2 credentials are absent or placeholder values.
+// Real Cloudflare account IDs are 32-char hex strings — anything else is a placeholder.
+var r2AccountId = builder.Configuration["R2:AccountId"] ?? "";
 var useLocalStorage = string.IsNullOrWhiteSpace(r2AccountId)
-    || r2AccountId == "your-account-id";
+    || r2AccountId.Contains("placeholder", StringComparison.OrdinalIgnoreCase)
+    || r2AccountId.Contains("your-", StringComparison.OrdinalIgnoreCase);
 
 // LocalFileService is always registered so DevUploadController can resolve it.
 // In production it is never used for IFileService and no presigned URLs point at it.
