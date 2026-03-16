@@ -4,12 +4,14 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AppLayout } from './components/AppLayout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { MagicLinkRequestPage } from './pages/auth/MagicLinkRequestPage';
 import { MagicLinkConfirmPage } from './pages/auth/MagicLinkConfirmPage';
 import { PasswordResetRequestPage } from './pages/auth/PasswordResetRequestPage';
 import { PasswordResetConfirmPage } from './pages/auth/PasswordResetConfirmPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { EventList } from './pages/events/EventList';
 import { EventDetail } from './pages/events/EventDetail';
 import { PlayerEventPage } from './pages/events/PlayerEventPage';
@@ -32,32 +34,38 @@ const router = createBrowserRouter([
   { path: '/auth/reset-password', element: <PasswordResetConfirmPage /> },
   { path: '/auth/forgot-password', element: <PasswordResetRequestPage /> },
 
-  // ── Authenticated routes ───────────────────────────────────────────────────
+  // ── Authenticated routes (all wrapped in AppLayout for global header) ─────
   {
     element: <ProtectedRoute />,
     children: [
-      // Redirect root to dashboard
-      { index: true, path: '/', element: <Navigate to="/dashboard" replace /> },
-      { path: '/dashboard', element: <DashboardPage /> },
-      { path: '/events', element: <EventList /> },
-      { path: '/events/:id', element: <EventDetail /> },
-
-      // Player-facing event view (all authenticated roles can access)
-      { path: '/events/:id/player', element: <PlayerEventPage /> },
-
-      // Event content pages (all authenticated users)
-      { path: '/events/:id/briefing', element: <BriefingPage /> },
-      { path: '/events/:id/maps', element: <MapResourcesPage /> },
-      { path: '/events/:id/roster', element: <RosterView /> },
-      { path: '/events/:id/notifications', element: <NotificationBlastPage /> },
-
-      // Commander-only routes — redirect non-commanders to /dashboard
       {
-        element: <ProtectedRoute requiredRole="faction_commander" />,
+        element: <AppLayout />,
         children: [
-          { path: '/events/:id/change-requests', element: <ChangeRequestsPage /> },
-          { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
-          { path: '/events/:id/roster/import', element: <CsvImportPage /> },
+          // Redirect root to dashboard
+          { index: true, path: '/', element: <Navigate to="/dashboard" replace /> },
+          { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/profile', element: <ProfilePage /> },
+          { path: '/events', element: <EventList /> },
+          { path: '/events/:id', element: <EventDetail /> },
+
+          // Player-facing event view (all authenticated roles can access)
+          { path: '/events/:id/player', element: <PlayerEventPage /> },
+
+          // Event content pages (all authenticated users)
+          { path: '/events/:id/briefing', element: <BriefingPage /> },
+          { path: '/events/:id/maps', element: <MapResourcesPage /> },
+          { path: '/events/:id/roster', element: <RosterView /> },
+          { path: '/events/:id/notifications', element: <NotificationBlastPage /> },
+
+          // Commander-only routes — redirect non-commanders to /dashboard
+          {
+            element: <ProtectedRoute requiredRole="faction_commander" />,
+            children: [
+              { path: '/events/:id/change-requests', element: <ChangeRequestsPage /> },
+              { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
+              { path: '/events/:id/roster/import', element: <CsvImportPage /> },
+            ],
+          },
         ],
       },
     ],

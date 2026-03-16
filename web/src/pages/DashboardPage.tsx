@@ -4,11 +4,10 @@ import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
 import { CreateEventDialog } from './events/CreateEventDialog';
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const { data: events = [], isLoading } = useQuery({
@@ -28,22 +27,7 @@ export function DashboardPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome, {user?.callsign || user?.email}
-          </p>
-          {user?.role && (
-            <Badge variant="secondary" className="mt-1">
-              {user.role}
-            </Badge>
-          )}
-        </div>
-        <Button variant="outline" onClick={() => void logout()}>
-          Logout
-        </Button>
-      </div>
+      <h1 className="text-2xl font-bold">Dashboard</h1>
 
       <div>
         <div className="flex items-center justify-between mb-3">

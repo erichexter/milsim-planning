@@ -139,7 +139,17 @@ export const api = {
     request<NotificationBlast[]>(`/events/${eventId}/notification-blasts`),
   createNotificationBlast: (eventId: string, payload: { subject: string; body: string }) =>
     request<{ blastId: string; recipientCount: number }>(`/events/${eventId}/notification-blasts`, { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Profile
+  getProfile: () => request<UserProfile>('/profile'),
 };
+
+export interface UserProfile {
+  email: string;
+  callsign: string | null;
+  displayName: string | null;
+  role: string;
+}
 
 // ─── Type exports ───────────────────────────────────────────────────────────
 

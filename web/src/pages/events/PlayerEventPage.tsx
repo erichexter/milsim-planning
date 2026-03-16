@@ -21,7 +21,11 @@ export function PlayerEventPage() {
   function renderContent() {
     switch (activeTab) {
       case 'assignment':
-        return <MyAssignmentTab eventId={eventId!} />;
+        return (
+          <div className="mx-auto max-w-4xl space-y-6 p-6">
+            <MyAssignmentTab eventId={eventId!} />
+          </div>
+        );
       case 'roster':
         // RosterView uses useParams internally (reads 'id') — works because we're under /events/:id
         return <RosterView />;
@@ -34,7 +38,7 @@ export function PlayerEventPage() {
   }
 
   return (
-    <div className="flex flex-col h-dvh">
+    <div className="flex flex-col">
       {/* ── Desktop top nav (hidden on mobile) ─────────────────────────── */}
       <nav className="hidden md:flex border-b bg-background shrink-0">
         {TABS.map((tab) => (
@@ -53,7 +57,7 @@ export function PlayerEventPage() {
       </nav>
 
       {/* ── Content area ─────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto pb-16 md:pb-0 p-4">
+      <div className="pb-16 md:pb-0">
         {renderContent()}
       </div>
 
