@@ -41,7 +41,10 @@ public class FileService : IFileService
             throw new ValidationException($"File type '{contentType}' is not permitted.");
 
         var uploadId = Guid.NewGuid();
-        var r2Key = $"events/{eventId}/resources/{resourceId}/files/{uploadId}/{fileName}";
+        // Sanitize filename for use as an S3/R2 key — spaces and special chars can
+        // break presigned URL signatures. The original friendly name is stored separately.
+        var safeFileName = System.Text.RegularExpressions.Regex.Replace(fileName, @"[^\w.\-]", "_");
+        var r2Key = $"events/{eventId}/resources/{resourceId}/files/{uploadId}/{safeFileName}";
 
         var request = new GetPreSignedUrlRequest
         {
