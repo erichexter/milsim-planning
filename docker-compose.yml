@@ -1,0 +1,59 @@
+services:
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: milsim_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5000:5000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=milsim_dev;Username=postgres;Password=postgres"
+      Jwt__Issuer: milsim-platform
+      Jwt__Audience: milsim-platform
+      Jwt__Secret: dev-placeholder-secret-32-chars!!
+      AppUrl: http://localhost:5173
+      Resend__ApiKey: re_placeholder
+      R2__AccountId: placeholder
+      R2__AccessKeyId: placeholder
+      R2__SecretAccessKey: placeholder
+      R2__BucketName: milsim-dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://api:5000
+    volumes:
+      # Mount source for hot reload — node_modules stays in container
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+      - ./web/index.html:/app/index.html
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

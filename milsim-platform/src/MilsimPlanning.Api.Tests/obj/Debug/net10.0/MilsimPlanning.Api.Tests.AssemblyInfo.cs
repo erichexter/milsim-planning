@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MilsimPlanning.Api.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5722f93c43caf06ecba9ce1150908b86fd68f501")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bf7812e651fbbc27f8d67a51fee5423a3919c895")]
 [assembly: System.Reflection.AssemblyProductAttribute("MilsimPlanning.Api.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MilsimPlanning.Api.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

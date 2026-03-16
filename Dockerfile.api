@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Restore dependencies first (layer cache)
+COPY milsim-platform/src/MilsimPlanning.Api/MilsimPlanning.Api.csproj milsim-platform/src/MilsimPlanning.Api/
+RUN dotnet restore milsim-platform/src/MilsimPlanning.Api/MilsimPlanning.Api.csproj
+
+# Build and publish
+COPY milsim-platform/src/MilsimPlanning.Api/ milsim-platform/src/MilsimPlanning.Api/
+RUN dotnet publish milsim-platform/src/MilsimPlanning.Api/MilsimPlanning.Api.csproj \
+    -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 5000
+ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_ENVIRONMENT=Development
+ENTRYPOINT ["dotnet", "MilsimPlanning.Api.dll"]

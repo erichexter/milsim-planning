@@ -1,0 +1,15 @@
+# .NET build artifacts
+milsim-platform/**/bin/
+milsim-platform/**/obj/
+
+# Node
+web/node_modules/
+web/dist/
+web/@/
+
+# Git / planning
+.git/
+.planning/
+
+# Test containers don't belong in image
+milsim-platform/src/MilsimPlanning.Api.Tests/
