@@ -21,7 +21,7 @@ export function BriefingPage() {
   if (isLoading) return <div className="p-6">Loading briefing...</div>;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="mx-auto max-w-4xl lg:max-w-5xl space-y-4 p-6">
       <EventBreadcrumb eventId={resolvedEventId} page="Briefing" />
       <h1 className="text-2xl font-bold">Briefing</h1>
       <SectionList

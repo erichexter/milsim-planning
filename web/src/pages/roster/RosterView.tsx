@@ -65,7 +65,7 @@ export function RosterView() {
   const regularPlatoons = filtered.platoons.filter((p) => !p.isCommandElement);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-4">
+    <div className="p-6 max-w-3xl lg:max-w-5xl mx-auto space-y-4">
       <EventBreadcrumb eventId={eventId!} page="Roster" />
       <h1 className="text-2xl font-bold">Faction Roster</h1>
 

@@ -148,7 +148,7 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
   const hasPendingRequest = myRequest?.status === 'Pending';
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-5">
+    <div className="mx-auto max-w-3xl lg:max-w-5xl space-y-5 p-5">
       <EventBreadcrumb eventId={eventId} page="Overview" />
 
       {/* ── Event header ──────────────────────────────────────────────── */}

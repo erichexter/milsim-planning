@@ -85,7 +85,7 @@ export function MapResourcesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-4xl lg:max-w-5xl space-y-6 p-6">
       <EventBreadcrumb eventId={resolvedEventId} page="Maps" />
       <h1 className="text-2xl font-bold">Map Resources</h1>
 

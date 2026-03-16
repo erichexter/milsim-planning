@@ -103,7 +103,7 @@ export function EventDetail() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-4xl lg:max-w-5xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link to="/dashboard" className="hover:text-foreground transition-colors">
