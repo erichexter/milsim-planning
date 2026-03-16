@@ -7,13 +7,13 @@ namespace MilsimPlanning.Api.Services;
 /// </summary>
 public class LocalFileService : IFileService
 {
-    private readonly string _webRootPath;
+    private readonly string _storageRoot;
     private readonly string _appUrl;
 
     public LocalFileService(IWebHostEnvironment env, IConfiguration config)
     {
-        _webRootPath = env.WebRootPath
-            ?? Path.Combine(env.ContentRootPath, "wwwroot");
+        // Store uploads under ContentRootPath/dev-uploads (works in Docker where WebRootPath is null)
+        _storageRoot = Path.Combine(env.ContentRootPath, "dev-uploads");
         _appUrl = (config["AppUrl"] ?? "http://localhost:5000").TrimEnd('/');
     }
 
@@ -31,16 +31,22 @@ public class LocalFileService : IFileService
 
     public string GenerateDownloadUrl(string r2Key)
     {
-        // Files are served as static content from wwwroot/dev-uploads/
-        return $"{_appUrl}/dev-uploads/{r2Key}";
+        // Served back through DevUploadController GET, proxied via Vite
+        return $"{_appUrl}/api/dev/upload/{r2Key}";
     }
+
+    /// <summary>
+    /// Returns the absolute on-disk path for a given r2Key.
+    /// </summary>
+    public string GetFilePath(string r2Key)
+        => Path.Combine(_storageRoot, r2Key.Replace('/', Path.DirectorySeparatorChar));
 
     /// <summary>
     /// Writes the uploaded bytes to disk. Called by DevUploadController.
     /// </summary>
     public async Task SaveAsync(string r2Key, Stream body)
     {
-        var filePath = Path.Combine(_webRootPath, "dev-uploads", r2Key.Replace('/', Path.DirectorySeparatorChar));
+        var filePath = GetFilePath(r2Key);
         Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
         await using var fs = File.Create(filePath);
         await body.CopyToAsync(fs);
