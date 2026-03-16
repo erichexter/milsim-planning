@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Secure authentication, 5-role RBAC, and full database schema (completed 2026-03-13)
 - [x] **Phase 2: Commander Workflow** - Event management, CSV roster import, and platoon/squad hierarchy (completed 2026-03-13)
 - [x] **Phase 3: Content, Maps & Notifications** - Event briefing content, file storage, and email delivery (completed 2026-03-13)
-- [ ] **Phase 4: Player Experience & Change Requests** - Player dashboard, mobile UI, and roster change workflow
+- [x] **Phase 4: Player Experience & Change Requests** - Player dashboard, mobile UI, and roster change workflow (completed 2026-03-16)
 
 ## Phase Details
 
@@ -92,8 +92,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — RosterChangeRequest entity + Phase4Schema migration + RosterChangeRequestsController (RCHG-01..05) + PlayerController /my-assignment (PLAY-01) + Wave 0 integration test stubs
-- [ ] 04-02-PLAN.md — main.tsx full routing setup + PlayerEventPage mobile tab bar + MyAssignmentTab + ChangeRequestsPage commander review + DashboardPage player extension (PLAY-02..06) + Wave 0 component test stubs
+- [x] 04-01-PLAN.md — RosterChangeRequest entity + Phase4Schema migration + RosterChangeRequestsController (RCHG-01..05) + PlayerController /my-assignment (PLAY-01) + Wave 0 integration test stubs
+- [x] 04-02-PLAN.md — main.tsx full routing setup + PlayerEventPage mobile tab bar + MyAssignmentTab + ChangeRequestsPage commander review + DashboardPage player extension (PLAY-02..06) + Wave 0 component test stubs
 
 ## Progress
 
@@ -105,4 +105,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 4/4 | Complete    | 2026-03-13 |
 | 2. Commander Workflow | 5/5 | Complete    | 2026-03-13 |
 | 3. Content, Maps & Notifications | 9/9 | Complete | 2026-03-13 |
-| 4. Player Experience & Change Requests | 0/2 | Not started | - |
+| 4. Player Experience & Change Requests | 2/2 | Complete    | 2026-03-16 |
