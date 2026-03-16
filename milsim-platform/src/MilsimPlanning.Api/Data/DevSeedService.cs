@@ -53,6 +53,11 @@ public static class DevSeedService
         // ── Backfill missing EventMembership rows for commanders ──────────────
         // Fixes events created before the auto-enroll logic was added to CreateEventAsync.
         await BackfillCommanderMembershipsAsync(db);
+
+        // ── Backfill missing EventMembership rows for roster-imported players ─
+        // Links EventPlayer.UserId and creates EventMembership for any player
+        // whose email matches an existing AppUser but was imported before this fix.
+        await BackfillPlayerMembershipsAsync(userManager, db);
     }
 
     /// <summary>
@@ -79,6 +84,51 @@ public static class DevSeedService
         }
 
         if (eventsWithoutMembership.Count > 0)
+            await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Idempotent backfill: for every EventPlayer whose email matches an AppUser,
+    /// set UserId and create an EventMembership (player role) if not already present.
+    /// Safe to run on every startup.
+    /// </summary>
+    private static async Task BackfillPlayerMembershipsAsync(UserManager<AppUser> userManager, AppDbContext db)
+    {
+        // Find all EventPlayer rows that are either not yet linked or have no membership
+        var unlinkedPlayers = await db.EventPlayers
+            .Where(ep => ep.UserId == null || !db.EventMemberships.Any(m => m.EventId == ep.EventId && m.UserId == ep.UserId))
+            .ToListAsync();
+
+        var changed = false;
+        foreach (var ep in unlinkedPlayers)
+        {
+            var appUser = await userManager.FindByEmailAsync(ep.Email);
+            if (appUser is null) continue;
+
+            // Link UserId
+            if (ep.UserId is null)
+            {
+                ep.UserId = appUser.Id;
+                changed = true;
+            }
+
+            // Upsert membership
+            var alreadyMember = await db.EventMemberships
+                .AnyAsync(m => m.EventId == ep.EventId && m.UserId == appUser.Id);
+            if (!alreadyMember)
+            {
+                db.EventMemberships.Add(new EventMembership
+                {
+                    UserId = appUser.Id,
+                    EventId = ep.EventId,
+                    Role = AppRoles.Player,
+                    JoinedAt = DateTime.UtcNow,
+                });
+                changed = true;
+            }
+        }
+
+        if (changed)
             await db.SaveChangesAsync();
     }
 

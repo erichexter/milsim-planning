@@ -4,7 +4,9 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using MilsimPlanning.Api.Data;
 using MilsimPlanning.Api.Data.Entities;
+using MilsimPlanning.Api.Domain;
 using MilsimPlanning.Api.Models.CsvImport;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace MilsimPlanning.Api.Services;
@@ -14,12 +16,14 @@ public class RosterService
     private readonly AppDbContext _db;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _config;
+    private readonly UserManager<AppUser> _userManager;
 
-    public RosterService(AppDbContext db, IEmailService emailService, IConfiguration config)
+    public RosterService(AppDbContext db, IEmailService emailService, IConfiguration config, UserManager<AppUser> userManager)
     {
         _db = db;
         _emailService = emailService;
         _config = config;
+        _userManager = userManager;
     }
 
     public async Task<CsvValidationResult> ValidateRosterCsvAsync(IFormFile file, Guid eventId)
@@ -171,6 +175,45 @@ public class RosterService
                 existing.TeamAffiliation = row.TeamAffiliation;
                 // existing.PlatoonId — UNTOUCHED
                 // existing.SquadId   — UNTOUCHED
+            }
+        }
+
+        await _db.SaveChangesAsync();
+
+        // For every imported player, if an AppUser with that email already exists:
+        // 1. Link EventPlayer.UserId so the roster shows their account.
+        // 2. Upsert an EventMembership so they can see the event on their dashboard.
+        var allImportedEmails = importedRows
+            .Where(r => !string.IsNullOrWhiteSpace(r.Email))
+            .Select(r => r.Email.ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        foreach (var email in allImportedEmails)
+        {
+            var appUser = await _userManager.FindByEmailAsync(email);
+            if (appUser is null) continue;
+
+            // Link UserId on the EventPlayer row
+            var ep = await _db.EventPlayers
+                .FirstOrDefaultAsync(p => p.EventId == eventId && p.Email == email);
+            if (ep is not null && ep.UserId is null)
+            {
+                ep.UserId = appUser.Id;
+            }
+
+            // Upsert EventMembership
+            var alreadyMember = await _db.EventMemberships
+                .AnyAsync(m => m.EventId == eventId && m.UserId == appUser.Id);
+            if (!alreadyMember)
+            {
+                _db.EventMemberships.Add(new EventMembership
+                {
+                    UserId = appUser.Id,
+                    EventId = eventId,
+                    Role = AppRoles.Player,
+                    JoinedAt = DateTime.UtcNow,
+                });
             }
         }
 
