@@ -1,4 +1,4 @@
-import { getToken } from './auth';
+import { getToken, clearToken } from './auth';
 
 const BASE_URL = '/api';
 
@@ -13,6 +13,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      window.location.href = '/auth/login';
+      return undefined as T;   // navigation is in flight; prevent further processing
+    }
     const error = await response.json().catch(() => ({ error: response.statusText }));
     throw Object.assign(new Error(error.error ?? 'API error'), { status: response.status });
   }
@@ -35,6 +40,11 @@ async function upload<T>(path: string, file: File, fieldName = 'file'): Promise<
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      window.location.href = '/auth/login';
+      return undefined as T;
+    }
     const error = await response.json().catch(() => ({ error: response.statusText }));
     throw Object.assign(new Error(error.error ?? 'API error'), { status: response.status });
   }
