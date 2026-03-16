@@ -131,7 +131,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1 pending — see `.planning/todos/pending/`
+
+- **Faction commander hierarchy management UI** (area: ui) — Audit HierarchyBuilder, add platoon/squad creation flow, player assignment, and consider leader role assignment
 
 ### Blockers/Concerns
 
