@@ -11,6 +11,8 @@ const mockRoster = {
     {
       id: 'plat-1',
       name: 'Alpha',
+      isCommandElement: false,
+      hqPlayers: [],
       squads: [
         {
           id: 'sq-1',
@@ -21,6 +23,7 @@ const mockRoster = {
               name: 'John Smith',
               callsign: 'GHOST',
               teamAffiliation: 'Alpha Team',
+              role: null,
             },
           ],
         },
@@ -28,7 +31,7 @@ const mockRoster = {
     },
   ],
   unassignedPlayers: [
-    { id: 'p2', name: 'Jane Doe', callsign: 'NOVA', teamAffiliation: 'Alpha Team' },
+    { id: 'p2', name: 'Jane Doe', callsign: 'NOVA', teamAffiliation: 'Alpha Team', role: null },
   ],
 };
 

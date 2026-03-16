@@ -11,13 +11,15 @@ const mockHierarchy = {
     {
       id: 'plat-1',
       name: 'Alpha Platoon',
+      isCommandElement: false,
+      hqPlayers: [],
       squads: [
         {
           id: 'squad-1',
           name: 'Alpha 1',
           players: [
-            { id: 'p1', name: 'John Smith', callsign: 'GHOST', teamAffiliation: null },
-            { id: 'p2', name: 'Jane Doe', callsign: 'NOVA', teamAffiliation: null },
+            { id: 'p1', name: 'John Smith', callsign: 'GHOST', teamAffiliation: null, role: null },
+            { id: 'p2', name: 'Jane Doe', callsign: 'NOVA', teamAffiliation: null, role: null },
           ],
         },
       ],
@@ -61,7 +63,7 @@ describe('RosterView', () => {
     );
     await waitFor(() => screen.getByText('John Smith'));
 
-    fireEvent.change(screen.getByPlaceholderText('Search by name or callsign...'), {
+    fireEvent.change(screen.getByPlaceholderText('Search by name, callsign, or role...'), {
       target: { value: 'GHOST' },
     });
 
@@ -82,7 +84,7 @@ describe('RosterView', () => {
     );
     await waitFor(() => screen.getByText('Jane Doe'));
 
-    fireEvent.change(screen.getByPlaceholderText('Search by name or callsign...'), {
+    fireEvent.change(screen.getByPlaceholderText('Search by name, callsign, or role...'), {
       target: { value: 'Jane' },
     });
 

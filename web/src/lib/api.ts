@@ -73,14 +73,16 @@ export const api = {
   // Hierarchy endpoints
   getRoster: (eventId: string) =>
     request<RosterHierarchyDto>(`/events/${eventId}/roster`),
-  createPlatoon: (eventId: string, name: string) =>
-    request<{ id: string; name: string }>(`/events/${eventId}/platoons`, { method: 'POST', body: JSON.stringify({ name }) }),
+  createPlatoon: (eventId: string, name: string, isCommandElement = false) =>
+    request<{ id: string; name: string; isCommandElement: boolean }>(`/events/${eventId}/platoons`, { method: 'POST', body: JSON.stringify({ name, isCommandElement }) }),
   createSquad: (platoonId: string, name: string) =>
     request<{ id: string; name: string }>(`/platoons/${platoonId}/squads`, { method: 'POST', body: JSON.stringify({ name }) }),
   assignSquad: (playerId: string, squadId: string | null) =>
     request<void>(`/event-players/${playerId}/squad`, { method: 'PUT', body: JSON.stringify({ squadId }) }),
   setPlayerRole: (playerId: string, role: string | null) =>
     request<void>(`/event-players/${playerId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  assignPlayerToPlatoon: (playerId: string, platoonId: string | null) =>
+    request<void>(`/event-players/${playerId}/platoon`, { method: 'PUT', body: JSON.stringify({ platoonId }) }),
 
   // Info sections + attachments
   getInfoSections: (eventId: string) =>
@@ -184,6 +186,8 @@ export interface RosterHierarchyDto {
 export interface PlatoonDto {
   id: string;
   name: string;
+  isCommandElement: boolean;
+  hqPlayers: PlayerDto[];
   squads: SquadDto[];
 }
 

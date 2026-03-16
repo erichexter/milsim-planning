@@ -22,7 +22,7 @@ public class HierarchyService
 
     // ── HIER-01: Create Platoon ───────────────────────────────────────────────
 
-    public async Task<Platoon> CreatePlatoonAsync(Guid eventId, string name)
+    public async Task<Platoon> CreatePlatoonAsync(Guid eventId, string name, bool isCommandElement = false)
     {
         var faction = await _db.Factions
             .FirstOrDefaultAsync(f => f.EventId == eventId)
@@ -39,7 +39,8 @@ public class HierarchyService
         {
             FactionId = faction.Id,
             Name = name,
-            Order = maxOrder + 1
+            Order = maxOrder + 1,
+            IsCommandElement = isCommandElement
         };
         _db.Platoons.Add(platoon);
         await _db.SaveChangesAsync();
@@ -155,6 +156,35 @@ public class HierarchyService
         }
     }
 
+    // ── Assign player directly to a platoon (HQ / command element slot) ─────
+
+    public async Task AssignToPlatoonAsync(Guid eventPlayerId, Guid? platoonId)
+    {
+        var player = await _db.EventPlayers
+            .Include(ep => ep.Event)
+                .ThenInclude(e => e.Faction)
+            .FirstOrDefaultAsync(ep => ep.Id == eventPlayerId)
+            ?? throw new KeyNotFoundException($"EventPlayer {eventPlayerId} not found");
+
+        AssertCommanderAccess(player.Event.Faction);
+
+        // IDOR protection: verify platoon belongs to the same event
+        if (platoonId.HasValue)
+        {
+            var platoonBelongsToEvent = await _db.Platoons
+                .AnyAsync(p => p.Id == platoonId.Value && p.Faction.EventId == player.EventId);
+
+            if (!platoonBelongsToEvent)
+                throw new ForbiddenException($"Platoon {platoonId} does not belong to event {player.EventId}");
+        }
+
+        // Set platoon directly; always clear squad (platoon-level assignment has no squad)
+        player.PlatoonId = platoonId;
+        player.SquadId = null;
+
+        await _db.SaveChangesAsync();
+    }
+
     // ── HIER-06: Get Roster Hierarchy (accessible to all faction members) ─────
 
     public async Task<RosterHierarchyDto> GetRosterHierarchyAsync(Guid eventId)
@@ -175,18 +205,24 @@ public class HierarchyService
         var platoonDtos = platoons.Select(p => new PlatoonDto(
             p.Id,
             p.Name,
+            p.IsCommandElement,
+            // HQ players: assigned to this platoon but not to any squad
+            players
+                .Where(ep => ep.PlatoonId == p.Id && ep.SquadId is null)
+                .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
+                .ToList(),
             p.Squads.OrderBy(s => s.Order).Select(s => new SquadDto(
                 s.Id,
                 s.Name,
-                    players
-                        .Where(ep => ep.SquadId == s.Id)
-                        .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
-                        .ToList()
+                players
+                    .Where(ep => ep.SquadId == s.Id)
+                    .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
+                    .ToList()
             )).ToList()
         )).ToList();
 
         var unassigned = players
-            .Where(ep => ep.SquadId is null)
+            .Where(ep => ep.SquadId is null && ep.PlatoonId is null)
             .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
             .ToList();
 

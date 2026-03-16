@@ -22,10 +22,10 @@ public class HierarchyController : ControllerBase
     {
         try
         {
-            var platoon = await _hierarchyService.CreatePlatoonAsync(eventId, request.Name);
+            var platoon = await _hierarchyService.CreatePlatoonAsync(eventId, request.Name, request.IsCommandElement);
             return Created(
                 $"/api/events/{eventId}/platoons/{platoon.Id}",
-                new { id = platoon.Id, name = platoon.Name }
+                new { id = platoon.Id, name = platoon.Name, isCommandElement = platoon.IsCommandElement }
             );
         }
         catch (KeyNotFoundException) { return NotFound(); }
@@ -74,6 +74,21 @@ public class HierarchyController : ControllerBase
         try
         {
             await _hierarchyService.AssignSquadAsync(playerId, request.SquadId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // ── Assign player to platoon (HQ / command element slot) ─────────────────
+
+    [HttpPut("api/event-players/{playerId:guid}/platoon")]
+    [Authorize(Policy = "RequireFactionCommander")]
+    public async Task<IActionResult> AssignPlatoon(Guid playerId, [FromBody] SetPlayerPlatoonRequest request)
+    {
+        try
+        {
+            await _hierarchyService.AssignToPlatoonAsync(playerId, request.PlatoonId);
             return NoContent();
         }
         catch (KeyNotFoundException) { return NotFound(); }

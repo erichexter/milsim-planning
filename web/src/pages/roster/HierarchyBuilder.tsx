@@ -1,11 +1,21 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
-import { SquadCell } from '../../components/hierarchy/SquadCell';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { api, PlatoonDto } from '../../lib/api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { EventBreadcrumb } from '../../components/EventBreadcrumb';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '../../components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
+import { cn } from '../../lib/utils';
 import {
   Table,
   TableBody,
@@ -26,10 +36,13 @@ export function HierarchyBuilder() {
 
   // ── Create platoon ────────────────────────────────────────────────────────
   const [newPlatoonName, setNewPlatoonName] = useState('');
+  const [isCommandElement, setIsCommandElement] = useState(false);
   const createPlatoonMutation = useMutation({
-    mutationFn: (name: string) => api.createPlatoon(eventId!, name),
+    mutationFn: ({ name, isCommandElement }: { name: string; isCommandElement: boolean }) =>
+      api.createPlatoon(eventId!, name, isCommandElement),
     onSuccess: () => {
       setNewPlatoonName('');
+      setIsCommandElement(false);
       void queryClient.invalidateQueries({ queryKey: ['roster', eventId] });
     },
   });
@@ -57,13 +70,24 @@ export function HierarchyBuilder() {
   const allPlayers = useMemo(() => {
     if (!roster) return [];
     const assigned = roster.platoons.flatMap((p) =>
-      p.squads.flatMap((s) =>
-        s.players.map((pl) => ({ ...pl, squadId: s.id, eventId: eventId! }))
-      )
+      [
+        // HQ players (platoon-level, no squad)
+        ...p.hqPlayers.map((pl) => ({
+          ...pl,
+          squadId: null as string | null,
+          platoonId: p.id,
+          eventId: eventId!,
+        })),
+        // Squad players
+        ...p.squads.flatMap((s) =>
+          s.players.map((pl) => ({ ...pl, squadId: s.id, platoonId: p.id, eventId: eventId! }))
+        ),
+      ]
     );
     const unassigned = roster.unassignedPlayers.map((pl) => ({
       ...pl,
       squadId: null as string | null,
+      platoonId: null as string | null,
       eventId: eventId!,
     }));
     return [...assigned, ...unassigned];
@@ -88,6 +112,8 @@ export function HierarchyBuilder() {
   if (!roster) return <div className="p-6">Loading hierarchy...</div>;
 
   const platoons = roster.platoons;
+  const commandElements = platoons.filter((p) => p.isCommandElement);
+  const regularPlatoons = platoons.filter((p) => !p.isCommandElement);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
@@ -97,45 +123,76 @@ export function HierarchyBuilder() {
       {/* ── Structure panel ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* Create platoon */}
+        {/* Create platoon / command element */}
         <div className="border rounded-lg p-4 space-y-3">
-          <h2 className="font-semibold text-sm">Create Platoon</h2>
+          <h2 className="font-semibold text-sm">Create Platoon / Command Element</h2>
           <div className="flex gap-2">
             <Input
-              placeholder="e.g. Alpha Platoon"
+              placeholder={isCommandElement ? 'e.g. Battalion HQ' : 'e.g. Alpha Platoon'}
               value={newPlatoonName}
               onChange={(e) => setNewPlatoonName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && newPlatoonName.trim()) {
-                  createPlatoonMutation.mutate(newPlatoonName.trim());
+                  createPlatoonMutation.mutate({ name: newPlatoonName.trim(), isCommandElement });
                 }
               }}
             />
             <Button
-              onClick={() => createPlatoonMutation.mutate(newPlatoonName.trim())}
+              onClick={() => createPlatoonMutation.mutate({ name: newPlatoonName.trim(), isCommandElement })}
               disabled={!newPlatoonName.trim() || createPlatoonMutation.isPending}
             >
               Add
             </Button>
           </div>
-          {platoons.length > 0 && (
-            <ul className="text-sm space-y-1">
-              {platoons.map((p) => (
-                <li key={p.id} className="text-muted-foreground">
-                  {p.name}
-                  <span className="ml-2 text-xs">
-                    ({p.squads.length} squad{p.squads.length !== 1 ? 's' : ''})
-                  </span>
-                </li>
-              ))}
-            </ul>
+          {/* Command element checkbox */}
+          <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isCommandElement}
+              onChange={(e) => setIsCommandElement(e.target.checked)}
+              className="rounded"
+            />
+            <span>Command Element <span className="text-muted-foreground text-xs">(no squads — for CO, XO, etc.)</span></span>
+          </label>
+
+          {/* Command elements list */}
+          {commandElements.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Command Elements</p>
+              <ul className="text-sm space-y-1">
+                {commandElements.map((p) => (
+                  <li key={p.id} className="text-amber-600 font-medium">
+                    ★ {p.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Regular platoons list */}
+          {regularPlatoons.length > 0 && (
+            <div className="space-y-1">
+              {commandElements.length > 0 && (
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Platoons</p>
+              )}
+              <ul className="text-sm space-y-1">
+                {regularPlatoons.map((p) => (
+                  <li key={p.id} className="text-muted-foreground">
+                    {p.name}
+                    <span className="ml-2 text-xs">
+                      ({p.squads.length} squad{p.squads.length !== 1 ? 's' : ''})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 
-        {/* Create squad */}
+        {/* Create squad — only under regular platoons */}
         <div className="border rounded-lg p-4 space-y-3">
           <h2 className="font-semibold text-sm">Create Squad</h2>
-          {platoons.length === 0 ? (
+          {regularPlatoons.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Create a platoon first.
             </p>
@@ -147,7 +204,7 @@ export function HierarchyBuilder() {
                 onChange={(e) => setSelectedPlatoonId(e.target.value)}
               >
                 <option value="">Select platoon...</option>
-                {platoons.map((p) => (
+                {regularPlatoons.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
@@ -182,7 +239,7 @@ export function HierarchyBuilder() {
                 </Button>
               </div>
               {/* Show existing squads under each platoon */}
-              {platoons.map((p) =>
+              {regularPlatoons.map((p) =>
                 p.squads.length > 0 ? (
                   <div key={p.id} className="text-sm">
                     <span className="font-medium text-muted-foreground">{p.name}:</span>{' '}
@@ -199,7 +256,7 @@ export function HierarchyBuilder() {
       <div>
         <h2 className="text-lg font-semibold mb-2">Assign Players to Squads</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Players are grouped by their Team Affiliation from the CSV. Use the dropdown to assign each player to a squad.
+          Players are grouped by their Team Affiliation from the CSV. Use the dropdown to assign each player to a command element, platoon HQ slot, or squad.
         </p>
 
         {allPlayers.length === 0 && (
@@ -208,7 +265,7 @@ export function HierarchyBuilder() {
           </p>
         )}
 
-        {allSquads.length === 0 && allPlayers.length > 0 && (
+        {allSquads.length === 0 && commandElements.length === 0 && allPlayers.length > 0 && (
           <p className="text-sm text-amber-600 mb-4">
             Create platoons and squads above before assigning players.
           </p>
@@ -223,7 +280,7 @@ export function HierarchyBuilder() {
                   <TableHead>Callsign</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Squad</TableHead>
+                  <TableHead>Assignment</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -241,7 +298,11 @@ export function HierarchyBuilder() {
                       />
                     </TableCell>
                     <TableCell>
-                      <SquadCell player={player} squads={allSquads} />
+                      <AssignmentCell
+                        player={player}
+                        platoons={platoons}
+                        eventId={eventId!}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -251,6 +312,170 @@ export function HierarchyBuilder() {
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Assignment cell — grouped dropdown: command elements, platoon HQ, squads ──
+
+// Value encoding:
+//   ""                  = unassigned
+//   "platoon:{id}"      = platoon-level HQ slot (calls assignPlayerToPlatoon)
+//   "squad:{id}"        = squad assignment (calls assignSquad)
+
+function AssignmentCell({
+  player,
+  platoons,
+  eventId,
+}: {
+  player: { id: string; squadId: string | null; platoonId: string | null; eventId: string };
+  platoons: PlatoonDto[];
+  eventId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const assignSquadMutation = useMutation({
+    mutationFn: (squadId: string | null) => api.assignSquad(player.id, squadId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['roster', eventId] });
+      setOpen(false);
+    },
+  });
+
+  const assignPlatoonMutation = useMutation({
+    mutationFn: (platoonId: string | null) => api.assignPlayerToPlatoon(player.id, platoonId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['roster', eventId] });
+      setOpen(false);
+    },
+  });
+
+  const isPending = assignSquadMutation.isPending || assignPlatoonMutation.isPending;
+
+  // Determine current display label
+  const currentLabel = (() => {
+    if (player.squadId) {
+      const squad = platoons.flatMap((p) => p.squads).find((s) => s.id === player.squadId);
+      return squad?.name ?? null;
+    }
+    if (player.platoonId) {
+      const platoon = platoons.find((p) => p.id === player.platoonId);
+      if (platoon?.isCommandElement) return platoon.name;
+      if (platoon) return `${platoon.name} HQ`;
+    }
+    return null;
+  })();
+
+  const handleSelect = (value: string) => {
+    if (value === '') {
+      // Unassign — clear both squad and platoon
+      assignPlatoonMutation.mutate(null);
+    } else if (value.startsWith('platoon:')) {
+      const platoonId = value.slice('platoon:'.length);
+      assignPlatoonMutation.mutate(platoonId);
+    } else if (value.startsWith('squad:')) {
+      const squadId = value.slice('squad:'.length);
+      assignSquadMutation.mutate(squadId);
+    }
+  };
+
+  const isSelected = (value: string) => {
+    if (value === '' && !player.squadId && !player.platoonId) return true;
+    if (value === `platoon:${player.platoonId}` && !player.squadId) return true;
+    if (value === `squad:${player.squadId}`) return true;
+    return false;
+  };
+
+  const commandElements = platoons.filter((p) => p.isCommandElement);
+  const regularPlatoons = platoons.filter((p) => !p.isCommandElement);
+  const hasAnyOptions = commandElements.length > 0 || regularPlatoons.some((p) => p.squads.length > 0);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={isPending}
+          className="w-[200px] justify-between text-sm font-normal"
+        >
+          {currentLabel ?? (
+            <span className="text-muted-foreground">Assign…</span>
+          )}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[220px] p-0">
+        <Command>
+          <CommandInput placeholder="Search…" />
+          <CommandList>
+            {!hasAnyOptions && (
+              <CommandEmpty>No platoons or squads yet.</CommandEmpty>
+            )}
+
+            {/* Command elements */}
+            {commandElements.length > 0 && (
+              <CommandGroup heading="Command">
+                {commandElements.map((p) => (
+                  <CommandItem
+                    key={`platoon:${p.id}`}
+                    value={`cmd-${p.name}`}
+                    onSelect={() => handleSelect(`platoon:${p.id}`)}
+                  >
+                    <Check
+                      className={cn('mr-2 h-4 w-4', isSelected(`platoon:${p.id}`) ? 'opacity-100' : 'opacity-0')}
+                    />
+                    <span className="text-amber-600 font-medium">★ {p.name}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {/* Regular platoons — HQ slot + squads */}
+            {regularPlatoons.map((p) => (
+              <CommandGroup key={p.id} heading={p.name}>
+                {/* Platoon HQ synthetic option */}
+                <CommandItem
+                  value={`${p.name}-hq`}
+                  onSelect={() => handleSelect(`platoon:${p.id}`)}
+                >
+                  <Check
+                    className={cn('mr-2 h-4 w-4', isSelected(`platoon:${p.id}`) ? 'opacity-100' : 'opacity-0')}
+                  />
+                  <span className="italic text-muted-foreground">[Platoon HQ]</span>
+                </CommandItem>
+                {p.squads.map((s) => (
+                  <CommandItem
+                    key={`squad:${s.id}`}
+                    value={`${p.name}-${s.name}`}
+                    onSelect={() => handleSelect(`squad:${s.id}`)}
+                  >
+                    <Check
+                      className={cn('mr-2 h-4 w-4', isSelected(`squad:${s.id}`) ? 'opacity-100' : 'opacity-0')}
+                    />
+                    {s.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
+
+            {/* Unassign */}
+            {(player.squadId || player.platoonId) && (
+              <CommandGroup>
+                <CommandItem
+                  value="unassign"
+                  onSelect={() => handleSelect('')}
+                  className="text-muted-foreground"
+                >
+                  Unassign
+                </CommandItem>
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
