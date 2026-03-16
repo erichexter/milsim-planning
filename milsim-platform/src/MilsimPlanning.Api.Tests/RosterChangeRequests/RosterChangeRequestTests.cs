@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -145,18 +146,8 @@ public class RosterChangeRequestTestsBase : IClassFixture<PostgreSqlFixture>, IA
         db.Platoons.Add(platoon);
 
         // Create EventMemberships (scope guard check)
-        db.EventMemberships.Add(new EventMembership
-        {
-            EventId = eventId,
-            UserId = commanderUser.Id,
-            Role = "faction_commander"
-        });
-        db.EventMemberships.Add(new EventMembership
-        {
-            EventId = eventId,
-            UserId = playerUser.Id,
-            Role = "player"
-        });
+        db.EventMemberships.Add(new EventMembership { EventId = eventId, UserId = commanderUser.Id, Role = "faction_commander" });
+        db.EventMemberships.Add(new EventMembership { EventId = eventId, UserId = playerUser.Id, Role = "player" });
 
         // Create EventPlayer for the player
         var eventPlayer = new EventPlayer
@@ -185,25 +176,31 @@ public class RosterChangeRequestTestsBase : IClassFixture<PostgreSqlFixture>, IA
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var user = new AppUser
-        {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true
-        };
+        var user = new AppUser { UserName = email, Email = email, EmailConfirmed = true };
         var result = await userManager.CreateAsync(user, password);
         result.Succeeded.Should().BeTrue(because: string.Join("; ", result.Errors.Select(e => e.Description)));
         await userManager.AddToRoleAsync(user, role);
 
-        user.Profile = new UserProfile
-        {
-            UserId = user.Id,
-            Callsign = email,
-            DisplayName = email,
-            User = user
-        };
+        user.Profile = new UserProfile { UserId = user.Id, Callsign = email, DisplayName = email, User = user };
         await db.SaveChangesAsync();
         return user;
+    }
+
+    protected AppDbContext GetDb()
+    {
+        var scope = _factory.Services.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    }
+
+    /// <summary>Helper: submit a change request as the player and return the request ID.</summary>
+    protected async Task<Guid> SubmitChangeRequestAsync(string note = "Please move me to Alpha Squad")
+    {
+        var response = await _playerClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests",
+            new { note });
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("id").GetGuid();
     }
 
     private static async IAsyncEnumerable<NotificationJob> EmptyQueueAsync(
@@ -224,31 +221,79 @@ public class RosterChangeRequest_SubmitTests : RosterChangeRequestTestsBase
     [Fact]
     public async Task SubmitRequest_ValidNote_Returns201()
     {
-        throw new NotImplementedException("TODO: implement POST /roster-change-requests then make this pass");
+        var response = await _playerClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests",
+            new { note = "I'd like to move to Alpha Squad please" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("id").GetGuid().Should().NotBeEmpty();
+        body.GetProperty("status").GetString().Should().Be("Pending");
     }
 
     [Fact]
     public async Task SubmitRequest_AlreadyPending_Returns409()
     {
-        throw new NotImplementedException("TODO: implement duplicate pending guard then make this pass");
+        // First submit succeeds
+        await _playerClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests",
+            new { note = "First request" });
+
+        // Second submit returns 409 Conflict
+        var response = await _playerClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests",
+            new { note = "Second request" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
     public async Task SubmitRequest_PlayerRole_CancelRequest_Returns204()
     {
-        throw new NotImplementedException("TODO: implement DELETE /roster-change-requests/{id} then make this pass");
+        // Submit first
+        var requestId = await SubmitChangeRequestAsync();
+
+        // Cancel it
+        var deleteResponse = await _playerClient.DeleteAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}");
+
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
     public async Task GetMine_WithPendingRequest_ReturnsRequest()
     {
-        throw new NotImplementedException("TODO: implement GET /roster-change-requests/mine then make this pass");
+        // Submit a request
+        await SubmitChangeRequestAsync("Get me to Alpha Squad");
+
+        // Get mine
+        var response = await _playerClient.GetAsync(
+            $"/api/events/{_eventId}/roster-change-requests/mine");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("status").GetString().Should().Be("Pending");
+        body.GetProperty("note").GetString().Should().Be("Get me to Alpha Squad");
     }
 
     [Fact]
     public async Task GetMine_NoPendingRequest_Returns204()
     {
-        throw new NotImplementedException("TODO: implement GET /roster-change-requests/mine empty case then make this pass");
+        // No request submitted — fresh player
+        var anotherPlayer = await CreateUserAsync($"no-req-{Guid.NewGuid():N}@test.com", "player");
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.EventMemberships.Add(new EventMembership { EventId = _eventId, UserId = anotherPlayer.Id, Role = "player" });
+        db.EventPlayers.Add(new EventPlayer { EventId = _eventId, Email = anotherPlayer.Email!, Name = "Another", UserId = anotherPlayer.Id });
+        await db.SaveChangesAsync();
+
+        var freshClient = _factory.CreateClient();
+        IntegrationTestAuthHandler.ApplyTestIdentity(freshClient, anotherPlayer.Id, "player");
+
+        var response = await freshClient.GetAsync(
+            $"/api/events/{_eventId}/roster-change-requests/mine");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 }
 
@@ -262,13 +307,27 @@ public class RosterChangeRequest_ReviewTests : RosterChangeRequestTestsBase
     [Fact]
     public async Task ListPending_CommanderRole_ReturnsPendingRequests()
     {
-        throw new NotImplementedException("TODO: implement GET /roster-change-requests (commander) then make this pass");
+        // Submit a request as player
+        await SubmitChangeRequestAsync("Move me to Alpha");
+
+        // List as commander
+        var response = await _commanderClient.GetAsync(
+            $"/api/events/{_eventId}/roster-change-requests");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var requests = await response.Content.ReadFromJsonAsync<JsonElement[]>();
+        requests.Should().NotBeNull();
+        requests!.Should().HaveCountGreaterThanOrEqualTo(1);
+        requests!.Any(r => r.GetProperty("note").GetString() == "Move me to Alpha").Should().BeTrue();
     }
 
     [Fact]
     public async Task ListPending_PlayerRole_Returns403()
     {
-        throw new NotImplementedException("TODO: implement commander-only policy on list endpoint then make this pass");
+        var response = await _playerClient.GetAsync(
+            $"/api/events/{_eventId}/roster-change-requests");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }
 
@@ -282,30 +341,80 @@ public class RosterChangeRequest_DecisionTests : RosterChangeRequestTestsBase
     [Fact]
     public async Task Approve_UpdatesEventPlayerAssignment()
     {
-        throw new NotImplementedException("TODO: implement POST /{id}/approve updating PlatoonId/SquadId then make this pass");
+        var requestId = await SubmitChangeRequestAsync("Move me to Alpha-1");
+
+        var approveBody = new { platoonId = _platoonId, squadId = _squadId, commanderNote = (string?)null };
+        var approveResponse = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}/approve", approveBody);
+
+        approveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify EventPlayer updated in DB
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var player = await db.EventPlayers.FindAsync(_eventPlayerId);
+        player!.SquadId.Should().Be(_squadId);
+        player.PlatoonId.Should().Be(_platoonId);
     }
 
     [Fact]
     public async Task Approve_EnqueuesRosterChangeDecisionJob_WithApprovedDecision()
     {
-        throw new NotImplementedException("TODO: implement notification enqueue after approve then make this pass");
+        var requestId = await SubmitChangeRequestAsync("Move me to Alpha-1");
+
+        var approveBody = new { platoonId = _platoonId, squadId = _squadId, commanderNote = (string?)null };
+        await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}/approve", approveBody);
+
+        // Verify notification enqueued with "approved" decision
+        var mockQueue = _factory.Services.GetRequiredService<Mock<INotificationQueue>>();
+        mockQueue.Verify(q => q.EnqueueAsync(
+            It.Is<RosterChangeDecisionJob>(j => j.Decision == "approved"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Deny_EnqueuesRosterChangeDecisionJob_WithDeniedDecision()
     {
-        throw new NotImplementedException("TODO: implement notification enqueue after deny then make this pass");
+        var requestId = await SubmitChangeRequestAsync("Move me to Alpha-1");
+
+        var denyBody = new { commanderNote = "Not approved at this time." };
+        await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}/deny", denyBody);
+
+        // Verify notification enqueued with "denied" decision
+        var mockQueue = _factory.Services.GetRequiredService<Mock<INotificationQueue>>();
+        mockQueue.Verify(q => q.EnqueueAsync(
+            It.Is<RosterChangeDecisionJob>(j => j.Decision == "denied"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Approve_PlayerRole_Returns403()
     {
-        throw new NotImplementedException("TODO: implement RequireFactionCommander policy on approve endpoint then make this pass");
+        var requestId = await SubmitChangeRequestAsync();
+
+        var approveBody = new { platoonId = _platoonId, squadId = _squadId };
+        var response = await _playerClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}/approve", approveBody);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
     public async Task Approve_AlreadyApproved_Returns422()
     {
-        throw new NotImplementedException("TODO: implement Status != Pending guard then make this pass");
+        var requestId = await SubmitChangeRequestAsync();
+
+        // First approval succeeds
+        var approveBody = new { platoonId = _platoonId, squadId = _squadId };
+        await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}/approve", approveBody);
+
+        // Second approval should return 422
+        var secondApprove = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/roster-change-requests/{requestId}/approve", approveBody);
+
+        secondApprove.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 }

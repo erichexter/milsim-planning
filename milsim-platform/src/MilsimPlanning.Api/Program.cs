@@ -121,6 +121,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// ── Dev seed (runs migrations + creates dev accounts on startup) ──────────────
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    await DevSeedService.SeedAsync(app.Services);
+}
+
 // ── Middleware pipeline ───────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {

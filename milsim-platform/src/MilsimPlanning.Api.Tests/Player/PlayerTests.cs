@@ -186,13 +186,37 @@ public class Player_AssignmentTests : PlayerTestsBase
     [Fact]
     public async Task GetMyAssignment_ReturnsPlayerCallsignPlatoonSquad()
     {
-        throw new NotImplementedException("TODO");
+        // Assign the player to a platoon + squad first
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var player = await db.EventPlayers.FindAsync(_eventPlayerId);
+            player!.PlatoonId = _platoonId;
+            player.SquadId = _squadId;
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _playerClient.GetAsync($"/api/events/{_eventId}/my-assignment");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        body.GetProperty("callsign").GetString().Should().Be("WOLF-01");
+        body.GetProperty("isAssigned").GetBoolean().Should().BeTrue();
+        body.GetProperty("platoon").GetProperty("id").GetGuid().Should().Be(_platoonId);
+        body.GetProperty("squad").GetProperty("id").GetGuid().Should().Be(_squadId);
     }
 
     [Fact]
     public async Task GetMyAssignment_UnassignedPlayer_ReturnsIsAssignedFalse()
     {
-        throw new NotImplementedException("TODO");
+        // Player in seed data has no platoon/squad assignment
+        var response = await _playerClient.GetAsync($"/api/events/{_eventId}/my-assignment");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        body.GetProperty("isAssigned").GetBoolean().Should().BeFalse();
+        body.GetProperty("platoon").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+        body.GetProperty("squad").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
     }
 
 }
