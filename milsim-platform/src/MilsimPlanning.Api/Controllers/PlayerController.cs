@@ -36,11 +36,18 @@ public class PlayerController : ControllerBase
 
         if (player is null) return NotFound();
 
+        // Prefer the user's profile callsign if they've set one; fall back to roster callsign.
+        var profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == _currentUser.UserId);
+        var displayCallsign = !string.IsNullOrWhiteSpace(profile?.Callsign)
+            ? profile.Callsign
+            : player.Callsign;
+
         return Ok(new
         {
             player.Id,
             player.Name,
-            player.Callsign,
+            Callsign = displayCallsign,
             player.TeamAffiliation,
             player.Role,
             Platoon = player.Platoon is null ? null : new { player.Platoon.Id, player.Platoon.Name },
