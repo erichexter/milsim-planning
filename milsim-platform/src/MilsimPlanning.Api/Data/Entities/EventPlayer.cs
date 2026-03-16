@@ -8,6 +8,7 @@ public class EventPlayer
     public string Name { get; set; } = null!;
     public string? Callsign { get; set; }
     public string? TeamAffiliation { get; set; }
+    public string? Role { get; set; }                  // free-text position label e.g. "Platoon Commander", "XO"
     public string? UserId { get; set; }                // null until invite accepted; FK to AppUser.Id
     public Guid? PlatoonId { get; set; }
     public Guid? SquadId { get; set; }

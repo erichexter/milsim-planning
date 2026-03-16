@@ -67,8 +67,11 @@ describe('HierarchyBuilder', () => {
       </QueryClientProvider>
     );
     await waitFor(() => screen.getByText('John Smith'));
-    // p1 is assigned to sq-1 "Alpha-1" — combobox shows the squad name
-    expect(screen.getByText('Alpha-1')).toBeInTheDocument();
+    // p1 is assigned to sq-1 "Alpha-1" — the SquadCell combobox shows the squad name.
+    // Use getAllByText and verify at least one match is inside the table (not the squad listing panel).
+    const matches = screen.getAllByText('Alpha-1');
+    const tableMatch = matches.find((el) => el.closest('table'));
+    expect(tableMatch).toBeTruthy();
   });
 
   it('callsign is displayed prominently', async () => {

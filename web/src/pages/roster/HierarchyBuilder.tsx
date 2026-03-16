@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -32,6 +32,13 @@ export function HierarchyBuilder() {
       setNewPlatoonName('');
       void queryClient.invalidateQueries({ queryKey: ['roster', eventId] });
     },
+  });
+
+  // ── Set player role ───────────────────────────────────────────────────────
+  const setRoleMutation = useMutation({
+    mutationFn: ({ playerId, role }: { playerId: string; role: string | null }) =>
+      api.setPlayerRole(playerId, role),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['roster', eventId] }),
   });
 
   // ── Create squad ──────────────────────────────────────────────────────────
@@ -215,6 +222,7 @@ export function HierarchyBuilder() {
                 <TableRow>
                   <TableHead>Callsign</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Squad</TableHead>
                 </TableRow>
               </TableHeader>
@@ -226,6 +234,13 @@ export function HierarchyBuilder() {
                     </TableCell>
                     <TableCell>{player.name}</TableCell>
                     <TableCell>
+                      <RoleCell
+                        playerId={player.id}
+                        role={player.role}
+                        onSave={(role) => setRoleMutation.mutate({ playerId: player.id, role })}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <SquadCell player={player} squads={allSquads} />
                     </TableCell>
                   </TableRow>
@@ -236,5 +251,61 @@ export function HierarchyBuilder() {
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Inline editable role cell ─────────────────────────────────────────────────
+
+function RoleCell({
+  playerId,
+  role,
+  onSave,
+}: {
+  playerId: string;
+  role: string | null;
+  onSave: (role: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(role ?? '');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync if parent value changes (e.g. after mutation invalidates query)
+  useEffect(() => { setValue(role ?? ''); }, [role]);
+
+  const commit = () => {
+    setEditing(false);
+    const trimmed = value.trim() || null;
+    if (trimmed !== role) onSave(trimmed);
+  };
+
+  if (editing) {
+    return (
+      <Input
+        ref={inputRef}
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { setValue(role ?? ''); setEditing(false); }
+        }}
+        placeholder="e.g. Platoon Commander"
+        className="h-7 text-sm w-40"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setEditing(true); }}
+      className="text-sm text-left w-full min-h-[28px] px-1 rounded hover:bg-muted/50 transition-colors"
+      title="Click to edit role"
+    >
+      {role
+        ? <span className="text-muted-foreground italic">{role}</span>
+        : <span className="text-muted-foreground/40 text-xs">set role…</span>
+      }
+    </button>
   );
 }

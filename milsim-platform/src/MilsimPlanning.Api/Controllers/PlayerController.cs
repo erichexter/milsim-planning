@@ -42,6 +42,7 @@ public class PlayerController : ControllerBase
             player.Name,
             player.Callsign,
             player.TeamAffiliation,
+            player.Role,
             Platoon = player.Platoon is null ? null : new { player.Platoon.Id, player.Platoon.Name },
             Squad = player.Squad is null ? null : new { player.Squad.Id, player.Squad.Name },
             IsAssigned = player.SquadId is not null

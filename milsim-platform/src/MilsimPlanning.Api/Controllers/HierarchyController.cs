@@ -50,6 +50,21 @@ public class HierarchyController : ControllerBase
         catch (ForbiddenException) { return Forbid(); }
     }
 
+    // ── Set player role label (free-text, commander only) ─────────────────────
+
+    [HttpPatch("api/event-players/{playerId:guid}/role")]
+    [Authorize(Policy = "RequireFactionCommander")]
+    public async Task<IActionResult> SetRole(Guid playerId, [FromBody] SetPlayerRoleRequest request)
+    {
+        try
+        {
+            await _hierarchyService.SetPlayerRoleAsync(playerId, request.Role);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
     // ── HIER-03 / HIER-04 / HIER-05: Assign/move player to squad ─────────────
 
     [HttpPut("api/event-players/{playerId:guid}/squad")]

@@ -45,7 +45,8 @@ export function RosterView() {
               players: squad.players.filter(
                 (p) =>
                   p.name.toLowerCase().includes(q) ||
-                  (p.callsign ?? '').toLowerCase().includes(q)
+                  (p.callsign ?? '').toLowerCase().includes(q) ||
+                  (p.role ?? '').toLowerCase().includes(q)
               ),
             }))
             .filter((s) => s.players.length > 0),
@@ -89,6 +90,11 @@ export function RosterView() {
                             [{player.callsign ?? '—'}]
                           </span>
                           <span>{player.name}</span>
+                          {player.role && (
+                            <span className="text-muted-foreground text-xs italic">
+                              {player.role}
+                            </span>
+                          )}
                           {player.teamAffiliation && (
                             <span className="text-muted-foreground text-xs">
                               {player.teamAffiliation}
@@ -116,7 +122,8 @@ export function RosterView() {
                 (p) =>
                   !search.trim() ||
                   p.name.toLowerCase().includes(search.toLowerCase()) ||
-                  (p.callsign ?? '').toLowerCase().includes(search.toLowerCase())
+                  (p.callsign ?? '').toLowerCase().includes(search.toLowerCase()) ||
+                  (p.role ?? '').toLowerCase().includes(search.toLowerCase())
               )
               .map((player) => (
                 <div key={player.id} className="flex items-center gap-3 text-sm">
@@ -124,6 +131,11 @@ export function RosterView() {
                     [{player.callsign ?? '—'}]
                   </span>
                   <span>{player.name}</span>
+                  {player.role && (
+                    <span className="text-muted-foreground text-xs italic">
+                      {player.role}
+                    </span>
+                  )}
                 </div>
               ))}
           </div>

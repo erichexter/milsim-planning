@@ -9,6 +9,7 @@ interface AssignmentDto {
   name: string;
   callsign: string | null;
   teamAffiliation: string | null;
+  role: string | null;
   platoon: { id: string; name: string } | null;
   squad: { id: string; name: string } | null;
   isAssigned: boolean;
@@ -35,8 +36,8 @@ export function MyAssignmentTab({ eventId }: MyAssignmentTabProps) {
       } catch (e: unknown) {
         // 404 = no EventPlayer record — treat as unassigned (Pitfall 4)
         const err = e as { status?: number };
-        if (err?.status === 404) {
-          return { id: '', name: '', callsign: null, teamAffiliation: null, platoon: null, squad: null, isAssigned: false };
+          if (err?.status === 404) {
+          return { id: '', name: '', callsign: null, teamAffiliation: null, role: null, platoon: null, squad: null, isAssigned: false };
         }
         throw e;
       }
@@ -119,6 +120,12 @@ export function MyAssignmentTab({ eventId }: MyAssignmentTabProps) {
                 <p>
                   <span className="text-muted-foreground">Team:</span>{' '}
                   <span className="font-medium">{assignment.teamAffiliation}</span>
+                </p>
+              )}
+              {assignment?.role && (
+                <p>
+                  <span className="text-muted-foreground">Role:</span>{' '}
+                  <span className="font-medium">{assignment.role}</span>
                 </p>
               )}
             </div>

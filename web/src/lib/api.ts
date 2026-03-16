@@ -79,6 +79,8 @@ export const api = {
     request<{ id: string; name: string }>(`/platoons/${platoonId}/squads`, { method: 'POST', body: JSON.stringify({ name }) }),
   assignSquad: (playerId: string, squadId: string | null) =>
     request<void>(`/event-players/${playerId}/squad`, { method: 'PUT', body: JSON.stringify({ squadId }) }),
+  setPlayerRole: (playerId: string, role: string | null) =>
+    request<void>(`/event-players/${playerId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
 
   // Info sections + attachments
   getInfoSections: (eventId: string) =>
@@ -196,6 +198,7 @@ export interface PlayerDto {
   name: string;
   callsign: string | null;
   teamAffiliation: string | null;
+  role: string | null;
 }
 
 export interface SectionAttachment {

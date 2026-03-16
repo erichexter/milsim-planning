@@ -73,6 +73,22 @@ public class HierarchyService
         return squad;
     }
 
+    // ── Set player role label ─────────────────────────────────────────────────
+
+    public async Task SetPlayerRoleAsync(Guid eventPlayerId, string? role)
+    {
+        var player = await _db.EventPlayers
+            .Include(ep => ep.Event)
+                .ThenInclude(e => e.Faction)
+            .FirstOrDefaultAsync(ep => ep.Id == eventPlayerId)
+            ?? throw new KeyNotFoundException($"EventPlayer {eventPlayerId} not found");
+
+        AssertCommanderAccess(player.Event.Faction);
+
+        player.Role = string.IsNullOrWhiteSpace(role) ? null : role.Trim();
+        await _db.SaveChangesAsync();
+    }
+
     // ── HIER-03 / HIER-04 / HIER-05: Assign/move player to squad ─────────────
 
     public async Task AssignSquadAsync(Guid eventPlayerId, Guid? squadId)
@@ -162,16 +178,16 @@ public class HierarchyService
             p.Squads.OrderBy(s => s.Order).Select(s => new SquadDto(
                 s.Id,
                 s.Name,
-                players
-                    .Where(ep => ep.SquadId == s.Id)
-                    .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation))
-                    .ToList()
+                    players
+                        .Where(ep => ep.SquadId == s.Id)
+                        .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
+                        .ToList()
             )).ToList()
         )).ToList();
 
         var unassigned = players
             .Where(ep => ep.SquadId is null)
-            .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation))
+            .Select(ep => new PlayerDto(ep.Id, ep.Name, ep.Callsign, ep.TeamAffiliation, ep.Role))
             .ToList();
 
         return new RosterHierarchyDto(platoonDtos, unassigned);
