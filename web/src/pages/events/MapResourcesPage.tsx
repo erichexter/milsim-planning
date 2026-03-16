@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UploadZone } from '@/components/content/UploadZone';
 import { MapResourceCard } from '@/components/content/MapResourceCard';
+import { EventBreadcrumb } from '@/components/EventBreadcrumb';
 
 export function MapResourcesPage() {
   const { eventId, id } = useParams<{ eventId: string; id: string }>();
@@ -85,6 +86,7 @@ export function MapResourcesPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <EventBreadcrumb eventId={resolvedEventId} page="Maps" />
       <h1 className="text-2xl font-bold">Map Resources</h1>
 
       {isCommander && (

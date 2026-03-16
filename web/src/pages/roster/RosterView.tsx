@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 import {
   Accordion,
   AccordionContent,
@@ -57,6 +58,7 @@ export function RosterView() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-4">
+      <EventBreadcrumb eventId={eventId!} page="Roster" />
       <h1 className="text-2xl font-bold">Faction Roster</h1>
 
       <Input

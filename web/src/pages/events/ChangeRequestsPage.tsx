@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 
 interface PendingRequestDto {
   id: string;
@@ -74,6 +75,7 @@ export function ChangeRequestsPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-4">
+      <EventBreadcrumb eventId={eventId!} page="Change Requests" />
       <h1 className="text-2xl font-bold">Roster Change Requests</h1>
 
       {requests.length === 0 && (

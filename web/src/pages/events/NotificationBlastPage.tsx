@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getToken } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EventBreadcrumb } from '@/components/EventBreadcrumb';
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
@@ -63,6 +64,7 @@ export function NotificationBlastPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <EventBreadcrumb eventId={resolvedEventId} page="Notifications" />
       <h1 className="text-2xl font-bold">Notification Blast</h1>
 
       <form onSubmit={handleSend} className="space-y-3 rounded border p-4">

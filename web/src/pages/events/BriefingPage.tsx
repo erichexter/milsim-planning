@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { SectionList } from '@/components/content/SectionList';
+import { EventBreadcrumb } from '@/components/EventBreadcrumb';
 
 export function BriefingPage() {
   const { eventId, id } = useParams<{ eventId: string; id: string }>();
@@ -21,6 +22,7 @@ export function BriefingPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
+      <EventBreadcrumb eventId={resolvedEventId} page="Briefing" />
       <h1 className="text-2xl font-bold">Briefing</h1>
       <SectionList
         eventId={resolvedEventId}

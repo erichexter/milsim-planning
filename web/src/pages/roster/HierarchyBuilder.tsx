@@ -5,6 +5,7 @@ import { api } from '../../lib/api';
 import { SquadCell } from '../../components/hierarchy/SquadCell';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 import {
   Table,
   TableBody,
@@ -83,6 +84,7 @@ export function HierarchyBuilder() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
+      <EventBreadcrumb eventId={eventId!} page="Hierarchy" />
       <h1 className="text-2xl font-bold">Hierarchy Builder</h1>
 
       {/* ── Structure panel ──────────────────────────────────────────────── */}

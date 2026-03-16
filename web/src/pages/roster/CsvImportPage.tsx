@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { useDropzone } from 'react-dropzone';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type CsvValidationResult } from '../../lib/api';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 
 export function CsvImportPage() {
   const { id: eventId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [validation, setValidation] = useState<CsvValidationResult | null>(null);
   const [committed, setCommitted] = useState(false);
@@ -21,10 +23,8 @@ export function CsvImportPage() {
   const commitMutation = useMutation({
     mutationFn: () => api.commitRoster(eventId!, file!),
     onSuccess: () => {
-      setCommitted(true);
-      setFile(null);
-      setValidation(null);
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      void navigate(`/events/${eventId}/hierarchy`);
     },
   });
 
@@ -50,6 +50,7 @@ export function CsvImportPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
+      <EventBreadcrumb eventId={eventId!} page="Import Roster" />
       <h1 className="text-2xl font-bold">Import Roster</h1>
 
       <div
