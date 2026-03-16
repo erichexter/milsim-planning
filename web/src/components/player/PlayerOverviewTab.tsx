@@ -286,55 +286,57 @@ function MapResourcePreview({ eventId, resource }: MapResourcePreviewProps) {
   });
 
   return (
-    <Card>
-      <CardContent className="space-y-2 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium text-sm">{resource.friendlyName ?? 'Untitled'}</span>
-          {resource.externalUrl && (
-            <a
-              href={resource.externalUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
-            >
-              Open <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
-          {resource.isFile && urlData?.downloadUrl && !isViewable && (
-            <a
-              href={urlData.downloadUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
-            >
-              Open <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
+    <Card className="overflow-hidden">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
+        <span className="font-medium text-sm">{resource.friendlyName ?? 'Untitled'}</span>
+        {resource.externalUrl && (
+          <a
+            href={resource.externalUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+          >
+            Open <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+        {resource.isFile && urlData?.downloadUrl && !isViewable && (
+          <a
+            href={urlData.downloadUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+          >
+            Open <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+
+      {/* Full-width image — no padding, bleeds to card edges */}
+      {isImage && urlData?.downloadUrl && (
+        <img
+          src={urlData.downloadUrl}
+          alt={resource.friendlyName ?? 'Map'}
+          className="w-full block"
+        />
+      )}
+
+      {/* PDF viewer */}
+      {isPdf && urlData?.downloadUrl && (
+        <iframe
+          src={urlData.downloadUrl}
+          title={resource.friendlyName ?? 'Map PDF'}
+          className="w-full block border-t"
+          style={{ height: '600px' }}
+        />
+      )}
+
+      {/* External link instructions */}
+      {resource.externalUrl && resource.instructions && (
+        <div className="prose prose-sm max-w-none px-4 pb-4 text-muted-foreground">
+          <Markdown remarkPlugins={[remarkGfm]}>{resource.instructions}</Markdown>
         </div>
-
-        {isImage && urlData?.downloadUrl && (
-          <img
-            src={urlData.downloadUrl}
-            alt={resource.friendlyName ?? 'Map'}
-            className="w-full rounded border object-contain max-h-[500px]"
-          />
-        )}
-
-        {isPdf && urlData?.downloadUrl && (
-          <iframe
-            src={urlData.downloadUrl}
-            title={resource.friendlyName ?? 'Map PDF'}
-            className="w-full rounded border"
-            style={{ height: '500px' }}
-          />
-        )}
-
-        {resource.externalUrl && resource.instructions && (
-          <div className="prose prose-sm max-w-none text-muted-foreground">
-            <Markdown remarkPlugins={[remarkGfm]}>{resource.instructions}</Markdown>
-          </div>
-        )}
-      </CardContent>
+      )}
     </Card>
   );
 }
