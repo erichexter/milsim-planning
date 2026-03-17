@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A centralized web platform for faction commanders to organize and run large airsoft / milsim events. Commanders import player rosters, build faction hierarchy (platoons → squads), publish event information and maps, and notify players of updates. Players get a single place to find their assignment, access event documents, and request roster changes.
+A centralized web platform for faction commanders to organize and run large airsoft / milsim events. Commanders import player rosters, build faction hierarchy (platoons → squads), publish event information and maps, and notify players of updates. Players get a single place to find their assignment, access event documents, and request roster changes. Deployed to Azure (Container Apps + Static Web Apps) with Cloudflare R2 for file storage and Neon for the database.
 
 ## Core Value
 
@@ -12,21 +12,21 @@ Faction commanders can publish a complete event briefing — roster, assignments
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Faction commander can create and manage events — v1.0
+- ✓ Faction commander can import players via CSV (name, email, callsign, team affiliation) — v1.0
+- ✓ Faction commander can build platoon/squad hierarchy and assign players — v1.0
+- ✓ Faction commander can create custom information sections (markdown + attachments) — v1.0
+- ✓ Faction commander can upload and link map resources (PDF, JPEG/PNG, KMZ, external links) — v1.0
+- ✓ Faction commander can publish events and send email notifications — v1.0
+- ✓ Players can log in, view their assignment, access event info, and download files — v1.0
+- ✓ Players can submit roster change requests; commander can approve/deny — v1.0
+- ✓ Email/password and magic link authentication — v1.0
+- ✓ Role-based access: System Admin, Faction Commander, Platoon Leader, Squad Leader, Player — v1.0
+- ✓ Responsive UI supporting mobile and desktop — v1.0
 
 ### Active
 
-- [ ] Faction commander can create and manage events
-- [ ] Faction commander can import players via CSV (name, email, callsign, team affiliation)
-- [ ] Faction commander can build platoon/squad hierarchy and assign players
-- [ ] Faction commander can create custom information sections (markdown + attachments)
-- [ ] Faction commander can upload and link map resources (PDF, JPEG/PNG, KMZ, external links)
-- [ ] Faction commander can publish events and send email notifications
-- [ ] Players can log in, view their assignment, access event info, and download files
-- [ ] Players can submit roster change requests; commander can approve/deny
-- [ ] Email/password and magic link authentication
-- [ ] Role-based access: System Admin, Faction Commander, Platoon Leader, Squad Leader, Player
-- [ ] Responsive UI supporting mobile and desktop
+(None — fresh for next milestone)
 
 ### Out of Scope
 
@@ -40,13 +40,13 @@ Faction commanders can publish a complete event briefing — roster, assignments
 
 ## Context
 
+- v1.0 shipped 2026-03-17 — deployed to Azure Container Apps + Static Web Apps
+- ~20 phases worth of work, 20 plans, 108 backend tests, 60 frontend tests
+- Tech stack: C# .NET 10 / ASP.NET Core API, React + Vite frontend, PostgreSQL (Neon), Cloudflare R2, Resend
 - Events run ~8 times per year for 300–800 players
 - Peak traffic: event publish + notification blast, then steady activity several days before event
 - Players access from mobile phones during events (offline map downloads critical)
 - External registration system is source of truth; app imports from it via CSV
-- External map platforms (e.g. CalTopo, Google MyMaps) remain separate; app links to them and hosts downloadable files
-- Email via transactional provider (SendGrid or equivalent)
-- Hosting: static frontend + API backend on cloud platform
 
 ## Constraints
 
@@ -61,12 +61,20 @@ Faction commanders can publish a complete event briefing — roster, assignments
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| CSV import for roster | Registration systems vary; manual upload keeps integration simple | — Pending |
-| External map platforms | Interactive mapping is high complexity; linking is sufficient for v1 | — Pending |
-| Email/password + magic link | Balances security and ease of access for non-technical players | — Pending |
-| Static frontend + API backend | Separation enables independent scaling; frontend CDN-hosted | — Pending |
-| **API: C# .NET 10 (ASP.NET Core)** | User decision — locked | ✓ Locked |
-| **Frontend: React (Vite)** | User decision — locked | ✓ Locked |
+| CSV import for roster | Registration systems vary; manual upload keeps integration simple | ✓ Validated — works well for event scale |
+| External map platforms | Interactive mapping is high complexity; linking is sufficient for v1 | ✓ Validated — CalTopo/Google MyMaps integration via links works |
+| Email/password + magic link | Balances security and ease of access for non-technical players | ✓ Validated |
+| Static frontend + API backend | Separation enables independent scaling; frontend CDN-hosted | ✓ Validated — Azure Static Web Apps + Container Apps |
+| **API: C# .NET 10 (ASP.NET Core)** | User decision — locked | ✓ Shipped |
+| **Frontend: React (Vite)** | User decision — locked | ✓ Shipped |
+| MinimumRoleHandler sole role evaluator | No raw role string comparisons in business logic | ✓ Good — consistent authorization |
+| ScopeGuard.AssertEventAccess first in services | IDOR prevention contract | ✓ Good — zero cross-event leaks in tests |
+| Delta EF migrations | Keep InitialSchema intact; never drop-and-recreate | ✓ Good — safe replay in CI |
+| Profile callsign overrides roster callsign | Players who set callsign in profile take precedence over CSV | ✓ Validated |
+| Bulk assign destination encoding: squad/platoon GUID | Clean API contract for hierarchy builder | ✓ Good |
+| Pre-signed URLs generated on demand | Never persist signed URLs; always fresh from R2Key | ✓ Good — security correct |
+| Notification blast async via Channel + BackgroundService | Non-blocking; 202 after enqueue | ✓ Good — scales for 800 recipients |
+| Azure Container Apps (scale-to-zero) + Neon free tier | Minimal cost for prototype | ✓ ~$1–3/mo operational cost |
 
 ---
-*Last updated: 2026-03-12 after stack decision (C# .NET 10 API + React/Vite frontend)*
+*Last updated: 2026-03-17 after v1.0 milestone*
