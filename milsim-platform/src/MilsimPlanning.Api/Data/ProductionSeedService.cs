@@ -40,8 +40,8 @@ public static class ProductionSeedService
         logger.LogInformation("Production seed: {Count} user(s) already exist", userCount);
         if (userCount > 0) return;
 
-        var email    = config["Seed__AdminEmail"];
-        var password = config["Seed__AdminPassword"];
+        var email    = config["Seed:AdminEmail"];
+        var password = config["Seed:AdminPassword"];
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
