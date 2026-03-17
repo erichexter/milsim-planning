@@ -1,6 +1,8 @@
 import { getToken, clearToken } from './auth';
 
-const BASE_URL = (import.meta.env.VITE_API_URL ?? '') + '/api';
+// In dev mode the Vite proxy rewrites /api/* to the backend — use a relative path.
+// In production builds VITE_API_URL is set at build time to the Container App URL.
+const BASE_URL = (import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '')) + '/api';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
