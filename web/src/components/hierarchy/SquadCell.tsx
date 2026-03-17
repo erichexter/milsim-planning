@@ -31,7 +31,8 @@ export function SquadCell({ player, squads }: Props) {
   const mutation = useMutation({
     mutationFn: (squadId: string | null) => {
       const token = getToken();
-      return fetch(`/api/event-players/${player.id}/squad`, {
+      const apiBase = (import.meta.env.VITE_API_URL ?? '') + '/api';
+      return fetch(`${apiBase}/event-players/${player.id}/squad`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

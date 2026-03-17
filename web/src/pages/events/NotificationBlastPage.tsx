@@ -38,7 +38,8 @@ export function NotificationBlastPage() {
     if (!canSend) return;
 
     const token = getToken();
-    const response = await fetch(`/api/events/${resolvedEventId}/notification-blasts`, {
+    const apiBase = (import.meta.env.VITE_API_URL ?? '') + '/api';
+    const response = await fetch(`${apiBase}/events/${resolvedEventId}/notification-blasts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

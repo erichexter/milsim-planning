@@ -1,12 +1,6 @@
 {
-  "routes": [
-    {
-      "route": "/api/*",
-      "rewrite": "https://milsim-api.lemoncoast-c5ba2dd3.eastus.azurecontainerapps.io/api/*"
-    }
-  ],
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/api/*", "/*.{png,jpg,gif,ico,css,js,svg,woff,woff2}"]
+    "exclude": ["/*.{png,jpg,gif,ico,css,js,svg,woff,woff2}"]
   }
 }
