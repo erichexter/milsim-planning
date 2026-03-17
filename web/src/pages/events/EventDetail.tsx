@@ -274,21 +274,18 @@ export function EventDetail() {
             </Link>
           </div>
 
-          {/* ── Commander action bar ─────────────────────────────────────── */}
-          <div className="flex flex-wrap gap-3 pt-2">
-            {isCommander && event.status === 'Draft' && (
-              <Button onClick={() => publishMutation.mutate()} disabled={publishMutation.isPending}>
-                {publishMutation.isPending ? 'Publishing...' : 'Publish Event'}
-              </Button>
-            )}
-            {isCommander && (
-              <>
-                <Button variant="outline" asChild>
-                  <Link to={`/events/${id}/player`}>
-                    <Eye className="h-4 w-4 mr-1.5" />
-                    Player View
-                  </Link>
-                </Button>
+          {/* ── Commander controls ───────────────────────────────────────── */}
+          {isCommander && (
+            <div className="rounded-lg border border-dashed p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Commander Controls
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {event.status === 'Draft' && (
+                  <Button onClick={() => publishMutation.mutate()} disabled={publishMutation.isPending}>
+                    {publishMutation.isPending ? 'Publishing...' : 'Publish Event'}
+                  </Button>
+                )}
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/roster/import`}>Import Roster</Link>
                 </Button>
@@ -308,9 +305,15 @@ export function EventDetail() {
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/notifications`}>Notifications</Link>
                 </Button>
-              </>
-            )}
-          </div>
+                <Button variant="outline" asChild>
+                  <Link to={`/events/${id}/player`}>
+                    <Eye className="h-4 w-4 mr-1.5" />
+                    Player View
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
