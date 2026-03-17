@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin } from 'lucide-react';
+import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
@@ -283,6 +283,12 @@ export function EventDetail() {
             )}
             {isCommander && (
               <>
+                <Button variant="outline" asChild>
+                  <Link to={`/events/${id}/player`}>
+                    <Eye className="h-4 w-4 mr-1.5" />
+                    Player View
+                  </Link>
+                </Button>
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/roster/import`}>Import Roster</Link>
                 </Button>
