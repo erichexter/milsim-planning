@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using MilsimPlanning.Api.Data.Entities;
 
 namespace MilsimPlanning.Api.Data;
@@ -20,24 +21,31 @@ public static class ProductionSeedService
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+                         .CreateLogger("ProductionSeedService");
 
         // ── Ensure all roles exist (required in every environment) ────────────
         string[] roles = ["player", "squad_leader", "platoon_leader", "faction_commander", "system_admin"];
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
+            {
                 await roleManager.CreateAsync(new IdentityRole(role));
+                logger.LogInformation("Production seed: created role '{Role}'", role);
+            }
         }
 
         // ── Skip if any user already exists ───────────────────────────────────
-        if (userManager.Users.Any()) return;
+        var userCount = userManager.Users.Count();
+        logger.LogInformation("Production seed: {Count} user(s) already exist", userCount);
+        if (userCount > 0) return;
 
         var email    = config["Seed__AdminEmail"];
         var password = config["Seed__AdminPassword"];
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            // No credentials configured — skip silently. Admin must be created manually.
+            logger.LogWarning("Production seed: Seed__AdminEmail / Seed__AdminPassword not set — skipping user creation");
             return;
         }
 
@@ -64,5 +72,6 @@ public static class ProductionSeedService
         };
 
         await db.SaveChangesAsync();
+        logger.LogInformation("Production seed: created initial commander account '{Email}'", email);
     }
 }
