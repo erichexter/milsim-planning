@@ -62,13 +62,16 @@ jobs:
 
       - name: Deploy to Azure Container Apps
         run: |
+          az containerapp registry set \
+            --name milsim-api \
+            --resource-group rg-milsim \
+            --server ${{ secrets.ACR_LOGIN_SERVER }} \
+            --username ${{ secrets.ACR_USERNAME }} \
+            --password ${{ secrets.ACR_PASSWORD }}
           az containerapp update \
             --name milsim-api \
             --resource-group rg-milsim \
-            --image ${{ secrets.ACR_LOGIN_SERVER }}/milsim-api:${{ github.sha }} \
-            --registry-server ${{ secrets.ACR_LOGIN_SERVER }} \
-            --registry-username ${{ secrets.ACR_USERNAME }} \
-            --registry-password ${{ secrets.ACR_PASSWORD }}
+            --image ${{ secrets.ACR_LOGIN_SERVER }}/milsim-api:${{ github.sha }}
 
   deploy-frontend:
     needs: [test-backend, test-frontend]
