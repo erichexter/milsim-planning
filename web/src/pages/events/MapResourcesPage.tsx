@@ -14,6 +14,7 @@ export function MapResourcesPage() {
   const resolvedEventId = eventId ?? id;
   const { user } = useAuth();
   const isCommander = user?.role === 'faction_commander';
+  const [preview, setPreview] = useState(false);
 
   const [externalUrl, setExternalUrl] = useState('');
   const [friendlyName, setFriendlyName] = useState('');
@@ -84,12 +85,30 @@ export function MapResourcesPage() {
     }
   };
 
+  const effectiveCommander = isCommander && !preview;
+
   return (
     <div className="mx-auto max-w-4xl lg:max-w-5xl space-y-6 p-6">
       <EventBreadcrumb eventId={resolvedEventId} page="Maps" />
-      <h1 className="text-2xl font-bold">Map Resources</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Map Resources</h1>
+        {isCommander && (
+          <Button
+            variant={preview ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPreview(v => !v)}
+          >
+            {preview ? 'Exit Preview' : 'Player Preview'}
+          </Button>
+        )}
+      </div>
+      {preview && (
+        <p className="text-sm text-muted-foreground border rounded px-3 py-2">
+          Previewing as player — edit controls are hidden.
+        </p>
+      )}
 
-      {isCommander && (
+      {effectiveCommander && (
         <>
           <form onSubmit={handleAddExternal} className="space-y-2 rounded border p-4">
             <h2 className="font-semibold">Add External Link</h2>
@@ -130,7 +149,7 @@ export function MapResourcesPage() {
               key={resource.id}
               eventId={resolvedEventId}
               resource={resource}
-              isCommander={isCommander}
+              isCommander={effectiveCommander}
               onDelete={() => {
                 void api.deleteMapResource(resolvedEventId, resource.id).then(() => {
                   void refetch();
