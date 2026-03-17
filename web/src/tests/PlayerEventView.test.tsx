@@ -6,12 +6,6 @@ import { http, HttpResponse } from "msw";
 import { server } from "../mocks/server";
 import { PlayerEventPage } from "../pages/events/PlayerEventPage";
 
-// Mock all child tabs so tests focus on PlayerEventPage navigation logic
-vi.mock("../components/player/MyAssignmentTab", () => ({
-  MyAssignmentTab: ({ eventId }: { eventId: string }) => (
-    <div data-testid="my-assignment-tab">Assignment tab for {eventId}</div>
-  ),
-}));
 
 // Mock PlayerOverviewTab — it makes 4+ API calls; not the subject of these tests
 vi.mock("../components/player/PlayerOverviewTab", () => ({
@@ -109,3 +103,5 @@ describe("PlayerEventPage", () => {
     expect(screen.getByText(/Overview for test-event-123/)).toBeInTheDocument();
   });
 });
+
+

@@ -1,5 +1,7 @@
 ---
 created: 2026-03-16T15:37:57.038Z
+resolved: 2026-03-17
+resolution: HierarchyBuilder verified functional post-EventMembership fix. All HIER-01..06 shipped in v1.0. Leader role assignment (point 2) deferred to v1.1 as out of scope for MVP.
 title: Faction commander hierarchy management UI
 area: ui
 files:
