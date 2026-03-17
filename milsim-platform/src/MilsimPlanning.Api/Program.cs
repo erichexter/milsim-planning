@@ -141,12 +141,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ── Dev seed (runs migrations + creates dev accounts on startup) ──────────────
-if (app.Environment.IsDevelopment())
+// ── Migrations (all environments) + dev seed ─────────────────────────────────
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+}
+if (app.Environment.IsDevelopment())
+{
     await DevSeedService.SeedAsync(app.Services);
 }
 
