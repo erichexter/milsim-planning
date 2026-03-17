@@ -151,6 +151,12 @@ if (app.Environment.IsDevelopment())
 {
     await DevSeedService.SeedAsync(app.Services);
 }
+else
+{
+    // Production bootstrap: seed roles and initial admin account on first startup.
+    // Skipped automatically once any user exists.
+    await ProductionSeedService.SeedAsync(app.Services, app.Configuration);
+}
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
