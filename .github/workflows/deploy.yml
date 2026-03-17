@@ -65,7 +65,10 @@ jobs:
           az containerapp update \
             --name milsim-api \
             --resource-group rg-milsim \
-            --image ${{ secrets.ACR_LOGIN_SERVER }}/milsim-api:${{ github.sha }}
+            --image ${{ secrets.ACR_LOGIN_SERVER }}/milsim-api:${{ github.sha }} \
+            --registry-server ${{ secrets.ACR_LOGIN_SERVER }} \
+            --registry-username ${{ secrets.ACR_USERNAME }} \
+            --registry-password ${{ secrets.ACR_PASSWORD }}
 
   deploy-frontend:
     needs: [test-backend, test-frontend]
