@@ -89,7 +89,7 @@ jobs:
       - name: Build frontend
         run: pnpm --prefix web build
         env:
-          VITE_API_URL: https://REPLACE_WITH_CONTAINER_APP_FQDN
+          VITE_API_URL:  https://milsim-api.lemoncoast-c5ba2dd3.eastus.azurecontainerapps.io
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
