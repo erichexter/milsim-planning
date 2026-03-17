@@ -48,19 +48,24 @@ function parseEventDate(dateOnly: string): Date {
   return new Date(dateOnly + 'T00:00:00');
 }
 
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'NOW';
+interface CountdownDisplay {
+  value: string;
+  unit: string | null; // null = no unit label (e.g. "NOW" or HH:MM:SS)
+}
+
+function formatCountdown(ms: number): CountdownDisplay {
+  if (ms <= 0) return { value: 'NOW', unit: null };
   const totalSecs = Math.floor(ms / 1000);
   const days = Math.floor(totalSecs / 86400);
-  if (days >= 1) return `D-${days}`;
+  if (days >= 1) return { value: String(days), unit: 'Days' };
   const h = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
   const m = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
   const s = (totalSecs % 60).toString().padStart(2, '0');
-  return `${h}:${m}:${s}`;
+  return { value: `${h}:${m}:${s}`, unit: null };
 }
 
 function useCountdown(startDate: string | null | undefined) {
-  const [display, setDisplay] = useState<string | null>(null);
+  const [display, setDisplay] = useState<CountdownDisplay | null>(null);
 
   useEffect(() => {
     if (!startDate) { setDisplay(null); return; }
@@ -185,14 +190,24 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
 
         {/* Countdown */}
         {countdown && (
-          <div className="flex items-center gap-2 pt-1">
-            <span className="rp0-label">T-minus</span>
-            <span
-              className="font-mono font-medium"
-              style={{ fontSize: 20, color: 'oklch(var(--primary))' }}
-            >
-              {countdown}
+          <div className="flex items-center gap-3 pt-1">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Countdown
             </span>
+            <span
+              className="font-mono font-bold animate-pulse"
+              style={{ fontSize: 28, color: 'oklch(var(--primary))' }}
+            >
+              {countdown.value}
+            </span>
+            {countdown.unit && (
+              <span
+                className="font-bold animate-pulse"
+                style={{ fontSize: 20, color: 'oklch(var(--primary))' }}
+              >
+                {countdown.unit}
+              </span>
+            )}
           </div>
         )}
       </div>
