@@ -97,13 +97,13 @@ function formatDate(d: string | null) {
 export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  const { data: events } = useQuery({
+  const { data: events, isLoading: isEventsLoading } = useQuery({
     queryKey: ['events'],
     queryFn: () => api.getEvents(),
   });
   const event = events?.find((e) => e.id === eventId);
 
-  const { data: assignment } = useQuery<AssignmentDto>({
+  const { data: assignment, isLoading: isAssignmentLoading } = useQuery<AssignmentDto>({
     queryKey: ['events', eventId, 'my-assignment'],
     queryFn: async () => {
       try {
@@ -130,12 +130,12 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
     },
   });
 
-  const { data: sections = [] } = useQuery({
+  const { data: sections = [], isLoading: isSectionsLoading } = useQuery({
     queryKey: ['info-sections', eventId],
     queryFn: () => api.getInfoSections(eventId),
   });
 
-  const { data: mapResources = [] } = useQuery({
+  const { data: mapResources = [], isLoading: isMapResourcesLoading } = useQuery({
     queryKey: ['map-resources', eventId],
     queryFn: () => api.getMapResources(eventId),
   });
@@ -151,6 +151,14 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
 
   const isAssigned = assignment?.isAssigned ?? false;
   const hasPendingRequest = myRequest?.status === 'Pending';
+
+  if (isEventsLoading || isAssignmentLoading) {
+    return <div className="p-6 text-muted-foreground">Loading event overview...</div>;
+  }
+
+  if (!event) {
+    return <div className="p-6 text-muted-foreground">Event not found.</div>;
+  }
 
   return (
     <div className="mx-auto max-w-3xl lg:max-w-5xl space-y-5 p-5">
@@ -302,7 +310,13 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
       </Card>
 
       {/* ── Briefing mini-cards ────────────────────────────────────────── */}
-      {sections.length > 0 && (
+      {isSectionsLoading ? (
+        <Card>
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            Loading briefing preview...
+          </CardContent>
+        </Card>
+      ) : sections.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="rp0-label">Briefing</span>
@@ -341,7 +355,13 @@ export function PlayerOverviewTab({ eventId, onNavigate }: Props) {
       )}
 
       {/* ── Maps ──────────────────────────────────────────────────────── */}
-      {mapResources.length > 0 && (
+      {isMapResourcesLoading ? (
+        <Card>
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            Loading map preview...
+          </CardContent>
+        </Card>
+      ) : mapResources.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="rp0-label">Maps</span>

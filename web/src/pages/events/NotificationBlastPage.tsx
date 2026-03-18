@@ -22,14 +22,15 @@ export function NotificationBlastPage() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
 
-  const { data: blasts = [], refetch } = useQuery({
+  const { data: blasts = [], isLoading, refetch } = useQuery({
     queryKey: ['notification-blasts', resolvedEventId],
     queryFn: () => api.getNotificationBlasts(resolvedEventId!),
-    enabled: Boolean(resolvedEventId),
+    enabled: Boolean(resolvedEventId && isCommander),
   });
 
   if (!resolvedEventId) return <div className="p-6">Event id missing.</div>;
   if (!isCommander) return <div className="p-6">You are not authorized to send notifications.</div>;
+  if (isLoading) return <div className="p-6">Loading notifications...</div>;
 
   const canSend = subject.trim().length > 0 && body.trim().length > 0;
 

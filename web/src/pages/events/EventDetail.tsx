@@ -14,7 +14,7 @@ export function EventDetail() {
   const { user } = useAuth();
   const isCommander = user?.role === 'faction_commander';
 
-  const { data: events } = useQuery({
+  const { data: events, isLoading: isEventsLoading } = useQuery({
     queryKey: ['events'],
     queryFn: () => api.getEvents(),
   });
@@ -67,6 +67,7 @@ export function EventDetail() {
     },
   });
 
+  if (isEventsLoading) return <div className="p-6">Loading event...</div>;
   if (!event) return <div className="p-6">Event not found.</div>;
 
   const openEdit = () => {
