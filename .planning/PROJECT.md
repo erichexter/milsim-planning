@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A centralized web platform for faction commanders to organize and run large airsoft / milsim events. Commanders import player rosters, build faction hierarchy (platoons → squads), publish event information and maps, and notify players of updates. Players get a single place to find their assignment, access event documents, and request roster changes. Deployed to Azure (Container Apps + Static Web Apps) with Cloudflare R2 for file storage and Neon for the database.
+A centralized web platform for faction commanders to organize and run large airsoft / milsim events. Commanders import player rosters, build faction hierarchy (platoons → squads), publish event information and maps, and notify players of updates. Players get a single place to find their assignment, access event documents, and request roster changes. New commanders can self-register and get immediate access without waiting for an admin invite. Deployed to Azure (Container Apps + Static Web Apps) with Cloudflare R2 for file storage and Neon for the database.
 
 ## Core Value
 
@@ -23,14 +23,15 @@ Faction commanders can publish a complete event briefing — roster, assignments
 - ✓ Email/password and magic link authentication — v1.0
 - ✓ Role-based access: System Admin, Faction Commander, Platoon Leader, Squad Leader, Player — v1.0
 - ✓ Responsive UI supporting mobile and desktop — v1.0
+- ✓ New user can create an account (displayName, email, password) without admin invite — v1.1
+- ✓ Login page shows "Create an account" link to /auth/register — v1.1
+- ✓ Self-registered users receive faction_commander role immediately — v1.1
+- ✓ /auth/register page validates input and shows clear error messages — v1.1
+- ✓ Authenticated users visiting /auth/register are redirected to /dashboard — v1.1
 
-### Validated
+### Active
 
-- ✓ New user can create an account (displayName, email, password) without admin invite — v1.1 (Validated in Phase 5: Self-Service Registration)
-- ✓ Login page shows "Create an account" link to /auth/register — v1.1 (Validated in Phase 5: Self-Service Registration)
-- ✓ Self-registered users receive faction_commander role immediately — v1.1 (Validated in Phase 5: Self-Service Registration)
-- ✓ /auth/register page validates input and shows clear error messages — v1.1 (Validated in Phase 5: Self-Service Registration)
-- ✓ Authenticated users visiting /auth/register are redirected to /dashboard — v1.1 (Validated in Phase 5: Self-Service Registration)
+*(None — start next milestone with `/gsd:new-milestone`)*
 
 ### Out of Scope
 
@@ -41,11 +42,13 @@ Faction commanders can publish a complete event briefing — roster, assignments
 - Real-time game tracking — in-game tooling out of scope
 - In-game command tools — out of scope
 - Player attendance tracking — out of scope
+- Email verification on registration — no confirmation required (explicit PRD exclusion)
 
 ## Context
 
 - v1.0 shipped 2026-03-17 — deployed to Azure Container Apps + Static Web Apps
-- ~20 phases worth of work, 20 plans, 108 backend tests, 60 frontend tests
+- v1.1 shipped 2026-03-26 — self-service registration added (1 phase, 2 plans)
+- ~5 phases total, 22 plans, 113 backend tests, 60 frontend tests
 - Tech stack: C# .NET 10 / ASP.NET Core API, React + Vite frontend, PostgreSQL (Neon), Cloudflare R2, Resend
 - Events run ~8 times per year for 300–800 players
 - Peak traffic: event publish + notification blast, then steady activity several days before event
@@ -79,16 +82,10 @@ Faction commanders can publish a complete event briefing — roster, assignments
 | Pre-signed URLs generated on demand | Never persist signed URLs; always fresh from R2Key | ✓ Good — security correct |
 | Notification blast async via Channel + BackgroundService | Non-blocking; 202 after enqueue | ✓ Good — scales for 800 recipients |
 | Azure Container Apps (scale-to-zero) + Neon free tier | Minimal cost for prototype | ✓ ~$1–3/mo operational cost |
-
-## Current Milestone: v1.1 Registration
-
-**Goal:** Add self-service user registration so new faction commanders and players can create accounts without waiting for an admin invite.
-
-**Target features:**
-- POST /api/auth/register backend endpoint with validation and tests
-- /auth/register frontend page (Display Name, Email, Password, Confirm Password)
-- Auth guard on /auth/register — redirect authenticated users to /dashboard
-- "Create an account" link on LoginPage
+| Self-registered users get faction_commander role immediately | Commanders register themselves, not players; no activation needed | ✓ Validated v1.1 |
+| EmailConfirmed=true on self-registration | No email activation flow for simplicity (PRD explicit) | ✓ Validated v1.1 |
+| Error & { status?: number } type for API error discrimination | Satisfies ESLint no-explicit-any; same runtime behavior as cast | ✓ Good — v1.1 pattern |
+| useAuth non-shared useState (per-component) | Pre-existing v1.0 pattern; works via localStorage bridge | ⚠ Revisit — latent risk if reactive cross-component state needed |
 
 ## Evolution
 
@@ -108,4 +105,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 — Phase 5 complete, v1.1 Registration milestone all phases done*
+*Last updated: 2026-03-26 after v1.1 milestone*
