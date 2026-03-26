@@ -24,13 +24,13 @@ Faction commanders can publish a complete event briefing — roster, assignments
 - ✓ Role-based access: System Admin, Faction Commander, Platoon Leader, Squad Leader, Player — v1.0
 - ✓ Responsive UI supporting mobile and desktop — v1.0
 
-### Active
+### Validated
 
-- [ ] New user can create an account (displayName, email, password) without admin invite — v1.1
-- [ ] Login page shows "Create an account" link to /auth/register — v1.1
-- [ ] Self-registered users receive faction_commander role immediately — v1.1
-- [ ] /auth/register page validates input and shows clear error messages — v1.1
-- [ ] Authenticated users visiting /auth/register are redirected to /dashboard — v1.1
+- ✓ New user can create an account (displayName, email, password) without admin invite — v1.1 (Validated in Phase 5: Self-Service Registration)
+- ✓ Login page shows "Create an account" link to /auth/register — v1.1 (Validated in Phase 5: Self-Service Registration)
+- ✓ Self-registered users receive faction_commander role immediately — v1.1 (Validated in Phase 5: Self-Service Registration)
+- ✓ /auth/register page validates input and shows clear error messages — v1.1 (Validated in Phase 5: Self-Service Registration)
+- ✓ Authenticated users visiting /auth/register are redirected to /dashboard — v1.1 (Validated in Phase 5: Self-Service Registration)
 
 ### Out of Scope
 
@@ -108,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-25 — v1.1 milestone started*
+*Last updated: 2026-03-26 — Phase 5 complete, v1.1 Registration milestone all phases done*
