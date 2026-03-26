@@ -80,6 +80,9 @@ export function LoginPage() {
           <Link to="/auth/forgot-password" className="text-primary hover:underline">
             Forgot password?
           </Link>
+          <Link to="/auth/register" className="text-primary hover:underline">
+            Don't have an account? Create one
+          </Link>
         </CardFooter>
       </Card>
     </div>

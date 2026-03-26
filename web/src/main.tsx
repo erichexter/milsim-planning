@@ -10,6 +10,7 @@ import { MagicLinkRequestPage } from './pages/auth/MagicLinkRequestPage';
 import { MagicLinkConfirmPage } from './pages/auth/MagicLinkConfirmPage';
 import { PasswordResetRequestPage } from './pages/auth/PasswordResetRequestPage';
 import { PasswordResetConfirmPage } from './pages/auth/PasswordResetConfirmPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { EventList } from './pages/events/EventList';
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
   { path: '/auth/magic-link/confirm', element: <MagicLinkConfirmPage /> },
   { path: '/auth/reset-password', element: <PasswordResetConfirmPage /> },
   { path: '/auth/forgot-password', element: <PasswordResetRequestPage /> },
+  { path: '/auth/register', element: <RegisterPage /> },
 
   // ── Authenticated routes (all wrapped in AppLayout for global header) ─────
   {

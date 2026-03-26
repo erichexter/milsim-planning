@@ -267,3 +267,11 @@ export interface NotificationBlast {
   sentAt: string;
   recipientCount: number;
 }
+
+export interface RegisterResponse {
+  token: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  role: string;
+}
