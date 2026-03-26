@@ -391,6 +391,120 @@ public class AuthTests : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
         invitedUser.Should().NotBeNull();
     }
 
+    // ── AC-1 through AC-5: Self-service registration tests ────────────────────
+
+    [Fact]
+    [Trait("Category", "Auth_Register")]
+    public async Task Register_WithValidData_Returns200AndJwt()
+    {
+        var email = $"register-valid-{Guid.NewGuid():N}@test.com";
+        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            displayName = "Test Commander",
+            email,
+            password = "TestPass123!"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("token").GetString().Should().NotBeNullOrEmpty();
+        body.GetProperty("userId").GetString().Should().NotBeNullOrEmpty();
+        body.GetProperty("email").GetString().Should().Be(email);
+        body.GetProperty("displayName").GetString().Should().Be("Test Commander");
+        body.GetProperty("role").GetString().Should().Be("faction_commander");
+
+        // Verify JWT structure
+        var token = body.GetProperty("token").GetString()!;
+        var handler = new JwtSecurityTokenHandler();
+        var jwt = handler.ReadJwtToken(token);
+        jwt.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Sub);
+        jwt.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == email);
+    }
+
+    [Fact]
+    [Trait("Category", "Auth_Register")]
+    public async Task Register_MissingDisplayName_Returns400()
+    {
+        var email = $"register-noname-{Guid.NewGuid():N}@test.com";
+        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            displayName = (string?)null,
+            email,
+            password = "TestPass123!"
+        });
+
+        ((int)response.StatusCode).Should().BeOneOf(400);
+    }
+
+    [Fact]
+    [Trait("Category", "Auth_Register")]
+    public async Task Register_ShortPassword_Returns400()
+    {
+        var email = $"register-shortpw-{Guid.NewGuid():N}@test.com";
+        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            displayName = "Test User",
+            email,
+            password = "abc"
+        });
+
+        ((int)response.StatusCode).Should().Be(400);
+    }
+
+    [Fact]
+    [Trait("Category", "Auth_Register")]
+    public async Task Register_DuplicateEmail_Returns409()
+    {
+        var email = $"register-dup-{Guid.NewGuid():N}@test.com";
+
+        // First registration should succeed
+        var first = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            displayName = "First User",
+            email,
+            password = "TestPass123!"
+        });
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Second registration with same email should return 409
+        var second = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            displayName = "Second User",
+            email,
+            password = "TestPass456!"
+        });
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        var body = await second.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("error").GetString().Should().Contain("email already exists");
+    }
+
+    [Fact]
+    [Trait("Category", "Auth_Register")]
+    public async Task Register_SelfRegisteredUser_HasFactionCommanderRole()
+    {
+        var email = $"register-role-{Guid.NewGuid():N}@test.com";
+        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            displayName = "Role Tester",
+            email,
+            password = "TestPass123!"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify role in DB
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = await userManager.FindByEmailAsync(email);
+        user.Should().NotBeNull();
+
+        var roles = await userManager.GetRolesAsync(user!);
+        roles.Should().Contain("faction_commander",
+            because: "self-registered users must be assigned faction_commander role (AC-5)");
+    }
+
     // ── Helper: extract token + userId from magic link email HTML ─────────────
     private static (string? token, string? userId) ExtractMagicLinkParams(string htmlBody)
     {
