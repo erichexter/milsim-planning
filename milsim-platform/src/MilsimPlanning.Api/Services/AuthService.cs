@@ -78,6 +78,44 @@ public class AuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
+    {
+        var user = new AppUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            EmailConfirmed = true  // per D-03: immediately active, no activation token
+        };
+
+        var createResult = await _userManager.CreateAsync(user, request.Password);
+        if (!createResult.Succeeded)
+        {
+            // Check for duplicate email/username (per D-07: 409 on duplicate email)
+            bool isDuplicate = createResult.Errors.Any(e =>
+                e.Code is "DuplicateEmail" or "DuplicateUserName");
+            if (isDuplicate)
+                throw new InvalidOperationException("DUPLICATE_EMAIL");
+            throw new ArgumentException(
+                string.Join("; ", createResult.Errors.Select(e => e.Description)));
+        }
+
+        // Create UserProfile — Callsign is NOT NULL in DB, use empty string
+        user.Profile = new Data.Entities.UserProfile
+        {
+            UserId = user.Id,
+            Callsign = "",              // not collected on self-registration; DB column is NOT NULL
+            DisplayName = request.DisplayName,
+            User = user
+        };
+        await _userManager.UpdateAsync(user);
+
+        // Per D-04: assign faction_commander role to all self-registered users
+        await _userManager.AddToRoleAsync(user, "faction_commander");
+
+        var token = GenerateJwt(user, "faction_commander");
+        return new RegisterResponse(token, user.Id, user.Email!, request.DisplayName, "faction_commander");
+    }
+
     public async Task<AppUser> InviteUserAsync(InviteUserRequest request)
     {
         var user = new AppUser

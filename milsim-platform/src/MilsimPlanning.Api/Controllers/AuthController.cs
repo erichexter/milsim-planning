@@ -47,6 +47,26 @@ public class AuthController : ControllerBase
         };
     }
 
+    // POST /api/auth/register
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Register(RegisterRequest request)
+    {
+        try
+        {
+            var response = await _authService.RegisterAsync(request);
+            return Ok(response);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "DUPLICATE_EMAIL")
+        {
+            return Conflict(new { error = "An account with this email already exists" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     // POST /api/auth/logout
     [HttpPost("logout")]
     [Authorize]
