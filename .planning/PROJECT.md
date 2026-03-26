@@ -26,7 +26,11 @@ Faction commanders can publish a complete event briefing — roster, assignments
 
 ### Active
 
-(None — fresh for next milestone)
+- [ ] New user can create an account (displayName, email, password) without admin invite — v1.1
+- [ ] Login page shows "Create an account" link to /auth/register — v1.1
+- [ ] Self-registered users receive faction_commander role immediately — v1.1
+- [ ] /auth/register page validates input and shows clear error messages — v1.1
+- [ ] Authenticated users visiting /auth/register are redirected to /dashboard — v1.1
 
 ### Out of Scope
 
@@ -76,5 +80,32 @@ Faction commanders can publish a complete event briefing — roster, assignments
 | Notification blast async via Channel + BackgroundService | Non-blocking; 202 after enqueue | ✓ Good — scales for 800 recipients |
 | Azure Container Apps (scale-to-zero) + Neon free tier | Minimal cost for prototype | ✓ ~$1–3/mo operational cost |
 
+## Current Milestone: v1.1 Registration
+
+**Goal:** Add self-service user registration so new faction commanders and players can create accounts without waiting for an admin invite.
+
+**Target features:**
+- POST /api/auth/register backend endpoint with validation and tests
+- /auth/register frontend page (Display Name, Email, Password, Confirm Password)
+- Auth guard on /auth/register — redirect authenticated users to /dashboard
+- "Create an account" link on LoginPage
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-03-17 after v1.0 milestone*
+*Last updated: 2026-03-25 — v1.1 milestone started*

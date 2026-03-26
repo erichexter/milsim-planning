@@ -1,36 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-status: archived
-stopped_at: v1.0 milestone archived 2026-03-17
-last_updated: "2026-03-17T00:00:00.000Z"
-last_activity: 2026-03-17 — v1.0 milestone archived, git tagged
+milestone: v1.1
+milestone_name: registration
+status: Defining requirements
+stopped_at: v1.1 milestone started
+last_updated: "2026-03-25T00:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-17)
+See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Faction commanders can publish a complete event briefing — roster, assignments, information sections, and maps — and every player receives it without anything falling through the cracks.
-**Current focus:** v1.0 shipped — planning next milestone
+**Current focus:** v1.1 — self-service user registration
 
 ## Current Position
 
-Status: **v1.0 SHIPPED AND ARCHIVED** — 2026-03-17
-All 4 phases, 20 plans complete. Deployed to production.
-
-Production URLs:
-- Frontend: https://green-forest-02e38090f.6.azurestaticapps.net
-- API: https://milsim-api.lemoncoast-c5ba2dd3.eastus.azurecontainerapps.io
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-25 — Milestone v1.1 started
 
 ## Accumulated Context
 
@@ -48,7 +44,7 @@ Key decisions logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
-None — milestone complete
+None — milestone just started
 
 ### Blockers/Concerns
 
@@ -56,6 +52,6 @@ None open
 
 ## Session Continuity
 
-Last session: 2026-03-17
-Stopped at: v1.0 milestone archived and tagged
-Resume: Start next milestone with `/gsd-new-milestone`
+Last session: 2026-03-25
+Stopped at: v1.1 milestone started — requirements and roadmap being defined
+Resume: `/gsd:plan-phase 5` after roadmap is created
