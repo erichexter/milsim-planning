@@ -37,4 +37,4 @@
 
 Plans:
 - [x] 05-01-PLAN.md — Backend registration endpoint + service + integration tests (AC-1 through AC-5)
-- [ ] 05-02-PLAN.md — Frontend RegisterPage + LoginPage link + route wiring (AC-6 through AC-10)
+- [x] 05-02-PLAN.md — Frontend RegisterPage + LoginPage link + route wiring (AC-6 through AC-10)
