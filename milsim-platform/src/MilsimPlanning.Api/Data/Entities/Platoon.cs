@@ -10,4 +10,6 @@ public class Platoon
     public Faction Faction { get; set; } = null!;
     public ICollection<Squad> Squads { get; set; } = [];
     public ICollection<EventPlayer> Players { get; set; } = [];
+    public string? PlatoonPrimaryFrequency { get; set; }
+    public string? PlatoonBackupFrequency { get; set; }
 }

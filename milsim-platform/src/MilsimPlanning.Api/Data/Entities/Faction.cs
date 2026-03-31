@@ -10,4 +10,6 @@ public class Faction
     public AppUser Commander { get; set; } = null!;
     public ICollection<Platoon> Platoons { get; set; } = [];
     public ICollection<EventPlayer> Players { get; set; } = [];
+    public string? CommandPrimaryFrequency { get; set; }
+    public string? CommandBackupFrequency { get; set; }
 }

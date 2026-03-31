@@ -8,4 +8,6 @@ public class Squad
     public int Order { get; set; }
     public Platoon Platoon { get; set; } = null!;
     public ICollection<EventPlayer> Players { get; set; } = [];
+    public string? SquadPrimaryFrequency { get; set; }
+    public string? SquadBackupFrequency { get; set; }
 }
