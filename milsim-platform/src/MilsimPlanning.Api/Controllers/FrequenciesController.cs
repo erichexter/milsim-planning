@@ -24,8 +24,8 @@ public class FrequenciesController : ControllerBase
             var dto = await _frequencyService.GetFrequenciesAsync(eventId);
             return Ok(dto);
         }
-        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (ForbiddenException ex)   { return StatusCode(403, new { error = ex.Message }); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found",  detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex)   { return Problem(title: "Forbidden",  detail: ex.Message, statusCode: 403); }
     }
 
     [HttpPut("squads/{squadId:guid}/frequencies")]
@@ -38,8 +38,8 @@ public class FrequenciesController : ControllerBase
             var dto = await _frequencyService.UpdateSquadFrequencyAsync(eventId, squadId, request.Primary, request.Backup);
             return Ok(dto);
         }
-        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (ForbiddenException ex)   { return StatusCode(403, new { error = ex.Message }); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found",  detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex)   { return Problem(title: "Forbidden",  detail: ex.Message, statusCode: 403); }
     }
 
     [HttpPut("platoons/{platoonId:guid}/frequencies")]
@@ -52,8 +52,8 @@ public class FrequenciesController : ControllerBase
             var dto = await _frequencyService.UpdatePlatoonFrequencyAsync(eventId, platoonId, request.Primary, request.Backup);
             return Ok(dto);
         }
-        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (ForbiddenException ex)   { return StatusCode(403, new { error = ex.Message }); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found",  detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex)   { return Problem(title: "Forbidden",  detail: ex.Message, statusCode: 403); }
     }
 
     [HttpPut("command-frequencies")]
@@ -66,7 +66,7 @@ public class FrequenciesController : ControllerBase
             var dto = await _frequencyService.UpdateCommandFrequencyAsync(eventId, request.Primary, request.Backup);
             return Ok(dto);
         }
-        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (ForbiddenException ex)   { return StatusCode(403, new { error = ex.Message }); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found",  detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex)   { return Problem(title: "Forbidden",  detail: ex.Message, statusCode: 403); }
     }
 }
