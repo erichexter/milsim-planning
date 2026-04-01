@@ -146,6 +146,16 @@ export const api = {
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
+
+  // Frequencies
+  getFrequencies: (eventId: string) =>
+    request<FrequencyVisibilityDto>(`/events/${eventId}/frequencies`),
+  updateSquadFrequency: (squadId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  updatePlatoonFrequency: (platoonId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  updateFactionFrequency: (factionId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
 };
 
 export interface UserProfile {
@@ -275,3 +285,43 @@ export interface RegisterResponse {
   displayName: string;
   role: string;
 }
+
+// ─── Frequency Types ───────────────────────────────────────────────────────
+
+export interface SquadFrequencyDto {
+  squadId: string;          // UUID string (Guid)
+  squadName: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface PlatoonFrequencyDto {
+  platoonId: string;        // UUID string (Guid)
+  platoonName: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface CommandFrequencyDto {
+  factionId: string;        // UUID string (Guid)
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface FrequencyVisibilityDto {
+  squad: SquadFrequencyDto | null;
+  platoon: PlatoonFrequencyDto | null;
+  command: CommandFrequencyDto | null;
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
+}
+
+// ─── React Query Keys ───────────────────────────────────────────────────────
+
+export const frequencyKeys = {
+  all: ['frequencies'] as const,
+  byEvent: (eventId: string) => ['frequencies', eventId] as const,
+};
