@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MilsimPlanning.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260401180954_AddFrequencyFields")]
+    [Migration("20260401181849_AddFrequencyFields")]
     partial class AddFrequencyFields
     {
         /// <inheritdoc />
