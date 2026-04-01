@@ -144,6 +144,16 @@ export const api = {
   createNotificationBlast: (eventId: string, payload: { subject: string; body: string }) =>
     request<{ blastId: string; recipientCount: number }>(`/events/${eventId}/notification-blasts`, { method: 'POST', body: JSON.stringify(payload) }),
 
+  // Frequency endpoints
+  getEventFrequencies: (eventId: string) =>
+    request<EventFrequenciesDto>(`/events/${eventId}/frequencies`),
+  setSquadFrequencies: (squadId: string, req: SetFrequenciesRequest) =>
+    request<FrequencyLevelDto>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  setPlatoonFrequencies: (platoonId: string, req: SetFrequenciesRequest) =>
+    request<FrequencyLevelDto>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  setFactionFrequencies: (factionId: string, req: SetFrequenciesRequest) =>
+    request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -266,4 +276,20 @@ export interface NotificationBlast {
   subject: string;
   sentAt: string;
   recipientCount: number;
+}
+
+export interface FrequencyLevelDto {
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface EventFrequenciesDto {
+  squad: FrequencyLevelDto | null;
+  platoon: FrequencyLevelDto | null;
+  command: FrequencyLevelDto | null;
+}
+
+export interface SetFrequenciesRequest {
+  primaryFrequency: string | null;
+  backupFrequency: string | null;
 }
