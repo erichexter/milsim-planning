@@ -10,41 +10,12 @@ namespace MilsimPlanning.Api.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "BackupFrequency",
-                table: "Squads",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "PrimaryFrequency",
-                table: "Squads",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "BackupFrequency",
-                table: "Platoons",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "PrimaryFrequency",
-                table: "Platoons",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "CommandBackupFrequency",
-                table: "Factions",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "CommandPrimaryFrequency",
-                table: "Factions",
-                type: "text",
-                nullable: true);
+            migrationBuilder.Sql(@"ALTER TABLE ""Squads"" ADD COLUMN IF NOT EXISTS ""BackupFrequency"" text NULL;");
+            migrationBuilder.Sql(@"ALTER TABLE ""Squads"" ADD COLUMN IF NOT EXISTS ""PrimaryFrequency"" text NULL;");
+            migrationBuilder.Sql(@"ALTER TABLE ""Platoons"" ADD COLUMN IF NOT EXISTS ""BackupFrequency"" text NULL;");
+            migrationBuilder.Sql(@"ALTER TABLE ""Platoons"" ADD COLUMN IF NOT EXISTS ""PrimaryFrequency"" text NULL;");
+            migrationBuilder.Sql(@"ALTER TABLE ""Factions"" ADD COLUMN IF NOT EXISTS ""CommandBackupFrequency"" text NULL;");
+            migrationBuilder.Sql(@"ALTER TABLE ""Factions"" ADD COLUMN IF NOT EXISTS ""CommandPrimaryFrequency"" text NULL;");
         }
 
         /// <inheritdoc />
