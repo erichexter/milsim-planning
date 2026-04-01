@@ -373,4 +373,94 @@ public class FrequencyPutTests : FrequencyTestsBase
         body.GetProperty("squad").GetProperty("primary").GetString().Should().Be("160.000");
         body.GetProperty("squad").GetProperty("backup").GetString().Should().Be("161.000");
     }
+
+    [Fact]
+    public async Task SetSquadFrequencies_NonExistentId_Returns404WithProblemDetails()
+    {
+        var nonExistentId = Guid.NewGuid();
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{nonExistentId}/frequencies",
+            new { primaryFrequency = "150.000", backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("title").GetString().Should().Be("Not Found");
+        body.GetProperty("status").GetInt32().Should().Be(404);
+        body.GetProperty("detail").GetString().Should().Contain(nonExistentId.ToString());
+    }
+
+    [Fact]
+    public async Task SetSquadFrequencies_NonFactionCommander_Returns403WithProblemDetails()
+    {
+        // Create a second commander (faction_commander JWT role + EventMembership) but NOT the faction's CommanderId
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var rogueEmail = $"freq-rogue-cmdr-{Guid.NewGuid():N}@test.com";
+        var rogueCommander = new AppUser { UserName = rogueEmail, Email = rogueEmail, EmailConfirmed = true };
+        await userManager.CreateAsync(rogueCommander, "TestPass123!");
+        await userManager.AddToRoleAsync(rogueCommander, "faction_commander");
+
+        db.EventMemberships.Add(new EventMembership { UserId = rogueCommander.Id, EventId = _eventId, Role = "faction_commander" });
+        await db.SaveChangesAsync();
+
+        var rogueClient = _factory.CreateClient();
+        IntegrationTestAuthHandler.ApplyTestIdentity(rogueClient, rogueCommander.Id, "faction_commander");
+
+        var response = await rogueClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = "150.000", backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("title").GetString().Should().Be("Forbidden");
+        body.GetProperty("status").GetInt32().Should().Be(403);
+
+        rogueClient.Dispose();
+    }
+}
+
+// ── EventMembership.Role vs JWT role regression tests ────────────────────────
+
+[Trait("Category", "Frequency_RoleVisibility")]
+public class FrequencyRoleVisibilityTests : FrequencyTestsBase
+{
+    public FrequencyRoleVisibilityTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetFrequencies_JwtRoleHigherThanMembershipRole_VisibilityDrivenByMembershipRole()
+    {
+        // Create a user whose JWT role is faction_commander but EventMembership.Role is player
+        // This proves visibility is gated on EventMembership.Role, not the global JWT role.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var downgradeEmail = $"freq-downgrade-{Guid.NewGuid():N}@test.com";
+        var downgradeUser = new AppUser { UserName = downgradeEmail, Email = downgradeEmail, EmailConfirmed = true };
+        await userManager.CreateAsync(downgradeUser, "TestPass123!");
+        await userManager.AddToRoleAsync(downgradeUser, "faction_commander");
+
+        // EventMembership grants only player-level access for this event
+        db.EventMemberships.Add(new EventMembership { UserId = downgradeUser.Id, EventId = _eventId, Role = "player" });
+        db.EventPlayers.Add(new EventPlayer { EventId = _eventId, Email = downgradeEmail.ToLower(), Name = "Downgraded User", UserId = downgradeUser.Id, SquadId = _squadId, PlatoonId = _platoonId });
+        await db.SaveChangesAsync();
+
+        // JWT role = faction_commander, but EventMembership.Role = player
+        var downgradeClient = _factory.CreateClient();
+        IntegrationTestAuthHandler.ApplyTestIdentity(downgradeClient, downgradeUser.Id, "faction_commander");
+
+        var response = await downgradeClient.GetAsync($"/api/events/{_eventId}/frequencies");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        // Should see only squad level (player visibility), NOT command level
+        body.GetProperty("squad").ValueKind.Should().NotBe(JsonValueKind.Null);
+        body.GetProperty("platoon").ValueKind.Should().Be(JsonValueKind.Null);
+        body.GetProperty("command").ValueKind.Should().Be(JsonValueKind.Null);
+
+        downgradeClient.Dispose();
+    }
 }

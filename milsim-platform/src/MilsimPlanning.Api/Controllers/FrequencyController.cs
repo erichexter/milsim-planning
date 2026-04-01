@@ -25,7 +25,7 @@ public class FrequencyController : ControllerBase
             var result = await _frequencyService.GetEventFrequenciesAsync(eventId);
             return Ok(result);
         }
-        catch (ForbiddenException) { return Forbid(); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
     }
 
     // ── PUT /api/squads/{squadId}/frequencies ─────────────────────────────────
@@ -39,8 +39,8 @@ public class FrequencyController : ControllerBase
             var result = await _frequencyService.SetSquadFrequenciesAsync(squadId, request);
             return Ok(result);
         }
-        catch (KeyNotFoundException) { return NotFound(); }
-        catch (ForbiddenException) { return Forbid(); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
     }
 
     // ── PUT /api/platoons/{platoonId}/frequencies ─────────────────────────────
@@ -54,8 +54,8 @@ public class FrequencyController : ControllerBase
             var result = await _frequencyService.SetPlatoonFrequenciesAsync(platoonId, request);
             return Ok(result);
         }
-        catch (KeyNotFoundException) { return NotFound(); }
-        catch (ForbiddenException) { return Forbid(); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
     }
 
     // ── PUT /api/factions/{factionId}/frequencies ─────────────────────────────
@@ -69,7 +69,7 @@ public class FrequencyController : ControllerBase
             var result = await _frequencyService.SetFactionFrequenciesAsync(factionId, request);
             return Ok(result);
         }
-        catch (KeyNotFoundException) { return NotFound(); }
-        catch (ForbiddenException) { return Forbid(); }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
     }
 }

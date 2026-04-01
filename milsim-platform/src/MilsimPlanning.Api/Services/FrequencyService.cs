@@ -23,7 +23,10 @@ public class FrequencyService
     {
         ScopeGuard.AssertEventAccess(_currentUser, eventId);
 
-        var role = _currentUser.Role;
+        // Use per-event membership role, not the global JWT role, to determine visibility tier
+        var membership = await _db.EventMemberships
+            .FirstOrDefaultAsync(m => m.EventId == eventId && m.UserId == _currentUser.UserId);
+        var role = membership?.Role ?? AppRoles.Player;
 
         // Load the current user's event player record for assignment context
         var eventPlayer = await _db.EventPlayers
