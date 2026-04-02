@@ -374,6 +374,22 @@ public class GetFrequencyTests : FrequencyTestsBase
     }
 
     [Fact]
+    public async Task GetFrequencies_AsSystemAdmin_ReturnsAllLevels()
+    {
+        var response = await _adminClient.GetAsync($"/api/events/{_eventId}/frequencies");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        var command = body.GetProperty("command");
+        command.GetProperty("primary").GetString().Should().Be("150.000");
+        command.GetProperty("backup").GetString().Should().Be("151.000");
+
+        body.GetProperty("platoons").GetArrayLength().Should().Be(2);
+        body.GetProperty("squads").GetArrayLength().Should().Be(2);
+    }
+
+    [Fact]
     public async Task GetFrequencies_AsOutsider_Returns403()
     {
         var response = await _outsiderClient.GetAsync($"/api/events/{_eventId}/frequencies");
@@ -439,6 +455,17 @@ public class UpdateSquadFrequencyTests : FrequencyTestsBase
         var response = await _playerClient.PutAsJsonAsync(
             $"/api/squads/{_squadId}/frequencies",
             new { primary = "166.000", backup = "167.000" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateSquadFrequency_AsDifferentSquadLeader_Returns403()
+    {
+        // Squad leader of Alpha Squad tries to update Bravo Squad
+        var response = await _squadLeaderClient.PutAsJsonAsync(
+            $"/api/squads/{_squad2Id}/frequencies",
+            new { primary = "190.000", backup = "191.000" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -538,6 +565,21 @@ public class UpdateCommandFrequencyTests : FrequencyTestsBase
             new { primary = "182.000", backup = "183.000" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateCommandFrequency_AsSystemAdmin_Returns204()
+    {
+        var response = await _adminClient.PutAsJsonAsync(
+            $"/api/events/{_eventId}/command-frequencies",
+            new { primary = "186.000", backup = "187.000" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var db = GetDb();
+        var faction = await db.Factions.FirstAsync(f => f.EventId == _eventId);
+        faction.CommandPrimaryFrequency.Should().Be("186.000");
+        faction.CommandBackupFrequency.Should().Be("187.000");
     }
 
     [Fact]

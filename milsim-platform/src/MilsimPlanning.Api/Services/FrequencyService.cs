@@ -30,13 +30,22 @@ public class FrequencyService
         if (faction is null)
             throw new KeyNotFoundException($"Event {eventId} not found.");
 
-        var membership = await _db.EventMemberships
-            .FirstOrDefaultAsync(m => m.UserId == _currentUser.UserId && m.EventId == eventId);
+        // system_admin bypasses membership check — derive role from identity
+        string role;
+        if (_currentUser.Role == AppRoles.SystemAdmin)
+        {
+            role = AppRoles.SystemAdmin;
+        }
+        else
+        {
+            var membership = await _db.EventMemberships
+                .FirstOrDefaultAsync(m => m.UserId == _currentUser.UserId && m.EventId == eventId);
 
-        if (membership is null)
-            throw new ForbiddenException($"User does not have access to event {eventId}");
+            if (membership is null)
+                throw new ForbiddenException($"User does not have access to event {eventId}");
 
-        var role = membership.Role;
+            role = membership.Role;
+        }
 
         // Find caller's EventPlayer to determine squad/platoon assignment
         var eventPlayer = await _db.EventPlayers
