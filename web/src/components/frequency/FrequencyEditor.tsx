@@ -18,7 +18,7 @@ interface FrequencyEditorProps {
 
 function canEdit(scope: FrequencyScope, role: string): boolean {
   if (role === 'system_admin' || role === 'faction_commander') return true;
-  if (scope === 'squad' && role === 'squad_leader') return true;
+  if (scope === 'squad' && (role === 'squad_leader' || role === 'platoon_leader')) return true;
   if (scope === 'platoon' && role === 'platoon_leader') return true;
   return false;
 }

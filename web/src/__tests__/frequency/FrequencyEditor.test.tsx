@@ -48,6 +48,11 @@ describe('FrequencyEditor', () => {
       renderEditor('platoon_leader', 'platoon');
       expect(screen.getByTestId('freq-edit-btn-platoon')).toBeInTheDocument();
     });
+
+    it('renders edit button for platoon_leader on squad scope', () => {
+      renderEditor('platoon_leader', 'squad');
+      expect(screen.getByTestId('freq-edit-btn-squad')).toBeInTheDocument();
+    });
   });
 
   describe('edit form interaction', () => {
@@ -104,6 +109,28 @@ describe('FrequencyEditor', () => {
       await waitFor(() => {
         expect(capturedBody).toBeDefined();
         expect(capturedBody!.primary).toBeNull();
+      });
+    });
+
+    it('platoon_leader can open squad-scope editor and submit PATCH', async () => {
+      let capturedBody: { primary: string | null; backup: string | null } | undefined;
+      server.use(
+        http.patch('/api/squads/squad-1/frequencies', async ({ request }) => {
+          capturedBody = (await request.json()) as { primary: string | null; backup: string | null };
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
+
+      renderEditor('platoon_leader', 'squad');
+      fireEvent.click(screen.getByTestId('freq-edit-btn-squad'));
+      expect(screen.getByTestId('freq-editor-squad')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Primary'), { target: { value: '155.000' } });
+      fireEvent.submit(screen.getByTestId('freq-editor-squad'));
+
+      await waitFor(() => {
+        expect(capturedBody).toBeDefined();
+        expect(capturedBody!.primary).toBe('155.000');
       });
     });
 
