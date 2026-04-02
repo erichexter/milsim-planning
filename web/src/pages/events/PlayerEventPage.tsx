@@ -5,6 +5,7 @@ import {
   Users,
   BookOpen,
   Map,
+  Radio,
   ArrowLeft,
 } from 'lucide-react';
 import { PlayerOverviewTab } from '../../components/player/PlayerOverviewTab';
@@ -13,18 +14,22 @@ import { PendingRequestCard } from '../../components/player/PendingRequestCard';
 import { RosterView } from '../roster/RosterView';
 import { BriefingPage } from './BriefingPage';
 import { MapResourcesPage } from './MapResourcesPage';
+import { FrequencyDisplay } from '../../components/frequency/FrequencyDisplay';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth';
+import { useFrequencies } from '../../hooks/useFrequencies';
 import { Button } from '../../components/ui/button';
 import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 
-type TabId = 'overview' | 'roster' | 'briefing' | 'maps' | 'change-request';
+type TabId = 'overview' | 'roster' | 'briefing' | 'maps' | 'frequencies' | 'change-request';
 
 const NAV_TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'overview',  label: 'Overview',  Icon: LayoutDashboard },
-  { id: 'roster',   label: 'Roster',    Icon: Users },
-  { id: 'briefing', label: 'Briefing',  Icon: BookOpen },
-  { id: 'maps',     label: 'Maps',      Icon: Map },
+  { id: 'overview',     label: 'Overview',     Icon: LayoutDashboard },
+  { id: 'roster',       label: 'Roster',       Icon: Users },
+  { id: 'briefing',     label: 'Briefing',     Icon: BookOpen },
+  { id: 'maps',         label: 'Maps',         Icon: Map },
+  { id: 'frequencies',  label: 'Frequencies',  Icon: Radio },
 ];
 
 interface ChangeRequestDto {
@@ -38,6 +43,8 @@ interface ChangeRequestDto {
 export function PlayerEventPage() {
   const { id: eventId } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const { user } = useAuth();
+  const { data: frequenciesData, refetch: refetchFrequencies } = useFrequencies(eventId ?? '');
 
   const { data: myRequest } = useQuery<ChangeRequestDto | null>({
     queryKey: ['events', eventId, 'roster-change-requests', 'mine'],
@@ -68,6 +75,21 @@ export function PlayerEventPage() {
         return <BriefingPage />;
       case 'maps':
         return <MapResourcesPage />;
+      case 'frequencies':
+        return (
+          <div className="mx-auto max-w-2xl space-y-4 p-6">
+            <h1 className="text-xl font-semibold">Frequencies</h1>
+            {frequenciesData ? (
+              <FrequencyDisplay
+                data={frequenciesData}
+                role={user?.role ?? 'player'}
+                onRefetch={() => void refetchFrequencies()}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Loading frequencies...</p>
+            )}
+          </div>
+        );
       case 'change-request':
         return <ChangeRequestTab eventId={eventId!} request={myRequest ?? null} onBack={() => setActiveTab('overview')} />;
     }

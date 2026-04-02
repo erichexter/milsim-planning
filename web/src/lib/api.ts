@@ -146,6 +146,22 @@ export const api = {
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
+
+  // Frequency endpoints
+  getFrequencies: (eventId: string): Promise<FrequencyViewDto> =>
+    request<FrequencyViewDto>(`/events/${eventId}/frequencies`),
+  getSquadFrequencies: (squadId: string): Promise<FrequencyLevelDto> =>
+    request<FrequencyLevelDto>(`/squads/${squadId}/frequencies`),
+  updateSquadFrequencies: (squadId: string, body: UpdateFrequencyRequest): Promise<void> =>
+    request<void>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(body) }),
+  getPlatoonFrequencies: (platoonId: string): Promise<FrequencyLevelDto> =>
+    request<FrequencyLevelDto>(`/platoons/${platoonId}/frequencies`),
+  updatePlatoonFrequencies: (platoonId: string, body: UpdateFrequencyRequest): Promise<void> =>
+    request<void>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(body) }),
+  getCommandFrequencies: (factionId: string): Promise<FrequencyLevelDto> =>
+    request<FrequencyLevelDto>(`/factions/${factionId}/command-frequencies`),
+  updateCommandFrequencies: (factionId: string, body: UpdateFrequencyRequest): Promise<void> =>
+    request<void>(`/factions/${factionId}/command-frequencies`, { method: 'PUT', body: JSON.stringify(body) }),
 };
 
 export interface UserProfile {
@@ -266,4 +282,22 @@ export interface NotificationBlast {
   subject: string;
   sentAt: string;
   recipientCount: number;
+}
+
+export interface FrequencyViewDto {
+  command: FrequencyLevelDto | null;
+  platoons: FrequencyLevelDto[] | null;
+  squads: FrequencyLevelDto[] | null;
+}
+
+export interface FrequencyLevelDto {
+  id: string;       // Guid as UUID string
+  name: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
 }
