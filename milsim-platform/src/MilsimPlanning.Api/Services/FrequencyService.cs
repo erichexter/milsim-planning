@@ -127,8 +127,11 @@ public class FrequencyService
 
         var ep = await GetEventPlayerAsync(faction.EventId);
 
+        var platoonInFaction = ep?.PlatoonId != null
+            && await PlatoonBelongsToFactionAsync(ep.PlatoonId.Value, factionId);
+
         var canRead = _currentUser.Role is AppRoles.FactionCommander or AppRoles.SystemAdmin
-            || (_currentUser.Role == AppRoles.PlatoonLeader && ep?.PlatoonId != null);
+            || (_currentUser.Role == AppRoles.PlatoonLeader && platoonInFaction);
         if (!canRead) throw new ForbiddenException("Insufficient role to access this resource.");
 
         return new FactionFrequencyDto
@@ -164,5 +167,13 @@ public class FrequencyService
     {
         return await _db.EventPlayers
             .FirstOrDefaultAsync(ep => ep.UserId == _currentUser.UserId && ep.EventId == eventId);
+    }
+
+    private async Task<bool> PlatoonBelongsToFactionAsync(Guid platoonId, Guid factionId)
+    {
+        return await _db.Platoons
+            .Where(p => p.Id == platoonId)
+            .Select(p => p.FactionId)
+            .FirstOrDefaultAsync() == factionId;
     }
 }
