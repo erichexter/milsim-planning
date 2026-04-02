@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UseMutationResult } from '@tanstack/react-query';
+import { type UseMutationResult } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { type UpdateFrequencyRequest } from '../../lib/api';
 

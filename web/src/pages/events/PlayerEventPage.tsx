@@ -44,6 +44,7 @@ interface AssignmentDto {
   role: string | null;
   platoon: { id: string; name: string } | null;
   squad: { id: string; name: string } | null;
+  faction: { id: string; name: string } | null;
   isAssigned: boolean;
 }
 
@@ -59,7 +60,7 @@ export function PlayerEventPage() {
       } catch (e: unknown) {
         const err = e as { status?: number };
         if (err?.status === 404)
-          return { id: '', name: '', callsign: null, teamAffiliation: null, role: null, platoon: null, squad: null, isAssigned: false };
+          return { id: '', name: '', callsign: null, teamAffiliation: null, role: null, platoon: null, squad: null, faction: null, isAssigned: false };
         throw e;
       }
     },
@@ -95,7 +96,7 @@ export function PlayerEventPage() {
                   role={assignment.role ?? 'player'}
                   squadId={assignment.squad?.id ?? null}
                   platoonId={assignment.platoon?.id ?? null}
-                  factionId={null}
+                  factionId={assignment.faction?.id ?? null}
                 />
               </div>
             )}

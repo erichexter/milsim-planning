@@ -26,7 +26,7 @@ const FACTION_WRITERS = new Set(['faction_commander', 'system_admin']);
 
 // Role visibility rules
 function showsSquad(role: string) {
-  return ['player', 'squad_leader', 'platoon_leader', 'faction_commander', 'system_admin'].includes(role);
+  return ['player', 'squad_leader', 'faction_commander', 'system_admin'].includes(role);
 }
 function showsPlatoon(role: string) {
   return ['squad_leader', 'platoon_leader', 'faction_commander', 'system_admin'].includes(role);
