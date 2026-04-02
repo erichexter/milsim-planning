@@ -60,7 +60,7 @@ public class FrequencyService
                 ?? throw new KeyNotFoundException($"EventPlayer for event {eventId} not found.");
 
             if (eventPlayer.PlatoonId is null)
-                return new FrequencyViewDto { Command = null, Platoons = [], Squads = null };
+                return new FrequencyViewDto { Command = null, Platoons = null, Squads = null };
 
             var platoon = await _db.Platoons
                 .Include(p => p.Faction)
@@ -82,7 +82,7 @@ public class FrequencyService
                 ?? throw new KeyNotFoundException($"EventPlayer for event {eventId} not found.");
 
             if (eventPlayer.SquadId is null)
-                return new FrequencyViewDto { Command = null, Platoons = null, Squads = [] };
+                return new FrequencyViewDto { Command = null, Platoons = null, Squads = null };
 
             var squad = await _db.Squads
                 .Include(s => s.Platoon)
@@ -104,7 +104,7 @@ public class FrequencyService
                 ?? throw new KeyNotFoundException($"EventPlayer for event {eventId} not found.");
 
             if (eventPlayer.SquadId is null)
-                return new FrequencyViewDto { Command = null, Platoons = null, Squads = [] };
+                return new FrequencyViewDto { Command = null, Platoons = null, Squads = null };
 
             var squad = await _db.Squads
                 .FirstOrDefaultAsync(s => s.Id == eventPlayer.SquadId)
@@ -129,7 +129,24 @@ public class FrequencyService
             .FirstOrDefaultAsync(s => s.Id == squadId)
             ?? throw new KeyNotFoundException($"Squad {squadId} not found.");
 
-        ScopeGuard.AssertEventAccess(_currentUser, squad.Platoon.Faction.EventId);
+        var eventId = squad.Platoon.Faction.EventId;
+        ScopeGuard.AssertEventAccess(_currentUser, eventId);
+
+        var role = _currentUser.Role;
+        if (role == AppRoles.SquadLeader)
+        {
+            var ep = await _db.EventPlayers
+                .FirstOrDefaultAsync(ep => ep.EventId == eventId && ep.UserId == _currentUser.UserId);
+            if (ep?.SquadId != squadId)
+                throw new ForbiddenException("Insufficient role to access this resource.");
+        }
+        else if (role == AppRoles.PlatoonLeader)
+        {
+            var ep = await _db.EventPlayers
+                .FirstOrDefaultAsync(ep => ep.EventId == eventId && ep.UserId == _currentUser.UserId);
+            if (ep?.PlatoonId != squad.PlatoonId)
+                throw new ForbiddenException("Insufficient role to access this resource.");
+        }
 
         return new FrequencyLevelDto { Id = squad.Id, Name = squad.Name, Primary = squad.PrimaryFrequency, Backup = squad.BackupFrequency };
     }
@@ -177,7 +194,16 @@ public class FrequencyService
             .FirstOrDefaultAsync(p => p.Id == platoonId)
             ?? throw new KeyNotFoundException($"Platoon {platoonId} not found.");
 
-        ScopeGuard.AssertEventAccess(_currentUser, platoon.Faction.EventId);
+        var eventId = platoon.Faction.EventId;
+        ScopeGuard.AssertEventAccess(_currentUser, eventId);
+
+        if (_currentUser.Role == AppRoles.PlatoonLeader)
+        {
+            var ep = await _db.EventPlayers
+                .FirstOrDefaultAsync(ep => ep.EventId == eventId && ep.UserId == _currentUser.UserId);
+            if (ep?.PlatoonId != platoonId)
+                throw new ForbiddenException("Insufficient role to access this resource.");
+        }
 
         return new FrequencyLevelDto { Id = platoon.Id, Name = platoon.Name, Primary = platoon.PrimaryFrequency, Backup = platoon.BackupFrequency };
     }
@@ -221,6 +247,9 @@ public class FrequencyService
             ?? throw new KeyNotFoundException($"Faction {factionId} not found.");
 
         ScopeGuard.AssertEventAccess(_currentUser, faction.EventId);
+
+        if (_currentUser.Role != AppRoles.SystemAdmin && faction.CommanderId != _currentUser.UserId)
+            throw new ForbiddenException("Insufficient role to access this resource.");
 
         return new FrequencyLevelDto { Id = faction.Id, Name = faction.Name, Primary = faction.CommandPrimaryFrequency, Backup = faction.CommandBackupFrequency };
     }

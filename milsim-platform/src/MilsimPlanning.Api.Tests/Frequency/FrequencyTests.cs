@@ -420,3 +420,106 @@ public class FrequencyFactionPutTests : FrequencyTestsBase
         body.GetProperty("backup").GetString().Should().Be("61.000");
     }
 }
+
+// ── GET /api/squads/{squadId}/frequencies — ownership checks ──────────────────
+
+[Trait("Category", "Frequency_SquadGet")]
+public class FrequencySquadGetTests : FrequencyTestsBase
+{
+    public FrequencySquadGetTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetSquadFrequencies_AsSquadLeaderOwnSquad_Returns200()
+    {
+        var response = await _squadLeaderClient.GetAsync($"/api/squads/{_squad1Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("id").GetString().Should().Be(_squad1Id.ToString());
+    }
+
+    [Fact]
+    public async Task GetSquadFrequencies_AsSquadLeaderOtherSquad_Returns403()
+    {
+        var response = await _squadLeaderClient.GetAsync($"/api/squads/{_squad2Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetSquadFrequencies_AsPlatoonLeaderSquadInMyPlatoon_Returns200()
+    {
+        var response = await _platoonLeaderClient.GetAsync($"/api/squads/{_squad1Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("id").GetString().Should().Be(_squad1Id.ToString());
+    }
+
+    [Fact]
+    public async Task GetSquadFrequencies_AsPlatoonLeaderSquadNotInMyPlatoon_Returns403()
+    {
+        var response = await _platoonLeaderClient.GetAsync($"/api/squads/{_squad2Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetSquadFrequencies_AsFactionCommander_Returns200()
+    {
+        var response = await _commanderClient.GetAsync($"/api/squads/{_squad1Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+}
+
+// ── GET /api/platoons/{platoonId}/frequencies — ownership checks ───────────────
+
+[Trait("Category", "Frequency_PlatoonGet")]
+public class FrequencyPlatoonGetTests : FrequencyTestsBase
+{
+    public FrequencyPlatoonGetTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetPlatoonFrequencies_AsPlatoonLeaderOwnPlatoon_Returns200()
+    {
+        var response = await _platoonLeaderClient.GetAsync($"/api/platoons/{_platoon1Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("id").GetString().Should().Be(_platoon1Id.ToString());
+    }
+
+    [Fact]
+    public async Task GetPlatoonFrequencies_AsPlatoonLeaderOtherPlatoon_Returns403()
+    {
+        var response = await _platoonLeaderClient.GetAsync($"/api/platoons/{_platoon2Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetPlatoonFrequencies_AsFactionCommander_Returns200()
+    {
+        var response = await _commanderClient.GetAsync($"/api/platoons/{_platoon1Id}/frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+}
+
+// ── GET /api/factions/{factionId}/command-frequencies — ownership checks ───────
+
+[Trait("Category", "Frequency_FactionGet")]
+public class FrequencyFactionGetTests : FrequencyTestsBase
+{
+    public FrequencyFactionGetTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetFactionCommandFrequencies_AsOwnFactionCommander_Returns200()
+    {
+        var response = await _commanderClient.GetAsync($"/api/factions/{_factionId}/command-frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("id").GetString().Should().Be(_factionId.ToString());
+    }
+
+    [Fact]
+    public async Task GetFactionCommandFrequencies_AsOtherFactionCommander_Returns403_IDOR()
+    {
+        // otherCommander is NOT a member of this event → ScopeGuard blocks → 403
+        var response = await _otherCommanderClient.GetAsync($"/api/factions/{_factionId}/command-frequencies");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+}
