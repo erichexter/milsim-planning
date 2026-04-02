@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Button } from '../../components/ui/button';
 import { EventBreadcrumb } from '../../components/EventBreadcrumb';
+import { FrequencyPanel } from '../../components/frequency/FrequencyPanel';
 
 type TabId = 'overview' | 'roster' | 'briefing' | 'maps' | 'change-request';
 
@@ -35,9 +36,35 @@ interface ChangeRequestDto {
   createdAt: string;
 }
 
+interface AssignmentDto {
+  id: string;
+  name: string;
+  callsign: string | null;
+  teamAffiliation: string | null;
+  role: string | null;
+  platoon: { id: string; name: string } | null;
+  squad: { id: string; name: string } | null;
+  isAssigned: boolean;
+}
+
 export function PlayerEventPage() {
   const { id: eventId } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+
+  const { data: assignment } = useQuery<AssignmentDto>({
+    queryKey: ['events', eventId, 'my-assignment'],
+    queryFn: async () => {
+      try {
+        return await api.get<AssignmentDto>(`/events/${eventId!}/my-assignment`);
+      } catch (e: unknown) {
+        const err = e as { status?: number };
+        if (err?.status === 404)
+          return { id: '', name: '', callsign: null, teamAffiliation: null, role: null, platoon: null, squad: null, isAssigned: false };
+        throw e;
+      }
+    },
+    enabled: !!eventId,
+  });
 
   const { data: myRequest } = useQuery<ChangeRequestDto | null>({
     queryKey: ['events', eventId, 'roster-change-requests', 'mine'],
@@ -57,10 +84,22 @@ export function PlayerEventPage() {
     switch (activeTab) {
       case 'overview':
         return (
-          <PlayerOverviewTab
-            eventId={eventId!}
-            onNavigate={(tab) => setActiveTab(tab)}
-          />
+          <>
+            <PlayerOverviewTab
+              eventId={eventId!}
+              onNavigate={(tab) => setActiveTab(tab)}
+            />
+            {assignment?.isAssigned && (
+              <div className="mx-auto max-w-3xl lg:max-w-5xl px-5 pb-5">
+                <FrequencyPanel
+                  role={assignment.role ?? 'player'}
+                  squadId={assignment.squad?.id ?? null}
+                  platoonId={assignment.platoon?.id ?? null}
+                  factionId={null}
+                />
+              </div>
+            )}
+          </>
         );
       case 'roster':
         return <RosterView />;

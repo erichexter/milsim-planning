@@ -146,6 +146,20 @@ export const api = {
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
+
+  // Frequency endpoints
+  getSquadFrequency: (squadId: string) =>
+    request<SquadFrequencyDto>(`/squads/${squadId}/frequencies`),
+  updateSquadFrequency: (squadId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/squads/${squadId}/frequencies`, { method: 'PATCH', body: JSON.stringify(req) }),
+  getPlatoonFrequency: (platoonId: string) =>
+    request<PlatoonFrequencyDto>(`/platoons/${platoonId}/frequencies`),
+  updatePlatoonFrequency: (platoonId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/platoons/${platoonId}/frequencies`, { method: 'PATCH', body: JSON.stringify(req) }),
+  getFactionFrequency: (factionId: string) =>
+    request<FactionFrequencyDto>(`/factions/${factionId}/frequencies`),
+  updateFactionFrequency: (factionId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/factions/${factionId}/frequencies`, { method: 'PATCH', body: JSON.stringify(req) }),
 };
 
 export interface UserProfile {
@@ -266,4 +280,27 @@ export interface NotificationBlast {
   subject: string;
   sentAt: string;
   recipientCount: number;
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface SquadFrequencyDto {
+  squadId: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface PlatoonFrequencyDto {
+  platoonId: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface FactionFrequencyDto {
+  factionId: string;
+  primary: string | null;
+  backup: string | null;
 }
