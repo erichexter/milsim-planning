@@ -522,32 +522,44 @@ public class FrequencyTests : FrequencyTestsBase
     }
 
     [Fact]
-    public async Task UpdateSquadFrequencies_WithNonExistentSquadId_Returns404()
+    public async Task UpdateSquadFrequencies_WithNonExistentSquadId_Returns404ProblemDetails()
     {
+        var missingId = Guid.NewGuid();
         var response = await _squadLeaderClient.PutAsJsonAsync(
-            $"/api/squads/{Guid.NewGuid()}/frequencies",
+            $"/api/squads/{missingId}/frequencies",
             new { primary = "160.0" });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("title").GetString().Should().Be("Not Found");
+        body.GetProperty("detail").GetString().Should().Be($"Squad {missingId} not found.");
     }
 
     [Fact]
-    public async Task UpdatePlatoonFrequencies_WithNonExistentPlatoonId_Returns404()
+    public async Task UpdatePlatoonFrequencies_WithNonExistentPlatoonId_Returns404ProblemDetails()
     {
+        var missingId = Guid.NewGuid();
         var response = await _platoonLeaderClient.PutAsJsonAsync(
-            $"/api/platoons/{Guid.NewGuid()}/frequencies",
+            $"/api/platoons/{missingId}/frequencies",
             new { primary = "135.0" });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("title").GetString().Should().Be("Not Found");
+        body.GetProperty("detail").GetString().Should().Be($"Platoon {missingId} not found.");
     }
 
     [Fact]
-    public async Task UpdateFactionFrequencies_WithNonExistentFactionId_Returns404()
+    public async Task UpdateFactionFrequencies_WithNonExistentFactionId_Returns404ProblemDetails()
     {
+        var missingId = Guid.NewGuid();
         var response = await _commanderClient.PutAsJsonAsync(
-            $"/api/factions/{Guid.NewGuid()}/frequencies",
+            $"/api/factions/{missingId}/frequencies",
             new { primary = "125.0" });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("title").GetString().Should().Be("Not Found");
+        body.GetProperty("detail").GetString().Should().Be($"Faction {missingId} not found.");
     }
 }
