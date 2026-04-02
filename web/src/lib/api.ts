@@ -144,6 +144,16 @@ export const api = {
   createNotificationBlast: (eventId: string, payload: { subject: string; body: string }) =>
     request<{ blastId: string; recipientCount: number }>(`/events/${eventId}/notification-blasts`, { method: 'POST', body: JSON.stringify(payload) }),
 
+  // Frequencies
+  getFrequencies: (eventId: string) =>
+    request<FrequencyOverviewDto>(`/events/${eventId}/frequencies`),
+  updateCommandFrequency: (eventId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/events/${eventId}/frequencies/command`, { method: 'PUT', body: JSON.stringify(req) }),
+  updatePlatoonFrequency: (eventId: string, platoonId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/events/${eventId}/frequencies/platoons/${platoonId}`, { method: 'PUT', body: JSON.stringify(req) }),
+  updateSquadFrequency: (eventId: string, squadId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/events/${eventId}/frequencies/squads/${squadId}`, { method: 'PUT', body: JSON.stringify(req) }),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -266,4 +276,15 @@ export interface NotificationBlast {
   subject: string;
   sentAt: string;
   recipientCount: number;
+}
+
+export interface FrequencyOverviewDto {
+  command: { primary: string | null; backup: string | null } | null;
+  platoons: { platoonId: string; platoonName: string; primary: string | null; backup: string | null }[];
+  squads: { squadId: string; squadName: string; platoonId: string; primary: string | null; backup: string | null }[];
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
 }
