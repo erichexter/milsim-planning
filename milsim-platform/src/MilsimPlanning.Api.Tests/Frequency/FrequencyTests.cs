@@ -31,6 +31,8 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
     protected HttpClient _playerClient = null!;
     protected HttpClient _adminClient = null!;
     protected HttpClient _outsiderClient = null!;
+    protected HttpClient _unassignedPlayerClient = null!;
+    protected HttpClient _unassignedSquadLeaderClient = null!;
 
     // IDs
     protected Guid _eventId;
@@ -145,6 +147,20 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         await userManager.AddToRoleAsync(admin, "system_admin");
         admin.Profile = new UserProfile { UserId = admin.Id, Callsign = "FreqAdmin", DisplayName = "FreqAdmin", User = admin };
 
+        // Create unassigned player (EventMembership but NO EventPlayer)
+        var unassignedPlayerEmail = $"freq-unassigned-player-{Guid.NewGuid():N}@test.com";
+        var unassignedPlayer = new AppUser { UserName = unassignedPlayerEmail, Email = unassignedPlayerEmail, EmailConfirmed = true };
+        await userManager.CreateAsync(unassignedPlayer, "TestPass123!");
+        await userManager.AddToRoleAsync(unassignedPlayer, "player");
+        unassignedPlayer.Profile = new UserProfile { UserId = unassignedPlayer.Id, Callsign = "FreqUnassignedPlayer", DisplayName = "FreqUnassignedPlayer", User = unassignedPlayer };
+
+        // Create unassigned squad leader (EventMembership but NO EventPlayer)
+        var unassignedSlEmail = $"freq-unassigned-sl-{Guid.NewGuid():N}@test.com";
+        var unassignedSl = new AppUser { UserName = unassignedSlEmail, Email = unassignedSlEmail, EmailConfirmed = true };
+        await userManager.CreateAsync(unassignedSl, "TestPass123!");
+        await userManager.AddToRoleAsync(unassignedSl, "squad_leader");
+        unassignedSl.Profile = new UserProfile { UserId = unassignedSl.Id, Callsign = "FreqUnassignedSL", DisplayName = "FreqUnassignedSL", User = unassignedSl };
+
         // Seed event + faction + hierarchy
         _eventId = Guid.NewGuid();
         _factionId = Guid.NewGuid();
@@ -224,6 +240,8 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         db.EventMemberships.Add(new EventMembership { UserId = platoonLeader.Id, EventId = _eventId, Role = "platoon_leader" });
         db.EventMemberships.Add(new EventMembership { UserId = squadLeader.Id, EventId = _eventId, Role = "squad_leader" });
         db.EventMemberships.Add(new EventMembership { UserId = player.Id, EventId = _eventId, Role = "player" });
+        db.EventMemberships.Add(new EventMembership { UserId = unassignedPlayer.Id, EventId = _eventId, Role = "player" });
+        db.EventMemberships.Add(new EventMembership { UserId = unassignedSl.Id, EventId = _eventId, Role = "squad_leader" });
 
         // EventPlayers — assign to squads/platoons
         db.EventPlayers.Add(new EventPlayer
@@ -276,6 +294,12 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
 
         _outsiderClient = _factory.CreateClient();
         IntegrationTestAuthHandler.ApplyTestIdentity(_outsiderClient, outsider.Id, "player");
+
+        _unassignedPlayerClient = _factory.CreateClient();
+        IntegrationTestAuthHandler.ApplyTestIdentity(_unassignedPlayerClient, unassignedPlayer.Id, "player");
+
+        _unassignedSquadLeaderClient = _factory.CreateClient();
+        IntegrationTestAuthHandler.ApplyTestIdentity(_unassignedSquadLeaderClient, unassignedSl.Id, "squad_leader");
     }
 
     public Task DisposeAsync()
@@ -286,6 +310,8 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         _playerClient.Dispose();
         _adminClient.Dispose();
         _outsiderClient.Dispose();
+        _unassignedPlayerClient.Dispose();
+        _unassignedSquadLeaderClient.Dispose();
         _factory.Dispose();
         return Task.CompletedTask;
     }
@@ -403,6 +429,41 @@ public class GetFrequencyTests : FrequencyTestsBase
         var response = await _adminClient.GetAsync($"/api/events/{Guid.NewGuid()}/frequencies");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetFrequencies_AsUnassignedPlayer_ReturnsEmptySquadsList()
+    {
+        var response = await _unassignedPlayerClient.GetAsync($"/api/events/{_eventId}/frequencies");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        body.GetProperty("command").ValueKind.Should().Be(JsonValueKind.Null);
+        body.GetProperty("platoons").ValueKind.Should().Be(JsonValueKind.Null);
+
+        var squads = body.GetProperty("squads");
+        squads.ValueKind.Should().Be(JsonValueKind.Array);
+        squads.GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetFrequencies_AsUnassignedSquadLeader_ReturnsEmptyLists()
+    {
+        var response = await _unassignedSquadLeaderClient.GetAsync($"/api/events/{_eventId}/frequencies");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        body.GetProperty("command").ValueKind.Should().Be(JsonValueKind.Null);
+
+        var platoons = body.GetProperty("platoons");
+        platoons.ValueKind.Should().Be(JsonValueKind.Array);
+        platoons.GetArrayLength().Should().Be(0);
+
+        var squads = body.GetProperty("squads");
+        squads.ValueKind.Should().Be(JsonValueKind.Array);
+        squads.GetArrayLength().Should().Be(0);
     }
 }
 

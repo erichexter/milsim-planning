@@ -66,7 +66,8 @@ public class FrequencyService
         // Platoon frequencies
         if (role == AppRoles.SquadLeader)
         {
-            // Own platoon only
+            // Own platoon only — empty list if unassigned
+            response.Platoons = [];
             if (eventPlayer?.PlatoonId is not null)
             {
                 var platoon = faction.Platoons.FirstOrDefault(p => p.Id == eventPlayer.PlatoonId);
@@ -78,7 +79,8 @@ public class FrequencyService
         }
         else if (role == AppRoles.PlatoonLeader)
         {
-            // Own platoon only
+            // Own platoon only — empty list if unassigned
+            response.Platoons = [];
             if (eventPlayer?.PlatoonId is not null)
             {
                 var platoon = faction.Platoons.FirstOrDefault(p => p.Id == eventPlayer.PlatoonId);
@@ -99,7 +101,8 @@ public class FrequencyService
         // Squad frequencies
         if (role is AppRoles.Player or AppRoles.SquadLeader)
         {
-            // Own squad only
+            // Own squad only — empty list if unassigned
+            response.Squads = [];
             if (eventPlayer?.SquadId is not null)
             {
                 var squad = faction.Platoons
