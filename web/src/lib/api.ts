@@ -267,3 +267,39 @@ export interface NotificationBlast {
   sentAt: string;
   recipientCount: number;
 }
+
+// ─── Frequency types ─────────────────────────────────────────────────────────
+
+export interface FrequencyLevelDto {
+  id: string;           // UUID string
+  name: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface EventFrequenciesDto {
+  squad: FrequencyLevelDto | null;
+  platoon: FrequencyLevelDto | null;
+  command: FrequencyLevelDto | null;
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
+}
+
+export function getEventFrequencies(eventId: string): Promise<EventFrequenciesDto> {
+  return request<EventFrequenciesDto>(`/events/${eventId}/frequencies`);
+}
+
+export function updateSquadFrequencies(squadId: string, req: UpdateFrequencyRequest): Promise<FrequencyLevelDto> {
+  return request<FrequencyLevelDto>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) });
+}
+
+export function updatePlatoonFrequencies(platoonId: string, req: UpdateFrequencyRequest): Promise<FrequencyLevelDto> {
+  return request<FrequencyLevelDto>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) });
+}
+
+export function updateFactionFrequencies(factionId: string, req: UpdateFrequencyRequest): Promise<FrequencyLevelDto> {
+  return request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) });
+}
