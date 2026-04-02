@@ -146,6 +146,16 @@ export const api = {
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
+
+  // Frequency endpoints
+  getFrequencies: (eventId: string) =>
+    request<FrequenciesDto>(`/events/${eventId}/frequencies`),
+  patchSquadFrequencies: (squadId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/squads/${squadId}/frequencies`, { method: 'PATCH', body: JSON.stringify(req) }),
+  patchPlatoonFrequencies: (platoonId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/platoons/${platoonId}/frequencies`, { method: 'PATCH', body: JSON.stringify(req) }),
+  patchFactionFrequencies: (factionId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/factions/${factionId}/frequencies`, { method: 'PATCH', body: JSON.stringify(req) }),
 };
 
 export interface UserProfile {
@@ -266,4 +276,24 @@ export interface NotificationBlast {
   subject: string;
   sentAt: string;
   recipientCount: number;
+}
+
+export interface FrequencyLevelDto {
+  id: string;
+  name: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface FrequenciesDto {
+  squad: FrequencyLevelDto | null;
+  platoon: FrequencyLevelDto | null;
+  command: FrequencyLevelDto | null;
+  allPlatoons: FrequencyLevelDto[] | null;
+  allSquads: FrequencyLevelDto[] | null;
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
 }
