@@ -35,14 +35,17 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
     protected HttpClient _platoonLeaderClient = null!;
     protected HttpClient _squadLeaderClient = null!;
     protected HttpClient _altSquadLeaderClient = null!;
+    protected HttpClient _altPlatoonLeaderClient = null!;
     protected HttpClient _playerClient = null!;
     protected HttpClient _nonMemberClient = null!;
 
     protected Guid _eventId;
     protected Guid _factionId;
     protected Guid _platoonId;
+    protected Guid _altPlatoonId;
     protected Guid _squadId;
     protected Guid _altSquadId;
+    protected Guid _altPlatoonSquadId;
     protected string _commanderUserId = string.Empty;
 
     public FrequencyTestsBase(PostgreSqlFixture fixture) => _fixture = fixture;
@@ -127,6 +130,13 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         await userManager.AddToRoleAsync(altSquadLeader, "squad_leader");
         altSquadLeader.Profile = new UserProfile { UserId = altSquadLeader.Id, Callsign = "SL2", DisplayName = "SL2", User = altSquadLeader };
 
+        // Alt platoon leader (different platoon — for IDOR 403 tests)
+        var pl2Email = $"freq-pl2-{Guid.NewGuid():N}@test.com";
+        var altPlatoonLeader = new AppUser { UserName = pl2Email, Email = pl2Email, EmailConfirmed = true };
+        await userManager.CreateAsync(altPlatoonLeader, "TestPass123!");
+        await userManager.AddToRoleAsync(altPlatoonLeader, "platoon_leader");
+        altPlatoonLeader.Profile = new UserProfile { UserId = altPlatoonLeader.Id, Callsign = "PL2", DisplayName = "PL2", User = altPlatoonLeader };
+
         // Player
         var playerEmail = $"freq-player-{Guid.NewGuid():N}@test.com";
         var player = new AppUser { UserName = playerEmail, Email = playerEmail, EmailConfirmed = true };
@@ -145,8 +155,10 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         _eventId = Guid.NewGuid();
         _factionId = Guid.NewGuid();
         _platoonId = Guid.NewGuid();
+        _altPlatoonId = Guid.NewGuid();
         _squadId = Guid.NewGuid();
         _altSquadId = Guid.NewGuid();
+        _altPlatoonSquadId = Guid.NewGuid();
 
         var faction = new Faction
         {
@@ -198,11 +210,30 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         };
         db.Squads.Add(altSquad);
 
+        var altPlatoon = new Platoon
+        {
+            Id = _altPlatoonId,
+            FactionId = _factionId,
+            Name = "Bravo Platoon",
+            Order = 2
+        };
+        db.Platoons.Add(altPlatoon);
+
+        var altPlatoonSquad = new Squad
+        {
+            Id = _altPlatoonSquadId,
+            PlatoonId = _altPlatoonId,
+            Name = "Bravo-1",
+            Order = 1
+        };
+        db.Squads.Add(altPlatoonSquad);
+
         // EventMemberships
         db.EventMemberships.Add(new EventMembership { UserId = commander.Id, EventId = _eventId, Role = "faction_commander" });
         db.EventMemberships.Add(new EventMembership { UserId = platoonLeader.Id, EventId = _eventId, Role = "platoon_leader" });
         db.EventMemberships.Add(new EventMembership { UserId = squadLeader.Id, EventId = _eventId, Role = "squad_leader" });
         db.EventMemberships.Add(new EventMembership { UserId = altSquadLeader.Id, EventId = _eventId, Role = "squad_leader" });
+        db.EventMemberships.Add(new EventMembership { UserId = altPlatoonLeader.Id, EventId = _eventId, Role = "platoon_leader" });
         db.EventMemberships.Add(new EventMembership { UserId = player.Id, EventId = _eventId, Role = "player" });
 
         // EventPlayer rows for non-commander users (linked via UserId)
@@ -245,6 +276,15 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
             PlatoonId = _platoonId
         });
 
+        db.EventPlayers.Add(new EventPlayer
+        {
+            EventId = _eventId,
+            Email = pl2Email,
+            Name = "PL2",
+            UserId = altPlatoonLeader.Id,
+            PlatoonId = _altPlatoonId
+        });
+
         await db.SaveChangesAsync();
 
         // Create HTTP clients
@@ -260,6 +300,9 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         _altSquadLeaderClient = _factory.CreateClient();
         IntegrationTestAuthHandler.ApplyTestIdentity(_altSquadLeaderClient, altSquadLeader.Id, "squad_leader");
 
+        _altPlatoonLeaderClient = _factory.CreateClient();
+        IntegrationTestAuthHandler.ApplyTestIdentity(_altPlatoonLeaderClient, altPlatoonLeader.Id, "platoon_leader");
+
         _playerClient = _factory.CreateClient();
         IntegrationTestAuthHandler.ApplyTestIdentity(_playerClient, player.Id, "player");
 
@@ -273,6 +316,7 @@ public class FrequencyTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         _platoonLeaderClient.Dispose();
         _squadLeaderClient.Dispose();
         _altSquadLeaderClient.Dispose();
+        _altPlatoonLeaderClient.Dispose();
         _playerClient.Dispose();
         _nonMemberClient.Dispose();
         _factory.Dispose();
@@ -463,5 +507,47 @@ public class FrequencyTests : FrequencyTestsBase
             new { primary = "999.0" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateSquadFrequencies_AsPlatoonLeaderOfDifferentPlatoon_Returns403()
+    {
+        // altPlatoonLeader is assigned to _altPlatoonId, not _platoonId
+        // attempting to update a squad under _platoonId should be forbidden
+        var response = await _altPlatoonLeaderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primary = "999.0" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateSquadFrequencies_WithNonExistentSquadId_Returns404()
+    {
+        var response = await _squadLeaderClient.PutAsJsonAsync(
+            $"/api/squads/{Guid.NewGuid()}/frequencies",
+            new { primary = "160.0" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdatePlatoonFrequencies_WithNonExistentPlatoonId_Returns404()
+    {
+        var response = await _platoonLeaderClient.PutAsJsonAsync(
+            $"/api/platoons/{Guid.NewGuid()}/frequencies",
+            new { primary = "135.0" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateFactionFrequencies_WithNonExistentFactionId_Returns404()
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/factions/{Guid.NewGuid()}/frequencies",
+            new { primary = "125.0" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

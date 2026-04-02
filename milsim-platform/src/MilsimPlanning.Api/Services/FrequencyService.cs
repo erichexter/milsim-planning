@@ -107,6 +107,7 @@ public class FrequencyService
             ?? throw new KeyNotFoundException($"Squad {squadId} not found");
 
         var eventId = squad.Platoon.Faction.EventId;
+        ScopeGuard.AssertEventAccess(_currentUser, eventId);
         await AssertSquadWriteAccessAsync(squad, eventId);
 
         squad.PrimaryFrequency = request.Primary;
@@ -125,6 +126,7 @@ public class FrequencyService
             .FirstOrDefaultAsync(p => p.Id == platoonId)
             ?? throw new KeyNotFoundException($"Platoon {platoonId} not found");
 
+        ScopeGuard.AssertEventAccess(_currentUser, platoon.Faction.EventId);
         await AssertPlatoonWriteAccessAsync(platoon);
 
         platoon.PrimaryFrequency = request.Primary;
@@ -142,6 +144,7 @@ public class FrequencyService
             .FirstOrDefaultAsync(f => f.Id == factionId)
             ?? throw new KeyNotFoundException($"Faction {factionId} not found");
 
+        ScopeGuard.AssertEventAccess(_currentUser, faction.EventId);
         AssertFactionWriteAccess(faction);
 
         faction.CommandPrimaryFrequency = request.Primary;
