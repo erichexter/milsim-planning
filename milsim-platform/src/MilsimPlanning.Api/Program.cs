@@ -124,6 +124,7 @@ builder.Services.AddScoped<RosterService>();
 builder.Services.AddScoped<HierarchyService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IMapResourceService, MapResourceService>();
+builder.Services.AddScoped<FrequencyService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();
