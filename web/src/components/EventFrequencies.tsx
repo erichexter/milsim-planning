@@ -1,13 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { api, type EventFrequenciesDto, type FrequencyLevelDto } from '../lib/api';
+import { api, type EventFrequenciesDto, type FrequencyPairDto } from '../lib/api';
 
 interface Props {
   eventId: string;
 }
 
-function FrequencyRow({ label, freq }: { label: string; freq: FrequencyLevelDto | null }) {
-  if (!freq) return null;
-
+function FrequencyRow({ label, freq }: { label: string; freq: FrequencyPairDto }) {
   return (
     <div className="mb-3">
       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
@@ -26,13 +24,13 @@ function FrequencyRow({ label, freq }: { label: string; freq: FrequencyLevelDto 
 }
 
 function hasAnyFrequency(dto: EventFrequenciesDto): boolean {
-  return dto.squad !== null || dto.platoon !== null || dto.command !== null;
+  return dto.command !== null || dto.platoons.length > 0 || dto.squads.length > 0;
 }
 
 export function EventFrequencies({ eventId }: Props) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['frequencies', eventId],
-    queryFn: () => api.getEventFrequencies(eventId),
+    queryFn: () => api.getFrequencies(eventId),
   });
 
   if (isLoading) {
@@ -49,9 +47,13 @@ export function EventFrequencies({ eventId }: Props) {
 
   return (
     <div data-testid="event-frequencies">
-      <FrequencyRow label="Squad" freq={data.squad} />
-      <FrequencyRow label="Platoon" freq={data.platoon} />
-      <FrequencyRow label="Command" freq={data.command} />
+      {data.squads.map((sq) => (
+        <FrequencyRow key={sq.squadId} label={`Squad — ${sq.name}`} freq={{ primary: sq.primary, backup: sq.backup }} />
+      ))}
+      {data.platoons.map((pl) => (
+        <FrequencyRow key={pl.platoonId} label={`Platoon — ${pl.name}`} freq={{ primary: pl.primary, backup: pl.backup }} />
+      ))}
+      {data.command && <FrequencyRow label="Command" freq={data.command} />}
     </div>
   );
 }

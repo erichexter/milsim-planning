@@ -16,9 +16,9 @@ describe('EventFrequencies', () => {
       server.use(
         http.get('/api/events/evt-1/frequencies', () =>
           HttpResponse.json({
-            squad: { primary: '143.000', backup: '144.000' },
-            platoon: null,
             command: null,
+            platoons: [],
+            squads: [{ squadId: 'sq-1', name: 'Alpha 1', platoonId: 'pl-1', primary: '143.000', backup: '144.000' }],
           })
         )
       );
@@ -26,15 +26,15 @@ describe('EventFrequencies', () => {
 
     it('renders squad frequency', async () => {
       renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Squad')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Squad/)).toBeInTheDocument());
       expect(screen.getByText('143.000')).toBeInTheDocument();
       expect(screen.getByText('144.000')).toBeInTheDocument();
     });
 
     it('does not render platoon or command sections', async () => {
       renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Squad')).toBeInTheDocument());
-      expect(screen.queryByText('Platoon')).not.toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText(/Squad/)).toBeInTheDocument());
+      expect(screen.queryByText(/Platoon/)).not.toBeInTheDocument();
       expect(screen.queryByText('Command')).not.toBeInTheDocument();
     });
   });
@@ -44,9 +44,9 @@ describe('EventFrequencies', () => {
       server.use(
         http.get('/api/events/evt-1/frequencies', () =>
           HttpResponse.json({
-            squad: { primary: '143.000', backup: null },
-            platoon: { primary: '145.000', backup: '146.000' },
             command: null,
+            platoons: [{ platoonId: 'pl-1', name: '1st Platoon', primary: '145.000', backup: '146.000' }],
+            squads: [{ squadId: 'sq-1', name: 'Alpha 1', platoonId: 'pl-1', primary: '143.000', backup: null }],
           })
         )
       );
@@ -54,59 +54,32 @@ describe('EventFrequencies', () => {
 
     it('renders squad and platoon frequencies', async () => {
       renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Squad')).toBeInTheDocument());
-      expect(screen.getByText('Platoon')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText(/Squad/)).toBeInTheDocument());
+      expect(screen.getByText(/Platoon/)).toBeInTheDocument();
       expect(screen.getByText('145.000')).toBeInTheDocument();
     });
 
     it('does not render command section', async () => {
       renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Squad')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Squad/)).toBeInTheDocument());
       expect(screen.queryByText('Command')).not.toBeInTheDocument();
     });
 
     it('shows "not set" for null backup', async () => {
       renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Squad')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Squad/)).toBeInTheDocument());
       expect(screen.getByText('not set')).toBeInTheDocument();
     });
   });
 
-  describe('platoon_leader role (platoon + command)', () => {
+  describe('faction_commander role (all levels)', () => {
     beforeEach(() => {
       server.use(
         http.get('/api/events/evt-1/frequencies', () =>
           HttpResponse.json({
-            squad: null,
-            platoon: { primary: '145.000', backup: '146.000' },
             command: { primary: '147.000', backup: '148.000' },
-          })
-        )
-      );
-    });
-
-    it('renders platoon and command frequencies', async () => {
-      renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Platoon')).toBeInTheDocument());
-      expect(screen.getByText('Command')).toBeInTheDocument();
-      expect(screen.getByText('147.000')).toBeInTheDocument();
-    });
-
-    it('does not render squad section', async () => {
-      renderWithQuery(<EventFrequencies eventId="evt-1" />);
-      await waitFor(() => expect(screen.getByText('Platoon')).toBeInTheDocument());
-      expect(screen.queryByText('Squad')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('faction_commander role (command visible)', () => {
-    beforeEach(() => {
-      server.use(
-        http.get('/api/events/evt-1/frequencies', () =>
-          HttpResponse.json({
-            squad: null,
-            platoon: null,
-            command: { primary: '147.000', backup: '148.000' },
+            platoons: [{ platoonId: 'pl-1', name: '1st Platoon', primary: '145.000', backup: '146.000' }],
+            squads: [{ squadId: 'sq-1', name: 'Alpha 1', platoonId: 'pl-1', primary: '143.000', backup: '144.000' }],
           })
         )
       );
@@ -123,7 +96,7 @@ describe('EventFrequencies', () => {
     beforeEach(() => {
       server.use(
         http.get('/api/events/evt-1/frequencies', () =>
-          HttpResponse.json({ squad: null, platoon: null, command: null })
+          HttpResponse.json({ command: null, platoons: [], squads: [] })
         )
       );
     });

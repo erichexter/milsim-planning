@@ -145,14 +145,14 @@ export const api = {
     request<{ blastId: string; recipientCount: number }>(`/events/${eventId}/notification-blasts`, { method: 'POST', body: JSON.stringify(payload) }),
 
   // Frequency endpoints
-  getEventFrequencies: (eventId: string) =>
+  getFrequencies: (eventId: string) =>
     request<EventFrequenciesDto>(`/events/${eventId}/frequencies`),
-  setSquadFrequencies: (squadId: string, req: SetFrequenciesRequest) =>
-    request<FrequencyLevelDto>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
-  setPlatoonFrequencies: (platoonId: string, req: SetFrequenciesRequest) =>
-    request<FrequencyLevelDto>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
-  setFactionFrequencies: (factionId: string, req: SetFrequenciesRequest) =>
-    request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  updateSquadFrequency: (squadId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  updatePlatoonFrequency: (platoonId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+  updateCommandFrequency: (eventId: string, req: UpdateFrequencyRequest) =>
+    request<void>(`/events/${eventId}/frequencies/command`, { method: 'PUT', body: JSON.stringify(req) }),
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
@@ -278,18 +278,33 @@ export interface NotificationBlast {
   recipientCount: number;
 }
 
-export interface FrequencyLevelDto {
+export interface FrequencyPairDto {
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface PlatoonFrequencyDto {
+  platoonId: string;
+  name: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface SquadFrequencyDto {
+  squadId: string;
+  name: string;
+  platoonId: string;
   primary: string | null;
   backup: string | null;
 }
 
 export interface EventFrequenciesDto {
-  squad: FrequencyLevelDto | null;
-  platoon: FrequencyLevelDto | null;
-  command: FrequencyLevelDto | null;
+  command: FrequencyPairDto | null;
+  platoons: PlatoonFrequencyDto[];
+  squads: SquadFrequencyDto[];
 }
 
-export interface SetFrequenciesRequest {
-  primaryFrequency: string | null;
-  backupFrequency: string | null;
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
 }
