@@ -18,7 +18,7 @@ import { FrequencyDisplay } from '../../components/frequency/FrequencyDisplay';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
-import { useFrequencies } from '../../hooks/useFrequencies';
+import { useFrequencies, usePlatoonLeaderSquadFrequencies } from '../../hooks/useFrequencies';
 import { Button } from '../../components/ui/button';
 import { EventBreadcrumb } from '../../components/EventBreadcrumb';
 
@@ -45,6 +45,12 @@ export function PlayerEventPage() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const { user } = useAuth();
   const { data: frequenciesData, refetch: refetchFrequencies } = useFrequencies(eventId ?? '');
+  const platoonIds = frequenciesData?.platoons?.map(p => p.id) ?? [];
+  const platoonLeaderSquads = usePlatoonLeaderSquadFrequencies(
+    eventId ?? '',
+    user?.role ?? '',
+    platoonIds
+  );
 
   const { data: myRequest } = useQuery<ChangeRequestDto | null>({
     queryKey: ['events', eventId, 'roster-change-requests', 'mine'],
@@ -84,6 +90,7 @@ export function PlayerEventPage() {
                 data={frequenciesData}
                 role={user?.role ?? 'player'}
                 onRefetch={() => void refetchFrequencies()}
+                editableSquads={platoonLeaderSquads.length > 0 ? platoonLeaderSquads : undefined}
               />
             ) : (
               <p className="text-sm text-muted-foreground">Loading frequencies...</p>

@@ -7,6 +7,8 @@ interface FrequencyDisplayProps {
   data: FrequencyViewDto;
   role: string;
   onRefetch?: () => void;
+  /** Additional squad rows for platoon leaders to edit (squads are null in their frequency view). */
+  editableSquads?: FrequencyLevelDto[];
 }
 
 function canEditCommand(role: string): boolean {
@@ -72,7 +74,12 @@ function FrequencyRow({ level, levelType, showEdit, onRefetch }: FrequencyRowPro
   );
 }
 
-export function FrequencyDisplay({ data, role, onRefetch }: FrequencyDisplayProps) {
+export function FrequencyDisplay({ data, role, onRefetch, editableSquads }: FrequencyDisplayProps) {
+  // For platoon leaders: use editableSquads (fetched separately) since data.squads is null.
+  // For other roles: use data.squads directly.
+  const squadRows = data.squads ?? (editableSquads && editableSquads.length > 0 ? editableSquads : null);
+  const squadRowsShowEdit = data.squads !== null ? canEditSquad(role) : true;
+
   return (
     <div className="space-y-6">
       {data.command !== null && (
@@ -108,18 +115,18 @@ export function FrequencyDisplay({ data, role, onRefetch }: FrequencyDisplayProp
         </section>
       )}
 
-      {data.squads !== null && (
+      {squadRows !== null && (
         <section aria-label="Squad Frequencies">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
             Squad Frequencies
           </h3>
           <div className="space-y-3">
-            {data.squads.map((squad) => (
+            {squadRows.map((squad) => (
               <FrequencyRow
                 key={squad.id}
                 level={squad}
                 levelType="squad"
-                showEdit={canEditSquad(role)}
+                showEdit={squadRowsShowEdit}
                 onRefetch={onRefetch}
               />
             ))}

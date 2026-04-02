@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FrequencyDisplay } from "../components/frequency/FrequencyDisplay";
-import { FrequencyViewDto } from "../lib/api";
+import { FrequencyViewDto, FrequencyLevelDto } from "../lib/api";
 
 vi.mock("../components/frequency/FrequencyEditForm", () => ({
   FrequencyEditForm: ({
@@ -24,10 +24,14 @@ function makeQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-function renderDisplay(data: FrequencyViewDto, role: string) {
+function renderDisplay(
+  data: FrequencyViewDto,
+  role: string,
+  editableSquads?: FrequencyLevelDto[]
+) {
   return render(
     <QueryClientProvider client={makeQueryClient()}>
-      <FrequencyDisplay data={data} role={role} />
+      <FrequencyDisplay data={data} role={role} editableSquads={editableSquads} />
     </QueryClientProvider>
   );
 }
@@ -119,5 +123,48 @@ describe("FrequencyDisplay", () => {
     const { unmount } = renderDisplay(allSectionsData, "system_admin");
     expect(screen.getByText("Command Frequencies")).toBeInTheDocument();
     unmount();
+  });
+});
+
+describe("FrequencyDisplay — platoon leader editable squads", () => {
+  const editableSquads: FrequencyLevelDto[] = [
+    { id: "sq-1", name: "Alpha Squad", primary: "148.000", backup: "149.000" },
+    { id: "sq-2", name: "Bravo Squad", primary: null, backup: null },
+  ];
+
+  it("shows_squad_frequencies_section_for_platoon_leader_with_editable_squads", () => {
+    renderDisplay(commandAndPlatoonData, "platoon_leader", editableSquads);
+    expect(screen.getByText("Squad Frequencies")).toBeInTheDocument();
+    expect(screen.getByText("Alpha Squad")).toBeInTheDocument();
+    expect(screen.getByText("Bravo Squad")).toBeInTheDocument();
+  });
+
+  it("shows_edit_controls_for_platoon_leader_editable_squads", () => {
+    renderDisplay(commandAndPlatoonData, "platoon_leader", editableSquads);
+    expect(
+      screen.getByRole("button", { name: /edit alpha squad frequencies/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /edit bravo squad frequencies/i })
+    ).toBeInTheDocument();
+  });
+
+  it("platoon_leader_with_editable_squads_still_shows_command_and_platoon_sections", () => {
+    renderDisplay(commandAndPlatoonData, "platoon_leader", editableSquads);
+    expect(screen.getByText("Command Frequencies")).toBeInTheDocument();
+    expect(screen.getByText("Platoon Frequencies")).toBeInTheDocument();
+    expect(screen.getByText("Squad Frequencies")).toBeInTheDocument();
+  });
+
+  it("no_squad_section_for_platoon_leader_without_editable_squads", () => {
+    renderDisplay(commandAndPlatoonData, "platoon_leader");
+    expect(screen.queryByText("Squad Frequencies")).not.toBeInTheDocument();
+  });
+
+  it("shows_not_set_for_null_squad_frequencies_in_editable_squads", () => {
+    renderDisplay(commandAndPlatoonData, "platoon_leader", editableSquads);
+    // Bravo Squad has primary: null and backup: null — both show "Not set"
+    const notSetElements = screen.getAllByText("Not set");
+    expect(notSetElements.length).toBeGreaterThanOrEqual(2);
   });
 });
