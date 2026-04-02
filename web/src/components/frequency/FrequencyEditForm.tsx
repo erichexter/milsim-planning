@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
-import { api, UpdateFrequencyRequest } from '../../lib/api';
+import { api } from '../../lib/api';
+import type { UpdateFrequencyRequest } from '../../lib/api';
 import { Button } from '../ui/button';
 
 interface FrequencyEditFormProps {

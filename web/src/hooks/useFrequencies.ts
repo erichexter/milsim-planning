@@ -1,5 +1,6 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { api, FrequencyLevelDto, FrequencyViewDto } from '../lib/api';
+import { api } from '../lib/api';
+import type { FrequencyLevelDto, FrequencyViewDto } from '../lib/api';
 
 export function useFrequencies(eventId: string) {
   return useQuery<FrequencyViewDto>({

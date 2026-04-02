@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FrequencyDisplay } from "../components/frequency/FrequencyDisplay";
-import { FrequencyViewDto, FrequencyLevelDto } from "../lib/api";
+import type { FrequencyViewDto, FrequencyLevelDto } from "../lib/api";
 
 vi.mock("../components/frequency/FrequencyEditForm", () => ({
   FrequencyEditForm: ({

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FrequencyViewDto, FrequencyLevelDto } from '../../lib/api';
+import type { FrequencyViewDto, FrequencyLevelDto } from '../../lib/api';
 import { FrequencyEditForm } from './FrequencyEditForm';
 import { Button } from '../ui/button';
 
