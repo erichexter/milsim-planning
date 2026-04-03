@@ -146,6 +146,16 @@ export const api = {
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
+
+  // Frequency endpoints
+  getFrequencies: (eventId: string) =>
+    request<FrequencyReadDto>(`/events/${eventId}/frequencies`),
+  updateSquadFrequencies: (squadId: string, body: UpdateFrequencyRequest) =>
+    request<void>(`/squads/${squadId}/frequencies`, { method: 'PUT', body: JSON.stringify(body) }),
+  updatePlatoonFrequencies: (platoonId: string, body: UpdateFrequencyRequest) =>
+    request<void>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(body) }),
+  updateCommandFrequencies: (factionId: string, body: UpdateFrequencyRequest) =>
+    request<void>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(body) }),
 };
 
 export interface UserProfile {
@@ -266,4 +276,53 @@ export interface NotificationBlast {
   subject: string;
   sentAt: string;
   recipientCount: number;
+}
+
+// ─── Frequency types ────────────────────────────────────────────────────────
+
+export interface FrequencyReadDto {
+  squad: SquadFrequencyDto | null;
+  platoon: PlatoonFrequencyDto | null;
+  command: CommandFrequencyDto | null;
+  allFrequencies: AllFrequenciesDto | null;
+}
+
+export interface SquadFrequencyDto {
+  squadId: string;
+  squadName: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface PlatoonFrequencyDto {
+  platoonId: string;
+  platoonName: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface CommandFrequencyDto {
+  factionId: string;
+  factionName: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface AllFrequenciesDto {
+  command: CommandFrequencyDto;
+  platoons: PlatoonFrequencyDto[];
+  squads: AllFrequenciesSquadDto[];
+}
+
+export interface AllFrequenciesSquadDto {
+  squadId: string;
+  squadName: string;
+  platoonName: string;
+  primary: string | null;
+  backup: string | null;
+}
+
+export interface UpdateFrequencyRequest {
+  primary: string | null;
+  backup: string | null;
 }
