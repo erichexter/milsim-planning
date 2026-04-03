@@ -8,6 +8,8 @@ public class Faction
     public string Name { get; set; } = null!;
     public Event Event { get; set; } = null!;
     public AppUser Commander { get; set; } = null!;
+    public string? CommandPrimaryFrequency { get; set; }
+    public string? CommandBackupFrequency { get; set; }
     public ICollection<Platoon> Platoons { get; set; } = [];
     public ICollection<EventPlayer> Players { get; set; } = [];
 }
