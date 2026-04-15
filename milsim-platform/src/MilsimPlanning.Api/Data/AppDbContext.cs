@@ -28,6 +28,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Phase 5 DbSets
+    public DbSet<EventRsvp> EventRsvps => Set<EventRsvp>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +134,19 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Phase 5 Configuration ===
+
+        // EventRsvp: unique index on (EventId, UserId)
+        builder.Entity<EventRsvp>()
+            .HasIndex(r => new { r.EventId, r.UserId })
+            .IsUnique();
+
+        // EventRsvp → Event (cascade delete)
+        builder.Entity<EventRsvp>()
+            .HasOne(r => r.Event)
+            .WithMany()
+            .HasForeignKey(r => r.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
