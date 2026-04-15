@@ -154,6 +154,12 @@ export const api = {
   setFactionFrequencies: (factionId: string, req: SetFrequenciesRequest) =>
     request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
 
+  // RSVP endpoints
+  getRsvp: (eventId: string) =>
+    request<RsvpDto | null>(`/events/${eventId}/rsvp`),
+  setRsvp: (eventId: string, req: SetRsvpRequest) =>
+    request<RsvpDto>(`/events/${eventId}/rsvp`, { method: 'PUT', body: JSON.stringify(req) }),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -292,4 +298,17 @@ export interface EventFrequenciesDto {
 export interface SetFrequenciesRequest {
   primaryFrequency: string | null;
   backupFrequency: string | null;
+}
+
+export type RsvpStatus = 'Attending' | 'NotAttending' | 'Maybe';
+
+export interface RsvpDto {
+  eventId: string;
+  userId: string;
+  status: RsvpStatus;
+  respondedAt: string;
+}
+
+export interface SetRsvpRequest {
+  status: RsvpStatus;
 }

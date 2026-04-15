@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
+import { RsvpStatus } from '../../components/rsvp/RsvpStatus';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -190,6 +191,9 @@ export function EventDetail() {
               <p className="text-sm text-muted-foreground">{event.description}</p>
             )}
           </div>
+
+          {/* ── RSVP ────────────────────────────────────────────────────── */}
+          {id && <RsvpStatus eventId={id} />}
 
           {/* ── Summary cards ───────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
