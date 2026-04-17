@@ -13,8 +13,6 @@ permissions:
 jobs:
   handle:
     runs-on: [self-hosted, agent-team]
-    # Skip bot-generated events to prevent infinite loops
-    if: github.actor != 'github-actions[bot]'
     concurrency:
       group: agent-pipeline-${{ github.event.issue.number }}
       cancel-in-progress: false
