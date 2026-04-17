@@ -89,7 +89,7 @@ public class EventTestsBase : IClassFixture<PostgreSqlFixture>, IAsyncLifetime
 
         // Ensure roles exist
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "player", "squad_leader", "platoon_leader", "faction_commander", "system_admin" })
+        foreach (var role in new[] { "player", "squad_leader", "platoon_leader", "faction_commander", "event_owner", "system_admin" })
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
@@ -404,5 +404,167 @@ public class EventDuplicateTests : EventTestsBase
             new { copyInfoSectionIds = Array.Empty<Guid>() });
         var dupDto = await dupFromPublished.Content.ReadFromJsonAsync<EventDto>();
         dupDto!.Status.Should().Be("Draft", because: "duplicate always resets to Draft regardless of source status");
+    }
+}
+
+// ── EventOwner: Get Summary ───────────────────────────────────────────────────
+
+[Trait("Category", "EventOwner_Summary")]
+public class EventSummaryTests : EventTestsBase
+{
+    public EventSummaryTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetEventSummary_EventOwner_ReturnsRoleBreakdown()
+    {
+        // Create event (commander becomes EventOwner)
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Summary Test Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Get summary
+        var summaryResponse = await _commanderClient.GetAsync($"/api/events/{created!.Id}/summary");
+        summaryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var summary = await summaryResponse.Content.ReadFromJsonAsync<EventSummaryDto>();
+        summary.Should().NotBeNull();
+        summary!.EventName.Should().Be("Summary Test Event");
+        summary.RoleBreakdown.EventOwnerCount.Should().Be(1, because: "creator should be EventOwner");
+        summary.MemberCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetEventSummary_NonMember_Returns403()
+    {
+        // Create event with commander A
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Forbidden Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Try to get summary with commander B (different user)
+        var summaryResponse = await _commanderBClient.GetAsync($"/api/events/{created!.Id}/summary");
+        summaryResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+}
+
+// ── EventOwner: Get Members ───────────────────────────────────────────────────
+
+[Trait("Category", "EventOwner_Members")]
+public class EventMembersTests : EventTestsBase
+{
+    public EventMembersTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task GetEventMembers_EventOwner_ReturnsMemberList()
+    {
+        // Create event
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Members Test Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Get members
+        var membersResponse = await _commanderClient.GetAsync($"/api/events/{created!.Id}/members");
+        membersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var members = await membersResponse.Content.ReadFromJsonAsync<EventMembersDto>();
+        members.Should().NotBeNull();
+        members!.Members.Should().HaveCount(1);
+        members.TotalCount.Should().Be(1);
+        members.Members[0].RoleLabel.Should().Be("Event Owner");
+    }
+
+    [Fact]
+    public async Task GetEventMembers_WithPagination_ReturnsPagedResults()
+    {
+        // Create event
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Pagination Test Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Get members with pageSize=1
+        var membersResponse = await _commanderClient.GetAsync($"/api/events/{created!.Id}/members?pageSize=1&pageNumber=1");
+        var members = await membersResponse.Content.ReadFromJsonAsync<EventMembersDto>();
+
+        members!.PageSize.Should().Be(1);
+        members.PageNumber.Should().Be(1);
+        members.TotalCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetEventMembers_NonMember_Returns403()
+    {
+        // Create event with commander A
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Forbidden Members Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Try to get members with commander B
+        var membersResponse = await _commanderBClient.GetAsync($"/api/events/{created!.Id}/members");
+        membersResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+}
+
+// ── EventOwner: Remove Member ─────────────────────────────────────────────────
+
+[Trait("Category", "EventOwner_RemoveMember")]
+public class EventRemoveMemberTests : EventTestsBase
+{
+    public EventRemoveMemberTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task RemoveMember_EventOwner_Returns204()
+    {
+        // Create event
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Remove Member Test Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Create another user to add to event (manual DB insert)
+        var otherUser = await CreateUserAsync($"other-user-{Guid.NewGuid():N}@test.com", "event_owner");
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.EventMemberships.Add(new EventMembership
+        {
+            UserId = otherUser.Id,
+            EventId = created!.Id,
+            Role = "squad_leader",
+            JoinedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        // Remove the member
+        var removeResponse = await _commanderClient.DeleteAsync($"/api/events/{created.Id}/members/{otherUser.Id}");
+        removeResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify member was removed
+        var membersResponse = await _commanderClient.GetAsync($"/api/events/{created.Id}/members");
+        var members = await membersResponse.Content.ReadFromJsonAsync<EventMembersDto>();
+        members!.Members.Should().NotContain(m => m.UserId == otherUser.Id);
+    }
+
+    [Fact]
+    public async Task RemoveMember_NonEventOwner_Returns403()
+    {
+        // Create event with commander A
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Forbidden Remove Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Try to remove member with commander B (not event owner)
+        var removeResponse = await _commanderBClient.DeleteAsync($"/api/events/{created!.Id}/members/{_commanderUser.Id}");
+        removeResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task RemoveMember_CannotRemoveSelf_Returns409()
+    {
+        // Create event
+        var createResponse = await _commanderClient.PostAsJsonAsync("/api/events",
+            new { name = "Self Remove Event" });
+        var created = await createResponse.Content.ReadFromJsonAsync<EventDto>();
+
+        // Try to remove self
+        var removeResponse = await _commanderClient.DeleteAsync($"/api/events/{created!.Id}/members/{_commanderUser.Id}");
+        removeResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 }

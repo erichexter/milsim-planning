@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MilsimPlanning.Api.Authorization;
 using MilsimPlanning.Api.Models.Events;
 using MilsimPlanning.Api.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace MilsimPlanning.Api.Controllers;
 
@@ -86,6 +87,66 @@ public class EventsController : ControllerBase
             return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
         }
         catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // EventOwner: Get event summary with role breakdown
+    [HttpGet("{id:guid}/summary")]
+    public async Task<ActionResult<EventSummaryDto>> GetSummary(Guid id)
+    {
+        try
+        {
+            var dto = await _eventService.GetEventSummaryAsync(id);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // EventOwner: Get event members with pagination
+    [HttpGet("{id:guid}/members")]
+    public async Task<ActionResult<EventMembersDto>> GetMembers(Guid id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    {
+        try
+        {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 50;
+
+            var dto = await _eventService.GetEventMembersAsync(id, pageNumber, pageSize);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // EventOwner: Update member role (assign FactionCommander, etc.)
+    [HttpPatch("{id:guid}/members/{userId}/role")]
+    [Authorize(Policy = "RequireEventOwner")]
+    public async Task<ActionResult<EventMemberDto>> UpdateMemberRole(Guid id, string userId, UpdateEventMemberRoleRequest request)
+    {
+        try
+        {
+            var dto = await _eventService.UpdateMemberRoleAsync(id, userId, request);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // EventOwner: Remove member from event
+    [HttpDelete("{id:guid}/members/{userId}")]
+    [Authorize(Policy = "RequireEventOwner")]
+    public async Task<IActionResult> RemoveMember(Guid id, string userId)
+    {
+        try
+        {
+            await _eventService.RemoveMemberAsync(id, userId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
         catch (ForbiddenException) { return Forbid(); }
     }
 }

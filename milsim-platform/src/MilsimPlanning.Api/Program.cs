@@ -57,13 +57,14 @@ builder.Services.AddAuthentication(options =>
 
 // ── Authorization ─────────────────────────────────────────────────────────────
 // MinimumRoleHandler is the single source of truth for all role hierarchy checks.
-// All 5 policies use the same handler — numeric comparison via AppRoles.Hierarchy.
+// All policies use the same handler — numeric comparison via AppRoles.Hierarchy.
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequirePlayer",           p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.Player)));
     options.AddPolicy("RequireSquadLeader",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SquadLeader)));
     options.AddPolicy("RequirePlatoonLeader",    p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.PlatoonLeader)));
     options.AddPolicy("RequireFactionCommander", p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.FactionCommander)));
+    options.AddPolicy("RequireEventOwner",       p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.EventOwner)));
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
 });
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
@@ -122,6 +123,7 @@ builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<EventService>();
 builder.Services.AddScoped<RosterService>();
 builder.Services.AddScoped<HierarchyService>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<FrequencyService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IMapResourceService, MapResourceService>();

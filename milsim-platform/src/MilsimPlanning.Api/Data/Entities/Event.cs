@@ -12,6 +12,7 @@ public class Event
     public DateOnly? EndDate { get; set; }
     public EventStatus Status { get; set; } = EventStatus.Draft;
     public Guid FactionId { get; set; }
+    public string CreatedById { get; set; } = null!;  // FK to AppUser.Id; added for EventOwner role assignment
     public Faction Faction { get; set; } = null!;
 
     // Phase 3 navigation properties
