@@ -57,13 +57,14 @@ builder.Services.AddAuthentication(options =>
 
 // ── Authorization ─────────────────────────────────────────────────────────────
 // MinimumRoleHandler is the single source of truth for all role hierarchy checks.
-// All 5 policies use the same handler — numeric comparison via AppRoles.Hierarchy.
+// All 6 policies use the same handler — numeric comparison via AppRoles.Hierarchy.
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequirePlayer",           p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.Player)));
     options.AddPolicy("RequireSquadLeader",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SquadLeader)));
     options.AddPolicy("RequirePlatoonLeader",    p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.PlatoonLeader)));
     options.AddPolicy("RequireFactionCommander", p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.FactionCommander)));
+    options.AddPolicy("RequireEventOwner",       p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.EventOwner)));
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
 });
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();

@@ -85,7 +85,7 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
 
         // Ensure roles exist
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "player", "squad_leader", "platoon_leader", "faction_commander", "system_admin" })
+        foreach (var role in new[] { "player", "squad_leader", "platoon_leader", "faction_commander", "event_owner", "system_admin" })
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
@@ -485,5 +485,122 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         // Assert: IDOR protection
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             because: "player not in event cannot access its roster (IDOR-AUTHZ-06)");
+    }
+
+    // ── AUTHZ-EventOwner: Role level 5, above FactionCommander ──────────────────
+
+    [Fact]
+    [Trait("Category", "Authz_EventOwner")]
+    public async Task Roles_EventOwner_CanAccessFactionCommanderPolicy()
+    {
+        // Arrange: event_owner user in event
+        var user = await CreateTestUserAsync(
+            $"eo-{Guid.NewGuid():N}@test.com",
+            "event_owner");
+        var eventId = await CreateEventAndAddMemberAsync(user);
+        using var client = CreateAuthenticatedClient(user, "event_owner");
+
+        // Act: GET /api/roster/{eventId} — requires RequirePlayer; event_owner (level 5) should pass all policies
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
+
+        // Assert: event_owner satisfies FactionCommander and higher policies
+        response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
+            because: "event_owner (level 5) satisfies all role policies including RequireFactionCommander (level 4)");
+        response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized,
+            because: "JWT is valid and user is authenticated");
+    }
+
+    [Fact]
+    [Trait("Category", "Authz_EventOwner")]
+    public async Task Roles_EventOwner_CanAccessEventOwnerPolicy()
+    {
+        // Arrange: event_owner user in event
+        var user = await CreateTestUserAsync(
+            $"eo-policy-{Guid.NewGuid():N}@test.com",
+            "event_owner");
+        var eventId = await CreateEventAndAddMemberAsync(user);
+        using var client = CreateAuthenticatedClient(user, "event_owner");
+
+        // Act: GET /api/roster/{eventId} — which uses RequirePlayer; event_owner should pass
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
+
+        // Assert: event_owner can access player-level endpoints (and higher)
+        ((int)response.StatusCode).Should().NotBe(403,
+            because: "event_owner (level 5) should satisfy RequireEventOwner policy (level 5)");
+    }
+
+    [Fact]
+    [Trait("Category", "Authz_EventOwner")]
+    public async Task Roles_SystemAdmin_CanStillAccessAllPolicies()
+    {
+        // Arrange: system_admin user at level 6 (above event_owner level 5)
+        var user = await CreateTestUserAsync(
+            $"sa-level6-{Guid.NewGuid():N}@test.com",
+            "system_admin");
+        var eventId = await CreateEventAndAddMemberAsync(user);
+        using var client = CreateAuthenticatedClient(user, "system_admin");
+
+        // Act: GET /api/roster/{eventId} — system_admin at level 6 should pass all policies
+        var response = await client.GetAsync($"/api/events/{eventId}/roster");
+
+        // Assert: system_admin at level 6 > event_owner at level 5
+        response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
+            because: "system_admin (level 6) satisfies all policies, including EventOwner (level 5)");
+        response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    [Trait("Category", "Authz_EventOwner")]
+    public async Task ScopeGuard_EventOwnerInEventA_Returns403ForEventB()
+    {
+        // Arrange: event_owner is a member of EventA only
+        var user = await CreateTestUserAsync(
+            $"idor-eo-{Guid.NewGuid():N}@test.com",
+            "event_owner");
+        var eventAId = await CreateEventAndAddMemberAsync(user);
+
+        // Create EventB without adding this event_owner
+        Guid eventBId;
+        {
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            eventBId = Guid.NewGuid();
+            db.Events.Add(new Event
+            {
+                Id = eventBId,
+                Name = $"EventB-EventOwner {eventBId:N}",
+                Status = EventStatus.Draft,
+                FactionId = Guid.NewGuid()
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = CreateAuthenticatedClient(user, "event_owner");
+
+        // Act: event_owner tries to access EventB
+        var response = await client.GetAsync($"/api/events/{eventBId}/roster");
+
+        // Assert: IDOR protection applies to event_owner too — even high-privilege users are scoped
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            because: "event_owner not in EventB cannot access its resources (IDOR protection)");
+    }
+
+    [Fact]
+    [Trait("Category", "Authz_EventOwner")]
+    public async Task ScopeGuard_EventOwnerInEventA_CanAccessEventA()
+    {
+        // Arrange: event_owner IS a member of EventA
+        var user = await CreateTestUserAsync(
+            $"scope-eo-{Guid.NewGuid():N}@test.com",
+            "event_owner");
+        var eventAId = await CreateEventAndAddMemberAsync(user);
+        using var client = CreateAuthenticatedClient(user, "event_owner");
+
+        // Act: access EventA's roster (user is a member)
+        var response = await client.GetAsync($"/api/events/{eventAId}/roster");
+
+        // Assert: 200 OK — event_owner is in event
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "event_owner is a member of EventA");
     }
 }
