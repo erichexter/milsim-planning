@@ -1,0 +1,31 @@
+name: Agent Pipeline Handler
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, closed, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  handle:
+    runs-on: [self-hosted, agent-team]
+    # Skip bot-generated events to prevent infinite loops
+    if: github.actor != 'github-actions[bot]'
+    concurrency:
+      group: agent-pipeline-${{ github.event.issue.number }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Write event context
+        run: |
+          mkdir -p /tmp/agent-team
+          cat > /tmp/agent-team/event.json << 'EVENTEOF'
+          ${{ toJSON(github.event) }}
+          EVENTEOF
+
+      - name: Run orchestrator
+        working-directory: /home/ub24/github/agent-team
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx tsx src/cli.ts handle-event /tmp/agent-team/event.json
