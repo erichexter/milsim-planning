@@ -13,11 +13,6 @@ permissions:
 jobs:
   handle:
     runs-on: [self-hosted, agent-team]
-    # Only run for events the orchestrator actually handles:
-    # - issues.opened: new feature requests
-    # - issues.labeled: state:todo, state:in-progress, state:done, gate:* labels
-    # - issue_comment.created: [APPROVED], [ANSWER], [CHANGES] tokens
-    # Skip unlabeled, closed, edited events — they generate noise
     if: >-
       github.event_name == 'issue_comment' ||
       github.event.action == 'opened' ||
@@ -25,9 +20,6 @@ jobs:
         startsWith(github.event.label.name, 'state:') ||
         startsWith(github.event.label.name, 'gate:')
       ))
-    concurrency:
-      group: agent-pipeline-${{ github.event.issue.number }}
-      cancel-in-progress: false
 
     steps:
       - name: Write event context
