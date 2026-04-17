@@ -88,4 +88,63 @@ public class EventsController : ControllerBase
         catch (KeyNotFoundException) { return NotFound(); }
         catch (ForbiddenException) { return Forbid(); }
     }
+
+    // MEMB-01: List event members
+    [HttpGet("{eventId:guid}/members")]
+    [Authorize(Policy = "RequireFactionCommander")]
+    public async Task<ActionResult<EventMembersListDto>> GetMembers(Guid eventId, [FromQuery] int pageSize = 50, [FromQuery] int pageNumber = 1)
+    {
+        try
+        {
+            var dto = await _eventService.GetEventMembersAsync(eventId, pageSize, pageNumber);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // MEMB-02: Assign Faction Commander
+    [HttpPatch("{eventId:guid}/members/{userId}/role")]
+    [Authorize(Policy = "RequireEventOwner")]
+    public async Task<ActionResult<EventMemberDto>> AssignFactionCommander(Guid eventId, string userId, AssignFactionCommanderRequest request)
+    {
+        try
+        {
+            var dto = await _eventService.AssignFactionCommanderAsync(eventId, userId, request.FactionId);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // MEMB-03: Remove member from event
+    [HttpDelete("{eventId:guid}/members/{userId}")]
+    [Authorize(Policy = "RequireEventOwner")]
+    public async Task<IActionResult> RemoveMember(Guid eventId, string userId)
+    {
+        try
+        {
+            await _eventService.RemoveMemberAsync(eventId, userId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex) { return NotFound(new { error = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
+
+    // MEMB-04: Get event summary
+    [HttpGet("{eventId:guid}/summary")]
+    [Authorize(Policy = "RequireFactionCommander")]
+    public async Task<ActionResult<EventSummaryDto>> GetSummary(Guid eventId)
+    {
+        try
+        {
+            var dto = await _eventService.GetEventSummaryAsync(eventId);
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ForbiddenException) { return Forbid(); }
+    }
 }

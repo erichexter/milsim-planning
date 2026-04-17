@@ -64,6 +64,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireSquadLeader",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SquadLeader)));
     options.AddPolicy("RequirePlatoonLeader",    p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.PlatoonLeader)));
     options.AddPolicy("RequireFactionCommander", p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.FactionCommander)));
+    options.AddPolicy("RequireEventOwner",       p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.EventOwner)));
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
 });
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();

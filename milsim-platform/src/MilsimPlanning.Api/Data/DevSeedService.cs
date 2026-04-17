@@ -24,7 +24,7 @@ public static class DevSeedService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // ── Ensure all roles exist ────────────────────────────────────────────
-        string[] roles = ["player", "squad_leader", "platoon_leader", "faction_commander", "system_admin"];
+        string[] roles = ["player", "squad_leader", "platoon_leader", "faction_commander", "event_owner", "system_admin"];
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
