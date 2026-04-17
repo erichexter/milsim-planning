@@ -28,6 +28,6 @@ jobs:
       - name: Run orchestrator
         working-directory: /home/ub24/github/agent-team
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AGENT_PAT }}
         run: |
           npx tsx src/cli.ts handle-event /tmp/agent-team/event.json
