@@ -6,6 +6,7 @@ public static class AppRoles
     public const string SquadLeader      = "squad_leader";
     public const string PlatoonLeader    = "platoon_leader";
     public const string FactionCommander = "faction_commander";
+    public const string EventOwner       = "event_owner";
     public const string SystemAdmin      = "system_admin";
 
     public static readonly Dictionary<string, int> Hierarchy = new()
@@ -14,6 +15,7 @@ public static class AppRoles
         [SquadLeader] = 2,
         [PlatoonLeader] = 3,
         [FactionCommander] = 4,
-        [SystemAdmin] = 5
+        [EventOwner] = 5,
+        [SystemAdmin] = 6
     };
 }

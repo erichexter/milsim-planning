@@ -85,7 +85,7 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
 
         // Ensure roles exist
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { "player", "squad_leader", "platoon_leader", "faction_commander", "system_admin" })
+        foreach (var role in new[] { "player", "squad_leader", "platoon_leader", "faction_commander", "event_owner", "system_admin" })
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
@@ -197,9 +197,9 @@ public class AuthorizationTests : IClassFixture<PostgreSqlFixture>, IAsyncLifeti
         // Act: GET /api/roster/{eventId} — requires RequirePlayer; system_admin should pass
         var response = await client.GetAsync($"/api/events/{eventId}/roster");
 
-        // Assert: system_admin satisfies even the most restrictive roles (hierarchy 5 >= all)
+        // Assert: system_admin satisfies even the most restrictive roles (hierarchy 6 >= all)
         response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
-            because: "system_admin (level 5) satisfies all policies including RequireFactionCommander");
+            because: "system_admin (level 6) satisfies all policies including RequireFactionCommander");
         response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized,
             because: "JWT is valid and user is authenticated");
     }
