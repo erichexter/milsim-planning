@@ -1,0 +1,178 @@
+name: Agent Dispatcher
+# Webhook-driven agent wakeup — replaces heartbeat polling for pipeline transitions.
+# Runs on the self-hosted runner (same network as Paperclip) to call /wakeup API.
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  dispatch:
+    runs-on: [self-hosted, agent-team]
+    # Only fire for pipeline-relevant events, not random issue noise
+    if: |
+      (github.event_name == 'issue_comment' && (
+        contains(github.event.comment.body, '[ANSWER]') ||
+        contains(github.event.comment.body, '[APPROVED]') ||
+        contains(github.event.comment.body, '[CHANGES]') ||
+        contains(github.event.comment.body, '[RESEARCH-COMPLETE]') ||
+        contains(github.event.comment.body, '[DESIGN-COMPLETE]') ||
+        contains(github.event.comment.body, '[HLTD-COMPLETE]') ||
+        contains(github.event.comment.body, '[STORIES-COMPLETE]') ||
+        contains(github.event.comment.body, '[REVISION]') ||
+        contains(github.event.comment.body, '[BRIEF-COMPLETE]')
+      )) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && (
+        startsWith(github.event.label.name, 'gate:') ||
+        github.event.label.name == 'state:human-review' ||
+        github.event.label.name == 'agent:conductor'
+      ))
+    steps:
+      - name: Determine which agent to wake
+        id: route
+        run: |
+          EVENT="${{ github.event_name }}"
+          ISSUE="${{ github.event.issue.number }}"
+
+          # Default: wake CONDUCTOR for all pipeline events
+          AGENT_ID=""
+          AGENT_NAME=""
+          REASON=""
+
+          # Load agent IDs from env file if available
+          CONFIG="/home/ub24/github/sim-ops/config-small-design.env"
+          if [ -f "$CONFIG" ]; then
+            source "$CONFIG"
+          else
+            # Fallback hardcoded IDs
+            AGENT_CONDUCTOR="7c2b74c2-8afc-481c-9943-69b4d4a29465"
+            AGENT_DISCOVERY="8898bf06-d5d4-43a4-8986-25644e58e68c"
+            AGENT_DESIGN="5aceaae0-7ee8-4d18-a4b8-236037fef663"
+            AGENT_BLUEPRINT="caee5a36-b01b-4434-8fe7-a0f593af601f"
+            AGENT_BACKLOG="804d708e-61a7-401c-aadd-038ce2ee94f6"
+          fi
+
+          if [ "$EVENT" = "issue_comment" ]; then
+            BODY='${{ github.event.comment.body }}'
+
+            # Human posted [ANSWER] to interview → wake DISCOVERY to process answers
+            if echo "$BODY" | grep -q '\[ANSWER\]'; then
+              # Check if this is a DISCOVERY issue
+              LABELS='${{ toJson(github.event.issue.labels.*.name) }}'
+              if echo "$LABELS" | grep -q 'agent:discovery'; then
+                AGENT_ID="$AGENT_DISCOVERY"
+                AGENT_NAME="DISCOVERY"
+                REASON="interview-answer-posted"
+              else
+                AGENT_ID="$AGENT_CONDUCTOR"
+                AGENT_NAME="CONDUCTOR"
+                REASON="answer-posted-on-#${ISSUE}"
+              fi
+
+            # Human posted [APPROVED] on Gate 4 → wake CONDUCTOR to close pipeline
+            elif echo "$BODY" | grep -q '\[APPROVED\]'; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="gate-approved-on-#${ISSUE}"
+
+            # Human posted [CHANGES] → wake CONDUCTOR for rework brief
+            elif echo "$BODY" | grep -q '\[CHANGES\]'; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="changes-requested-on-#${ISSUE}"
+
+            # Agent posted completion marker → wake CONDUCTOR for gate review
+            elif echo "$BODY" | grep -qE '\[(RESEARCH|DESIGN|HLTD|STORIES|BRIEF)-COMPLETE\]'; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="agent-complete-on-#${ISSUE}"
+
+            # Revision posted after rework → wake CONDUCTOR to re-review
+            elif echo "$BODY" | grep -q '\[REVISION\]'; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="revision-posted-on-#${ISSUE}"
+            fi
+
+          elif [ "$EVENT" = "issues" ]; then
+            LABEL="${{ github.event.label.name }}"
+
+            # Gate label applied → wake CONDUCTOR
+            if [[ "$LABEL" == gate:* ]]; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="gate-label-${LABEL}-on-#${ISSUE}"
+
+            # state:human-review → wake CONDUCTOR (agent needs gate review)
+            elif [ "$LABEL" = "state:human-review" ]; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="human-review-on-#${ISSUE}"
+
+            # agent:conductor label → new pipeline issue assigned to conductor
+            elif [ "$LABEL" = "agent:conductor" ]; then
+              AGENT_ID="$AGENT_CONDUCTOR"
+              AGENT_NAME="CONDUCTOR"
+              REASON="assigned-#${ISSUE}"
+            fi
+          fi
+
+          echo "agent_id=$AGENT_ID" >> $GITHUB_OUTPUT
+          echo "agent_name=$AGENT_NAME" >> $GITHUB_OUTPUT
+          echo "reason=$REASON" >> $GITHUB_OUTPUT
+          echo "issue=$ISSUE" >> $GITHUB_OUTPUT
+
+          if [ -n "$AGENT_ID" ]; then
+            echo "::notice::Dispatching to $AGENT_NAME ($AGENT_ID) — $REASON"
+          else
+            echo "::notice::No dispatch needed for this event"
+          fi
+
+      - name: Wake agent via Paperclip API
+        if: steps.route.outputs.agent_id != ''
+        run: |
+          AGENT_ID="${{ steps.route.outputs.agent_id }}"
+          AGENT_NAME="${{ steps.route.outputs.agent_name }}"
+          REASON="${{ steps.route.outputs.reason }}"
+
+          # Read Paperclip API token
+          TOKEN_FILE="$HOME/.paperclip/instances/default/secrets/master.key"
+          if [ ! -f "$TOKEN_FILE" ]; then
+            echo "::error::Paperclip token not found at $TOKEN_FILE"
+            exit 1
+          fi
+          TOKEN=$(cat "$TOKEN_FILE")
+
+          # Try both API endpoints (local proxy and direct)
+          API_URLS=("http://127.0.0.1:3100" "http://192.168.1.59:3200")
+
+          for API in "${API_URLS[@]}"; do
+            echo "Trying $API..."
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              "$API/api/agents/$AGENT_ID/wakeup" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"source\":\"webhook\",\"triggerDetail\":\"$REASON\"}" \
+              --connect-timeout 5 \
+              --max-time 10 2>/dev/null || echo -e "\n000")
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | head -n -1)
+
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+              STATUS=$(echo "$BODY" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('status','unknown'))" 2>/dev/null || echo "ok")
+              echo "::notice::$AGENT_NAME wakeup: $STATUS (via $API)"
+
+              # Log dispatch to file for debugging
+              mkdir -p /tmp/agent-dispatch-logs
+              echo "$(date -Iseconds) | $AGENT_NAME | $REASON | $STATUS | $API" >> /tmp/agent-dispatch-logs/dispatch.log
+              exit 0
+            fi
+            echo "  Failed ($HTTP_CODE), trying next..."
+          done
+
+          echo "::warning::Could not reach Paperclip API to wake $AGENT_NAME — agent will pick up on next heartbeat"
+          # Don't fail the workflow — the heartbeat is a fallback
+          exit 0
