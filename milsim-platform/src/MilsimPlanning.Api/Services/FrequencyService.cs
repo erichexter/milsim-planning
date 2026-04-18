@@ -27,6 +27,7 @@ public class FrequencyService
         var membership = await _db.EventMemberships
             .FirstOrDefaultAsync(m => m.EventId == eventId && m.UserId == _currentUser.UserId);
         var role = membership?.Role ?? AppRoles.Player;
+        var roleLevel = AppRoles.Hierarchy.GetValueOrDefault(role, 0);
 
         // Load the current user's event player record for assignment context
         var eventPlayer = await _db.EventPlayers
@@ -39,13 +40,13 @@ public class FrequencyService
         FrequencyLevelDto? platoonLevel = null;
         FrequencyLevelDto? commandLevel = null;
 
-        if (role == AppRoles.Player)
+        if (roleLevel <= AppRoles.Hierarchy[AppRoles.Player])
         {
             // Squad member: sees squad level only
             if (eventPlayer?.Squad != null)
                 squadLevel = new FrequencyLevelDto(eventPlayer.Squad.PrimaryFrequency, eventPlayer.Squad.BackupFrequency);
         }
-        else if (role == AppRoles.SquadLeader)
+        else if (roleLevel <= AppRoles.Hierarchy[AppRoles.SquadLeader])
         {
             // Squad leader: sees squad + platoon
             if (eventPlayer?.Squad != null)
@@ -56,7 +57,7 @@ public class FrequencyService
             else if (eventPlayer?.Platoon != null)
                 platoonLevel = new FrequencyLevelDto(eventPlayer.Platoon.PrimaryFrequency, eventPlayer.Platoon.BackupFrequency);
         }
-        else if (role == AppRoles.PlatoonLeader)
+        else if (roleLevel <= AppRoles.Hierarchy[AppRoles.PlatoonLeader])
         {
             // Platoon leader: sees platoon + command (faction)
             var platoon = eventPlayer?.Platoon
@@ -75,9 +76,9 @@ public class FrequencyService
                     commandLevel = new FrequencyLevelDto(faction.PrimaryFrequency, faction.BackupFrequency);
             }
         }
-        else if (role == AppRoles.FactionCommander || role == AppRoles.SystemAdmin)
+        else if (roleLevel >= AppRoles.Hierarchy[AppRoles.FactionCommander])
         {
-            // Faction commander: all available levels
+            // FactionCommander and above (EventOwner, SystemAdmin): all available levels
             var faction = await _db.Factions
                 .FirstOrDefaultAsync(f => f.EventId == eventId);
 
