@@ -20,9 +20,13 @@ jobs:
         startsWith(github.event.label.name, 'state:') ||
         startsWith(github.event.label.name, 'gate:')
       ))
+    concurrency:
+      group: agent-pipeline-${{ github.event.issue.number }}
+      cancel-in-progress: false
 
     steps:
       - name: Write event context
+        shell: bash
         run: |
           mkdir -p /tmp/agent-team
           cat > /tmp/agent-team/event.json << 'EVENTEOF'
@@ -30,7 +34,8 @@ jobs:
           EVENTEOF
 
       - name: Run orchestrator
-        working-directory: /home/ub24/github/agent-team
+        shell: bash
+        working-directory: /app
         env:
           GITHUB_TOKEN: ${{ secrets.AGENT_PAT }}
         run: |
