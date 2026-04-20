@@ -18,20 +18,14 @@ jobs:
       github.event.action == 'opened' ||
       (github.event.action == 'labeled' && (
         startsWith(github.event.label.name, 'state:') ||
-        startsWith(github.event.label.name, 'gate:')
+        startsWith(github.event.label.name, 'gate:') ||
+        startsWith(github.event.label.name, 'team:')
       ))
-
-    # No concurrency group — every event runs independently.
-    # The orchestrator handles dedup: if an agent is already running
-    # for the same role+issue, it skips the spawn. This prevents the
-    # previous bug where queued events in a per-issue concurrency group
-    # got cancelled while an agent was running synchronously.
 
     steps:
       - name: Write event context
         shell: bash
         run: |
-          # Use unique filename per run to avoid race conditions
           mkdir -p /tmp/agent-team
           cat > /tmp/agent-team/event-${{ github.run_id }}.json << 'EVENTEOF'
           ${{ toJSON(github.event) }}
