@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Radio, Trash2, Plus } from 'lucide-react';
-import { api, CreateFrequencyPoolRequest, FrequencyPoolEntryInputDto } from '../../lib/api';
+import { api } from '../../lib/api';
+import type { CreateFrequencyPoolRequest, FrequencyPoolEntryInputDto } from '../../lib/api';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 
 interface FrequencyPoolConfigurationProps {

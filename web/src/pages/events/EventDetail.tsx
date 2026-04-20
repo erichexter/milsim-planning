@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye } from 'lucide-react';
+import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye, X } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { FrequencyPoolConfiguration } from '../../components/frequency/FrequencyPoolConfiguration';
 
 export function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +47,9 @@ export function EventDetail() {
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // ── Frequency Pool Configuration state ──────────────────────────────────
+  const [showFrequencyPool, setShowFrequencyPool] = useState(false);
 
   const publishMutation = useMutation({
     mutationFn: () => api.publishEvent(id!),
@@ -306,12 +310,41 @@ export function EventDetail() {
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/notifications`}>Notifications</Link>
                 </Button>
+                <Button variant="outline" onClick={() => setShowFrequencyPool(true)}>
+                  Configure Frequency Pool
+                </Button>
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/player`}>
                     <Eye className="h-4 w-4 mr-1.5" />
                     Player View
                   </Link>
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Frequency Pool Configuration Modal ────────────────────────── */}
+          {showFrequencyPool && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+              <div className="bg-card rounded-lg shadow-lg max-w-2xl w-full my-8">
+                <div className="flex items-center justify-between p-6 border-b">
+                  <h2 className="text-lg font-semibold">Configure Frequency Pool</h2>
+                  <button
+                    onClick={() => setShowFrequencyPool(false)}
+                    className="p-1 hover:bg-muted rounded transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                  <FrequencyPoolConfiguration
+                    eventId={id!}
+                    onSuccess={() => {
+                      setShowFrequencyPool(false);
+                      void queryClient.invalidateQueries({ queryKey: ['events'] });
+                    }}
+                  />
+                </div>
               </div>
             </div>
           )}
