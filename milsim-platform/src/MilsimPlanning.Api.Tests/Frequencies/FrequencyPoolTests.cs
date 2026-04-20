@@ -372,4 +372,71 @@ public class FrequencyPoolTests(PostgreSqlFixture fixture) : FrequencyPoolTestsB
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    // ── AC-06: Pool becomes read-only after event enters submission window ──
+
+    [Fact]
+    public async Task CreateFrequencyPool_AfterEventPublished_Returns409Conflict()
+    {
+        // Arrange
+        var createRequest = new CreateFrequencyPoolRequest
+        {
+            Entries =
+            [
+                new() { Channel = "152.4 MHz", DisplayGroup = "VHF", SortOrder = 1, IsReserved = false, ReservedRole = null }
+            ]
+        };
+
+        // Create pool in Draft event
+        await _commanderClient.PutAsJsonAsync($"/api/events/{_eventId}/frequency-pool", createRequest);
+
+        // Publish the event (move to Published status)
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var evt = await db.Events.FirstOrDefaultAsync(e => e.Id == _eventId);
+        if (evt != null)
+        {
+            evt.Status = EventStatus.Published;
+            db.Events.Update(evt);
+            await db.SaveChangesAsync();
+        }
+
+        // Attempt to modify pool after publication
+        var updateRequest = new CreateFrequencyPoolRequest
+        {
+            Entries =
+            [
+                new() { Channel = "152.5 MHz", DisplayGroup = "VHF", SortOrder = 1, IsReserved = false, ReservedRole = null }
+            ]
+        };
+
+        // Act
+        var response = await _commanderClient.PutAsJsonAsync($"/api/events/{_eventId}/frequency-pool", updateRequest);
+
+        // Assert - should return 409 Conflict
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var problem = await response.Content.ReadAsAsync<ProblemDetails>();
+        problem.Detail.Should().Contain("read-only");
+    }
+
+    // ── Authorization: Only event organizer (faction commander) can create/modify pool ──
+
+    [Fact]
+    public async Task CreateFrequencyPool_AsNonCommander_Returns403()
+    {
+        // Arrange
+        var request = new CreateFrequencyPoolRequest
+        {
+            Entries =
+            [
+                new() { Channel = "152.4 MHz", DisplayGroup = "VHF", SortOrder = 1, IsReserved = false, ReservedRole = null }
+            ]
+        };
+
+        // Act - Player (non-commander) attempts to create pool
+        var response = await _playerClient.PutAsJsonAsync($"/api/events/{_eventId}/frequency-pool", request);
+
+        // Assert - should return 403 Forbidden
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }

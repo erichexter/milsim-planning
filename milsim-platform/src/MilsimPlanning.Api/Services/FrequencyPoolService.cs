@@ -46,8 +46,17 @@ public class FrequencyPoolService
     {
         ScopeGuard.AssertEventAccess(_currentUser, eventId);
 
-        // Validate organizer role (simplified - would check event membership role in real implementation)
-        // For now, we rely on the controller to enforce this
+        // Load event and faction for authorization and AC-06 validation
+        var evt = await _db.Events
+            .Include(e => e.Faction)
+            .FirstOrDefaultAsync(e => e.Id == eventId);
+
+        if (evt == null)
+            throw new ArgumentException($"Event {eventId} not found");
+
+        // Validate organizer role: Only faction commander (organizer) can manage the frequency pool
+        if (evt.Faction?.CommanderId != _currentUser.UserId)
+            throw new UnauthorizedAccessException("Only the event organizer can manage the frequency pool");
 
         // Validate entries
         ValidateEntries(request.Entries);
@@ -57,10 +66,13 @@ public class FrequencyPoolService
             .Include(fp => fp.Entries)
             .FirstOrDefaultAsync(fp => fp.EventId == eventId);
 
+        // AC-06: Once an event enters the submission window (Published), the frequency pool becomes read-only
+        if (existingPool != null && evt.Status == EventStatus.Published)
+            throw new InvalidOperationException("Frequency pool is read-only after event publication");
+
         if (existingPool != null)
         {
-            // If pool exists, check if any faction has submitted a plan (would require FrequencyPlan entity)
-            // For now, just update the pool
+            // Update existing pool
             existingPool.UpdatedAt = DateTime.UtcNow;
             existingPool.Entries.Clear();
 
