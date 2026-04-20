@@ -154,6 +154,12 @@ export const api = {
   setFactionFrequencies: (factionId: string, req: SetFrequenciesRequest) =>
     request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
 
+  // Frequency pool endpoints (Phase 6)
+  getFrequencyPool: (eventId: string) =>
+    request<FrequencyPoolDto>(`/events/${eventId}/frequency-pool`),
+  createOrUpdateFrequencyPool: (eventId: string, req: CreateFrequencyPoolRequest, force = false) =>
+    request<FrequencyPoolDto>(`/events/${eventId}/frequency-pool${force ? '?force=true' : ''}`, { method: 'PUT', body: JSON.stringify(req) }),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -292,4 +298,34 @@ export interface EventFrequenciesDto {
 export interface SetFrequenciesRequest {
   primaryFrequency: string | null;
   backupFrequency: string | null;
+}
+
+// Frequency Pool (Phase 6)
+export interface FrequencyPoolEntryDto {
+  id: string;
+  channel: string;
+  displayGroup: string | null;
+  sortOrder: number;
+  isReserved: boolean;
+  reservedRole: string | null;
+}
+
+export interface FrequencyPoolDto {
+  id: string;
+  eventId: string;
+  entries: FrequencyPoolEntryDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrequencyPoolEntryInputDto {
+  channel: string;
+  displayGroup: string | null;
+  sortOrder: number;
+  isReserved: boolean;
+  reservedRole: string | null;
+}
+
+export interface CreateFrequencyPoolRequest {
+  entries: FrequencyPoolEntryInputDto[];
 }

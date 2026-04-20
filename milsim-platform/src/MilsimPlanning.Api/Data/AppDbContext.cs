@@ -28,6 +28,10 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Phase 6 DbSets - Radio Frequency Management
+    public DbSet<FrequencyPool> FrequencyPools => Set<FrequencyPool>();
+    public DbSet<FrequencyPoolEntry> FrequencyPoolEntries => Set<FrequencyPoolEntry>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +135,30 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Phase 6 Configuration - Radio Frequency Management ===
+
+        // FrequencyPool: one pool per event (unique constraint on EventId)
+        builder.Entity<FrequencyPool>()
+            .HasIndex(fp => fp.EventId)
+            .IsUnique();
+
+        // FrequencyPool → Event (one pool per event)
+        builder.Entity<FrequencyPool>()
+            .HasOne(fp => fp.Event)
+            .WithMany()
+            .HasForeignKey(fp => fp.EventId);
+
+        // FrequencyPoolEntry: unique constraint on (FrequencyPoolId, Channel)
+        builder.Entity<FrequencyPoolEntry>()
+            .HasIndex(fpe => new { fpe.FrequencyPoolId, fpe.Channel })
+            .IsUnique();
+
+        // FrequencyPoolEntry → FrequencyPool (cascade delete)
+        builder.Entity<FrequencyPoolEntry>()
+            .HasOne(fpe => fpe.Pool)
+            .WithMany(fp => fp.Entries)
+            .HasForeignKey(fpe => fpe.FrequencyPoolId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
