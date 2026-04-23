@@ -52,6 +52,44 @@ public class BriefingService
         return briefing is null ? null : ToDto(briefing);
     }
 
+    /// <summary>
+    /// Returns a paginated list of non-deleted Briefings ordered by updatedAt descending.
+    /// </summary>
+    public async Task<BriefingListDto> ListBriefingsAsync(int limit, int offset)
+    {
+        var query = _db.Briefings
+            .AsNoTracking()
+            .Where(b => !b.IsDeleted)
+            .OrderByDescending(b => b.UpdatedAt);
+
+        var total = await query.CountAsync();
+
+        var items = await query
+            .Skip(offset)
+            .Take(limit)
+            .Select(b => new BriefingSummaryDto
+            {
+                Id = b.Id,
+                Title = b.Title,
+                Description = b.Description,
+                ChannelIdentifier = b.ChannelIdentifier,
+                PublicationState = b.PublicationState,
+                UpdatedAt = b.UpdatedAt
+            })
+            .ToListAsync();
+
+        return new BriefingListDto
+        {
+            Items = items,
+            Pagination = new PaginationDto
+            {
+                Limit = limit,
+                Offset = offset,
+                Total = total
+            }
+        };
+    }
+
     private static BriefingDto ToDto(Briefing b) => new(
         b.Id,
         b.Title,

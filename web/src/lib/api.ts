@@ -162,6 +162,10 @@ export const api = {
     request<BriefingDto>('/v1/briefings', { method: 'POST', body: JSON.stringify(req) }),
   getBriefing: (id: string) =>
     request<BriefingDto>(`/v1/briefings/${id}`),
+
+  // Briefing Board endpoints (Phase 5, Story 2)
+  getBriefings: (limit = 20, offset = 0) =>
+    request<BriefingListDto>(`/v1/briefings?limit=${limit}&offset=${offset}`),
 };
 
 export interface UserProfile {
@@ -316,4 +320,24 @@ export interface BriefingDto {
 export interface CreateBriefingRequest {
   title: string;
   description?: string | null;
+}
+
+export interface BriefingSummaryDto {
+  id: string;                  // UUID
+  title: string;
+  description: string | null;
+  channelIdentifier: string;   // stable UUID
+  publicationState: 'Draft' | 'Published' | 'Archived';
+  updatedAt: string;           // ISO 8601
+}
+
+export interface PaginationDto {
+  limit: number;
+  offset: number;
+  total: number;
+}
+
+export interface BriefingListDto {
+  items: BriefingSummaryDto[];
+  pagination: PaginationDto;
 }
