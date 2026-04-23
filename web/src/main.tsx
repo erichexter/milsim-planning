@@ -22,6 +22,7 @@ import { NotificationBlastPage } from './pages/events/NotificationBlastPage';
 import { CsvImportPage } from './pages/roster/CsvImportPage';
 import { HierarchyBuilder } from './pages/roster/HierarchyBuilder';
 import { RosterView } from './pages/roster/RosterView';
+import { BriefingsListPage } from './pages/briefings/BriefingsListPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -64,6 +65,14 @@ const router = createBrowserRouter([
               { path: '/events/:id/change-requests', element: <ChangeRequestsPage /> },
               { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
               { path: '/events/:id/roster/import', element: <CsvImportPage /> },
+            ],
+          },
+
+          // BriefingAdmin-only routes
+          {
+            element: <ProtectedRoute requiredRole="briefing_admin" />,
+            children: [
+              { path: '/briefings', element: <BriefingsListPage /> },
             ],
           },
         ],

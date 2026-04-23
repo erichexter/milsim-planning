@@ -15,7 +15,23 @@ public class BriefingsController : ControllerBase
     public BriefingsController(BriefingService briefingService)
         => _briefingService = briefingService;
 
-    // AC-01: POST /api/v1/briefings — create a new briefing channel
+    // Story 2 AC-01: GET /api/v1/briefings — paginated list of briefing channels
+    [HttpGet]
+    [Authorize(Policy = "BriefingAdmin")]
+    public async Task<ActionResult<BriefingListDto>> List(
+        [FromQuery] int limit = 20,
+        [FromQuery] int offset = 0)
+    {
+        if (limit < 1 || limit > 100)
+            return Problem(title: "Bad Request", detail: "limit must be between 1 and 100.", statusCode: 400);
+        if (offset < 0)
+            return Problem(title: "Bad Request", detail: "offset must be >= 0.", statusCode: 400);
+
+        var result = await _briefingService.ListBriefingsAsync(limit, offset);
+        return Ok(result);
+    }
+
+    // Story 1 AC-01: POST /api/v1/briefings — create a new briefing channel
     [HttpPost]
     [Authorize(Policy = "BriefingAdmin")]
     public async Task<ActionResult<BriefingDto>> Create(CreateBriefingRequest request)
