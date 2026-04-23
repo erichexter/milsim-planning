@@ -68,7 +68,7 @@ export function BriefingsListPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <Link
-                    to={`/briefings/${briefing.id}`}
+                    to={`/briefings/${briefing.id}/edit`}
                     className="font-semibold hover:underline truncate"
                   >
                     {briefing.title}
@@ -86,12 +86,12 @@ export function BriefingsListPage() {
                   Updated {formatUpdatedAt(briefing.updatedAt)}
                 </p>
               </div>
-              <div className="ml-4 shrink-0">
+              <div className="ml-4 shrink-0 flex gap-3">
                 <Link
-                  to={`/briefings/${briefing.id}`}
+                  to={`/briefings/${briefing.id}/edit`}
                   className="text-sm font-medium hover:underline"
                 >
-                  View →
+                  Edit →
                 </Link>
               </div>
             </div>
