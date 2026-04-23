@@ -26,17 +26,21 @@ jobs:
         env:
           ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          EVENT_JSON: ${{ toJSON(github.event) }}
         run: |
           if [ -z "$ORCHESTRATOR_URL" ]; then
             echo "::error::ORCHESTRATOR_URL secret not set"
             exit 1
           fi
 
+          # Write payload to file to avoid shell escaping issues
+          echo "$EVENT_JSON" > /tmp/event.json
+
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "${ORCHESTRATOR_URL}/api/trigger/webhook" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${WEBHOOK_SECRET}" \
-            -d '${{ toJSON(github.event) }}')
+            -d @/tmp/event.json)
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | sed '$d')
