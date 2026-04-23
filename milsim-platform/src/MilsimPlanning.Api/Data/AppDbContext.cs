@@ -28,6 +28,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Phase 6 DbSets (Single-use QR Validation)
+    public DbSet<EventParticipantCheckIn> EventParticipantCheckIns => Set<EventParticipantCheckIn>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +134,26 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Phase 6 Configuration (Single-use QR Validation) ===
+
+        // EventParticipantCheckIn unique index (one check-in per participant per event)
+        builder.Entity<EventParticipantCheckIn>()
+            .HasIndex(c => new { c.EventId, c.ParticipantId })
+            .IsUnique();
+
+        // EventParticipantCheckIn → Event
+        builder.Entity<EventParticipantCheckIn>()
+            .HasOne(c => c.Event)
+            .WithMany()
+            .HasForeignKey(c => c.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // EventParticipantCheckIn → EventPlayer
+        builder.Entity<EventParticipantCheckIn>()
+            .HasOne(c => c.Participant)
+            .WithMany()
+            .HasForeignKey(c => c.ParticipantId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
