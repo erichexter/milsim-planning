@@ -125,6 +125,8 @@ builder.Services.AddScoped<HierarchyService>();
 builder.Services.AddScoped<FrequencyService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IMapResourceService, MapResourceService>();
+builder.Services.AddScoped<QrValidationService>();
+builder.Services.AddScoped<CheckInService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();
