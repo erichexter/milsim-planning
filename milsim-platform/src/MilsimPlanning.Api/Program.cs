@@ -65,6 +65,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequirePlatoonLeader",    p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.PlatoonLeader)));
     options.AddPolicy("RequireFactionCommander", p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.FactionCommander)));
     options.AddPolicy("RequireSystemAdmin",      p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.SystemAdmin)));
+    // Phase 5 (Briefing Board): BriefingAdmin — maps to faction_commander level or higher
+    options.AddPolicy("BriefingAdmin",           p => p.AddRequirements(new MinimumRoleRequirement(AppRoles.BriefingAdmin)));
 });
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
 
@@ -125,6 +127,7 @@ builder.Services.AddScoped<HierarchyService>();
 builder.Services.AddScoped<FrequencyService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IMapResourceService, MapResourceService>();
+builder.Services.AddScoped<BriefingService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();

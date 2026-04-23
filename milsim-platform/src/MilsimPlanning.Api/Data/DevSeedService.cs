@@ -24,8 +24,7 @@ public static class DevSeedService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // ── Ensure all roles exist ────────────────────────────────────────────
-        string[] roles = ["player", "squad_leader", "platoon_leader", "faction_commander", "system_admin"];
-        foreach (var role in roles)
+        foreach (var role in AppRoles.AllRoles)
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));

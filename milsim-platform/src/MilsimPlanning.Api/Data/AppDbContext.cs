@@ -28,6 +28,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Phase 5 (Briefing Board) DbSets
+    public DbSet<Briefing> Briefings => Set<Briefing>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +134,12 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Phase 5 (Briefing Board) Configuration ===
+
+        // Briefing: channelIdentifier must be unique across all briefings
+        builder.Entity<Briefing>()
+            .HasIndex(b => b.ChannelIdentifier)
+            .IsUnique();
     }
 }
