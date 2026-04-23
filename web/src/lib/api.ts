@@ -156,6 +156,12 @@ export const api = {
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
+
+  // Briefing Board endpoints (Phase 5, Story 1)
+  createBriefing: (req: CreateBriefingRequest) =>
+    request<BriefingDto>('/v1/briefings', { method: 'POST', body: JSON.stringify(req) }),
+  getBriefing: (id: string) =>
+    request<BriefingDto>(`/v1/briefings/${id}`),
 };
 
 export interface UserProfile {
@@ -292,4 +298,22 @@ export interface EventFrequenciesDto {
 export interface SetFrequenciesRequest {
   primaryFrequency: string | null;
   backupFrequency: string | null;
+}
+
+// ─── Briefing Board types (Phase 5) ─────────────────────────────────────────
+
+export interface BriefingDto {
+  id: string;                  // UUID
+  title: string;
+  description: string | null;
+  channelIdentifier: string;   // stable UUID — QR codes reference this
+  publicationState: 'Draft' | 'Published' | 'Archived';
+  versionETag: string;
+  createdAt: string;           // ISO 8601
+  updatedAt: string;           // ISO 8601
+}
+
+export interface CreateBriefingRequest {
+  title: string;
+  description?: string | null;
 }

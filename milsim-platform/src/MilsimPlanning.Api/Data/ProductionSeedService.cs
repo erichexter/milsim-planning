@@ -25,8 +25,7 @@ public static class ProductionSeedService
                          .CreateLogger("ProductionSeedService");
 
         // ── Ensure all roles exist (required in every environment) ────────────
-        string[] roles = ["player", "squad_leader", "platoon_leader", "faction_commander", "system_admin"];
-        foreach (var role in roles)
+        foreach (var role in AppRoles.AllRoles)
         {
             if (!await roleManager.RoleExistsAsync(role))
             {
