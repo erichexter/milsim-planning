@@ -19,6 +19,7 @@ import { ChangeRequestsPage } from './pages/events/ChangeRequestsPage';
 import { BriefingPage } from './pages/events/BriefingPage';
 import { MapResourcesPage } from './pages/events/MapResourcesPage';
 import { NotificationBlastPage } from './pages/events/NotificationBlastPage';
+import { CheckInDashboard } from './pages/events/CheckInDashboard';
 import { CsvImportPage } from './pages/roster/CsvImportPage';
 import { HierarchyBuilder } from './pages/roster/HierarchyBuilder';
 import { RosterView } from './pages/roster/RosterView';
@@ -61,6 +62,7 @@ const router = createBrowserRouter([
           {
             element: <ProtectedRoute requiredRole="faction_commander" />,
             children: [
+              { path: '/events/:id/check-in/live-dashboard', element: <CheckInDashboard /> },
               { path: '/events/:id/change-requests', element: <ChangeRequestsPage /> },
               { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
               { path: '/events/:id/roster/import', element: <CsvImportPage /> },
