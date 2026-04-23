@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MilsimPlanning.Api.Authorization;
+using MilsimPlanning.Api.Models.CheckIn;
 using MilsimPlanning.Api.Models.Events;
 using MilsimPlanning.Api.Services;
 
@@ -12,9 +14,13 @@ namespace MilsimPlanning.Api.Controllers;
 public class EventsController : ControllerBase
 {
     private readonly EventService _eventService;
+    private readonly CheckInDashboardService _checkInDashboardService;
 
-    public EventsController(EventService eventService)
-        => _eventService = eventService;
+    public EventsController(EventService eventService, CheckInDashboardService checkInDashboardService)
+    {
+        _eventService = eventService;
+        _checkInDashboardService = checkInDashboardService;
+    }
 
     // EVNT-01: Create event
     [HttpPost]

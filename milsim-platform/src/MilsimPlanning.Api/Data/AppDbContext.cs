@@ -28,6 +28,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Phase 5 DbSets (Real-time Dashboard)
+    public DbSet<EventParticipantCheckIn> EventParticipantCheckIns => Set<EventParticipantCheckIn>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +134,30 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Phase 5 Configuration (Real-time Dashboard) ===
+
+        // EventParticipantCheckIn: composite unique index (one check-in per participant per event)
+        builder.Entity<EventParticipantCheckIn>()
+            .HasIndex(c => new { c.EventId, c.ParticipantId })
+            .IsUnique();
+
+        // EventParticipantCheckIn: index on EventId for dashboard query performance
+        builder.Entity<EventParticipantCheckIn>()
+            .HasIndex(c => c.EventId);
+
+        // EventParticipantCheckIn: FK to Event
+        builder.Entity<EventParticipantCheckIn>()
+            .HasOne(c => c.Event)
+            .WithMany()
+            .HasForeignKey(c => c.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // EventParticipantCheckIn: FK to EventPlayer
+        builder.Entity<EventParticipantCheckIn>()
+            .HasOne(c => c.Participant)
+            .WithMany()
+            .HasForeignKey(c => c.ParticipantId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
