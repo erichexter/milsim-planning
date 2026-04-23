@@ -23,6 +23,7 @@ import { CsvImportPage } from './pages/roster/CsvImportPage';
 import { HierarchyBuilder } from './pages/roster/HierarchyBuilder';
 import { RosterView } from './pages/roster/RosterView';
 import { BriefingsListPage } from './pages/briefings/BriefingsListPage';
+import { BriefingEditorPage } from './pages/briefings/BriefingEditorPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
             element: <ProtectedRoute requiredRole="briefing_admin" />,
             children: [
               { path: '/briefings', element: <BriefingsListPage /> },
+              { path: '/briefings/:id/edit', element: <BriefingEditorPage /> },
             ],
           },
         ],

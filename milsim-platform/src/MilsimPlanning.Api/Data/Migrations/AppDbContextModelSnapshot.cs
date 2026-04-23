@@ -260,6 +260,81 @@ namespace MilsimPlanning.Api.Data.Migrations
                     b.ToTable("Briefings");
                 });
 
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ImageUpload", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BriefingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("R2OriginalKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UploadedById")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UploadStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BriefingId");
+
+                    b.HasIndex("UploadedById");
+
+                    b.ToTable("ImageUploads");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ImageResizeJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ErrorLog")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ImageUploadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("JobCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("JobStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OutputR2Key")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ResizeStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TargetDimensions")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImageUploadId");
+
+                    b.ToTable("ImageResizeJobs");
+                });
+
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
@@ -894,6 +969,36 @@ namespace MilsimPlanning.Api.Data.Migrations
                     b.Navigation("Platoon");
                 });
 
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ImageUpload", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Briefing", "Briefing")
+                        .WithMany()
+                        .HasForeignKey("BriefingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.AppUser", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Briefing");
+
+                    b.Navigation("UploadedBy");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ImageResizeJob", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.ImageUpload", "ImageUpload")
+                        .WithMany("ResizeJobs")
+                        .HasForeignKey("ImageUploadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ImageUpload");
+                });
+
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.UserProfile", b =>
                 {
                     b.HasOne("MilsimPlanning.Api.Data.Entities.AppUser", "User")
@@ -947,6 +1052,11 @@ namespace MilsimPlanning.Api.Data.Migrations
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.Squad", b =>
                 {
                     b.Navigation("Players");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ImageUpload", b =>
+                {
+                    b.Navigation("ResizeJobs");
                 });
 #pragma warning restore 612, 618
         }

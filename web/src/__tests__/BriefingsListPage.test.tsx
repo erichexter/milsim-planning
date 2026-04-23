@@ -14,7 +14,7 @@ function renderWithProviders(ui: React.ReactElement) {
       <MemoryRouter initialEntries={['/briefings']}>
         <Routes>
           <Route path="/briefings" element={ui} />
-          <Route path="/briefings/:id" element={<div>Briefing Detail</div>} />
+          <Route path="/briefings/:id/edit" element={<div>Briefing Editor</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -97,15 +97,15 @@ describe('BriefingsListPage', () => {
     expect(updatedTexts.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('each channel row is clickable and links to editor/preview', async () => {
+  it('each channel row is clickable and links to the briefing editor', async () => {
     renderWithProviders(<BriefingsListPage />);
 
     await waitFor(() => expect(screen.getByText('Op Nightfall Brief')).toBeInTheDocument());
 
-    // Title links should point to /briefings/{id}
+    // Title links should point to /briefings/{id}/edit
     const links = screen.getAllByRole('link', { name: /Op Nightfall Brief/i });
     expect(links.length).toBeGreaterThanOrEqual(1);
-    expect(links[0]).toHaveAttribute('href', '/briefings/aaaaaaaa-0000-0000-0000-000000000001');
+    expect(links[0]).toHaveAttribute('href', '/briefings/aaaaaaaa-0000-0000-0000-000000000001/edit');
   });
 
   it('shows empty state when no briefings exist', async () => {

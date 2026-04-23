@@ -166,6 +166,12 @@ export const api = {
   // Briefing Board endpoints (Phase 5, Story 2)
   getBriefings: (limit = 20, offset = 0) =>
     request<BriefingListDto>(`/v1/briefings?limit=${limit}&offset=${offset}`),
+
+  // Briefing Board endpoints (Phase 5, Story 3) — image upload
+  uploadBriefingImage: (briefingId: string, file: File) =>
+    upload<ImageUploadDto>(`/v1/briefings/${briefingId}/images`, file),
+  getBriefingImageStatus: (briefingId: string, uploadId: string) =>
+    request<ImageUploadStatusDto>(`/v1/briefings/${briefingId}/images/${uploadId}`),
 };
 
 export interface UserProfile {
@@ -340,4 +346,25 @@ export interface PaginationDto {
 export interface BriefingListDto {
   items: BriefingSummaryDto[];
   pagination: PaginationDto;
+}
+
+// ─── Image Upload types (Phase 5, Story 3) ───────────────────────────────────
+
+export interface ImageUploadDto {
+  uploadId: string;   // UUID
+  status: string;     // "Pending"
+  createdAt: string;  // ISO 8601
+}
+
+export interface ResizeJobStatusDto {
+  jobId: string;        // UUID
+  dimensions: string;   // "1280x720"
+  resizeStatus: string; // "Queued|Processing|Completed|Failed"
+  completedAt: string | null;
+}
+
+export interface ImageUploadStatusDto {
+  uploadId: string;      // UUID
+  uploadStatus: string;  // "Pending|Processing|Completed|Failed"
+  resizeJobs: ResizeJobStatusDto[];
 }

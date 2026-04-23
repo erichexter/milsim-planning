@@ -30,6 +30,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
 
     // Phase 5 (Briefing Board) DbSets
     public DbSet<Briefing> Briefings => Set<Briefing>();
+    public DbSet<ImageUpload> ImageUploads => Set<ImageUpload>();
+    public DbSet<ImageResizeJob> ImageResizeJobs => Set<ImageResizeJob>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -141,5 +143,35 @@ public class AppDbContext : IdentityDbContext<AppUser>
         builder.Entity<Briefing>()
             .HasIndex(b => b.ChannelIdentifier)
             .IsUnique();
+
+        // ImageUpload → Briefing FK
+        builder.Entity<ImageUpload>()
+            .HasOne(u => u.Briefing)
+            .WithMany()
+            .HasForeignKey(u => u.BriefingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ImageUpload → AppUser FK (string PK)
+        builder.Entity<ImageUpload>()
+            .HasOne(u => u.UploadedBy)
+            .WithMany()
+            .HasForeignKey(u => u.UploadedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // OriginalFileName max length
+        builder.Entity<ImageUpload>()
+            .Property(u => u.OriginalFileName)
+            .HasMaxLength(255);
+
+        // ImageResizeJob → ImageUpload FK
+        builder.Entity<ImageResizeJob>()
+            .HasOne(j => j.ImageUpload)
+            .WithMany(u => u.ResizeJobs)
+            .HasForeignKey(j => j.ImageUploadId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Index: fast lookup of jobs by upload
+        builder.Entity<ImageResizeJob>()
+            .HasIndex(j => j.ImageUploadId);
     }
 }
