@@ -7,12 +7,11 @@ on:
     types: [created]
 
 permissions:
-  issues: write
-  contents: read
+  issues: read
 
 jobs:
-  handle:
-    runs-on: [self-hosted, agent-team]
+  relay:
+    runs-on: ubuntu-latest
     if: >-
       github.event_name == 'issue_comment' ||
       github.event.action == 'opened' ||
@@ -23,18 +22,28 @@ jobs:
       ))
 
     steps:
-      - name: Write event context
-        shell: bash
-        run: |
-          mkdir -p /tmp/agent-team
-          cat > /tmp/agent-team/event-${{ github.run_id }}.json << 'EVENTEOF'
-          ${{ toJSON(github.event) }}
-          EVENTEOF
-
-      - name: Run orchestrator
-        shell: bash
-        working-directory: /app
+      - name: Relay event to orchestrator
         env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT }}
+          ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
         run: |
-          npx tsx src/cli.ts handle-event /tmp/agent-team/event-${{ github.run_id }}.json
+          if [ -z "$ORCHESTRATOR_URL" ]; then
+            echo "::error::ORCHESTRATOR_URL secret not set"
+            exit 1
+          fi
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${ORCHESTRATOR_URL}/api/trigger/webhook" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${WEBHOOK_SECRET}" \
+            -d '${{ toJSON(github.event) }}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response ($HTTP_CODE): $BODY"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Orchestrator returned $HTTP_CODE"
+            exit 1
+          fi
