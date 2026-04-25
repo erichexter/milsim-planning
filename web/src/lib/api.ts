@@ -154,6 +154,36 @@ export const api = {
   setFactionFrequencies: (factionId: string, req: SetFrequenciesRequest) =>
     request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
 
+  // Radio channel endpoints (Story 1)
+  getRadioChannels: (eventId: string) =>
+    request<RadioChannelListDto[]>(`/events/${eventId}/radio-channels`),
+  createRadioChannel: (eventId: string, req: CreateRadioChannelRequest) =>
+    request<RadioChannelDetailDto>(`/events/${eventId}/radio-channels`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  updateRadioChannel: (channelId: string, req: UpdateRadioChannelRequest) =>
+    request<RadioChannelDetailDto>(`/radio-channels/${channelId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(req),
+    }),
+
+  // Channel assignment endpoints (Story 2)
+  getChannelAssignments: (eventId: string, limit = 50, offset = 0) =>
+    request<ChannelAssignmentListDto>(`/events/${eventId}/channel-assignments?limit=${limit}&offset=${offset}`),
+  createChannelAssignment: (eventId: string, req: CreateChannelAssignmentRequest) =>
+    request<ChannelAssignmentDto>(`/events/${eventId}/channel-assignments`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  updateChannelAssignment: (eventId: string, id: string, req: UpdateChannelAssignmentRequest) =>
+    request<ChannelAssignmentDto>(`/events/${eventId}/channel-assignments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    }),
+  deleteChannelAssignment: (eventId: string, id: string) =>
+    request<void>(`/events/${eventId}/channel-assignments/${id}`, { method: 'DELETE' }),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -292,4 +322,82 @@ export interface EventFrequenciesDto {
 export interface SetFrequenciesRequest {
   primaryFrequency: string | null;
   backupFrequency: string | null;
+}
+
+// ─── Radio Channel types ────────────────────────────────────────────────────
+
+export type ChannelScope = 'VHF' | 'UHF';
+
+export interface RadioChannelListDto {
+  id: string;
+  name: string;
+  callSign: string | null;
+  scope: ChannelScope;
+  assignmentCount: number;
+  conflictCount: number;
+}
+
+export interface RadioChannelDetailDto {
+  id: string;
+  eventId: string;
+  name: string;
+  callSign: string | null;
+  scope: ChannelScope;
+  assignments: RadioChannelAssignmentDto[];
+  createdAt: string;
+}
+
+export interface RadioChannelAssignmentDto {
+  id: string;
+  channelId: string;
+  unitId: string;
+  unitType: string;
+  unitName: string;
+  primary: number | null;
+  alternate: number | null;
+  hasConflict: boolean;
+  conflictWith: string[] | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface CreateRadioChannelRequest {
+  name: string;
+  callSign?: string | null;
+  scope: ChannelScope;
+}
+
+export interface UpdateRadioChannelRequest {
+  name: string;
+  scope: ChannelScope;
+}
+
+// ─── Channel Assignment types (Story 2) ─────────────────────────────────────
+
+export interface ChannelAssignmentDto {
+  id: string;
+  radioChannelId: string;
+  channelName: string;
+  channelScope: string;
+  squadId: string;
+  squadName: string;
+  primaryFrequency: number;
+  eventId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChannelAssignmentListDto {
+  total: number;
+  items: ChannelAssignmentDto[];
+}
+
+export interface CreateChannelAssignmentRequest {
+  radioChannelId: string;
+  squadId: string;
+  primaryFrequency: number;
+}
+
+export interface UpdateChannelAssignmentRequest {
+  primaryFrequency: number;
 }
