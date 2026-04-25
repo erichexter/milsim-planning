@@ -67,6 +67,14 @@ public class ChannelAssignmentService
         // Validate frequency against channel scope
         _validator.Validate(request.PrimaryFrequency, channel.Scope);
 
+        // Validate alternate frequency if provided
+        if (request.AlternateFrequency.HasValue)
+        {
+            _validator.Validate(request.AlternateFrequency.Value, channel.Scope);
+            if (request.AlternateFrequency.Value == request.PrimaryFrequency)
+                throw new ArgumentException("Alternate frequency cannot match primary frequency");
+        }
+
         var now = DateTime.UtcNow;
         var assignment = new ChannelAssignment
         {
@@ -74,6 +82,7 @@ public class ChannelAssignmentService
             RadioChannelId = request.RadioChannelId,
             SquadId = request.SquadId,
             PrimaryFrequency = request.PrimaryFrequency,
+            AlternateFrequency = request.AlternateFrequency,
             EventId = eventId,
             IsDeleted = false,
             CreatedAt = now,
@@ -112,7 +121,16 @@ public class ChannelAssignmentService
         // Validate frequency against channel scope
         _validator.Validate(request.PrimaryFrequency, assignment.RadioChannel.Scope);
 
+        // Validate alternate frequency if provided
+        if (request.AlternateFrequency.HasValue)
+        {
+            _validator.Validate(request.AlternateFrequency.Value, assignment.RadioChannel.Scope);
+            if (request.AlternateFrequency.Value == request.PrimaryFrequency)
+                throw new ArgumentException("Alternate frequency cannot match primary frequency");
+        }
+
         assignment.PrimaryFrequency = request.PrimaryFrequency;
+        assignment.AlternateFrequency = request.AlternateFrequency;
         assignment.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -160,6 +178,7 @@ public class ChannelAssignmentService
         SquadId = a.SquadId,
         SquadName = a.Squad.Name,
         PrimaryFrequency = a.PrimaryFrequency,
+        AlternateFrequency = a.AlternateFrequency,
         EventId = a.EventId,
         CreatedAt = a.CreatedAt,
         UpdatedAt = a.UpdatedAt

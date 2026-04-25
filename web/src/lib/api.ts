@@ -382,6 +382,7 @@ export interface ChannelAssignmentDto {
   squadId: string;
   squadName: string;
   primaryFrequency: number;
+  alternateFrequency: number | null;
   eventId: string;
   createdAt: string;
   updatedAt: string;
@@ -396,8 +397,10 @@ export interface CreateChannelAssignmentRequest {
   radioChannelId: string;
   squadId: string;
   primaryFrequency: number;
+  alternateFrequency?: number | null;
 }
 
 export interface UpdateChannelAssignmentRequest {
   primaryFrequency: number;
+  alternateFrequency?: number | null;
 }

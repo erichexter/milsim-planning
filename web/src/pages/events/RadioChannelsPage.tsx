@@ -299,18 +299,53 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
   const [editing, setEditing] = useState(false);
   const [freqValue, setFreqValue] = useState(assignment.primaryFrequency.toString());
   const [freqError, setFreqError] = useState<string | null>(null);
+  const [altFreqValue, setAltFreqValue] = useState(
+    assignment.alternateFrequency !== null && assignment.alternateFrequency !== undefined
+      ? assignment.alternateFrequency.toString()
+      : ''
+  );
+  const [altFreqError, setAltFreqError] = useState<string | null>(null);
+
+  const scope = (assignment.channelScope as ChannelScope) ?? 'VHF';
 
   // Real-time validation as user types (AC-10)
   const handleFreqChange = (val: string) => {
     setFreqValue(val);
-    const scope = (assignment.channelScope as ChannelScope) ?? 'VHF';
     setFreqError(validateFrequency(val, scope));
+    // Re-validate alternate against new primary if alternate is present
+    if (altFreqValue) {
+      const altErr = validateFrequency(altFreqValue, scope);
+      if (altErr) {
+        setAltFreqError(altErr);
+      } else if (parseFloat(altFreqValue) === parseFloat(val)) {
+        setAltFreqError('Alternate frequency cannot match primary frequency');
+      } else {
+        setAltFreqError(null);
+      }
+    }
+  };
+
+  const handleAltFreqChange = (val: string) => {
+    setAltFreqValue(val);
+    if (!val) {
+      setAltFreqError(null);
+      return;
+    }
+    const err = validateFrequency(val, scope);
+    if (err) {
+      setAltFreqError(err);
+    } else if (parseFloat(val) === parseFloat(freqValue)) {
+      setAltFreqError('Alternate frequency cannot match primary frequency');
+    } else {
+      setAltFreqError(null);
+    }
   };
 
   const updateMutation = useMutation({
     mutationFn: () =>
       api.updateChannelAssignment(eventId, assignment.id, {
         primaryFrequency: parseFloat(freqValue),
+        alternateFrequency: altFreqValue ? parseFloat(altFreqValue) : null,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['channel-assignments', eventId] });
@@ -335,6 +370,21 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
   });
 
   const channel = channels.find((c) => c.id === assignment.radioChannelId);
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setFreqValue(assignment.primaryFrequency.toString());
+    setFreqError(null);
+    setAltFreqValue(
+      assignment.alternateFrequency !== null && assignment.alternateFrequency !== undefined
+        ? assignment.alternateFrequency.toString()
+        : ''
+    );
+    setAltFreqError(null);
+  };
+
+  const isSaveDisabled =
+    updateMutation.isPending || !!freqError || !freqValue || !!altFreqError;
 
   if (editing) {
     return (
@@ -361,12 +411,30 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
           </div>
         </td>
         <td className="py-3 px-4">
+          <div className="space-y-1">
+            <Input
+              aria-label="Alternate frequency (MHz)"
+              value={altFreqValue}
+              onChange={(e) => handleAltFreqChange(e.target.value)}
+              placeholder="Optional"
+              className="h-8 w-32"
+              type="number"
+              step="0.025"
+              min={channel ? SCOPE_INFO[channel.scope].min : 30}
+              max={channel ? SCOPE_INFO[channel.scope].max : 400}
+            />
+            {altFreqError && (
+              <p className="text-xs text-red-600" role="alert">{altFreqError}</p>
+            )}
+          </div>
+        </td>
+        <td className="py-3 px-4">
           <div className="flex gap-1">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending || !!freqError || !freqValue}
+              disabled={isSaveDisabled}
               aria-label="Save assignment"
             >
               <Check className="h-4 w-4 text-green-600" />
@@ -374,7 +442,7 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => { setEditing(false); setFreqValue(assignment.primaryFrequency.toString()); setFreqError(null); }}
+              onClick={cancelEdit}
               aria-label="Cancel edit"
             >
               <X className="h-4 w-4 text-red-600" />
@@ -393,6 +461,11 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
         <span className="ml-2 text-xs text-muted-foreground">{assignment.channelScope}</span>
       </td>
       <td className="py-3 px-4 text-sm font-mono">{assignment.primaryFrequency.toFixed(3)} MHz</td>
+      <td className="py-3 px-4 text-sm font-mono">
+        {assignment.alternateFrequency !== null && assignment.alternateFrequency !== undefined
+          ? `${assignment.alternateFrequency.toFixed(3)} MHz`
+          : '—'}
+      </td>
       <td className="py-3 px-4">
         {isCommander && (
           <div className="flex gap-1">
@@ -441,6 +514,8 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
   const [squadId, setSquadId] = useState('');
   const [freqValue, setFreqValue] = useState('');
   const [freqError, setFreqError] = useState<string | null>(null);
+  const [altFreqValue, setAltFreqValue] = useState('');
+  const [altFreqError, setAltFreqError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Load roster to get squad list (AC-01)
@@ -467,6 +542,35 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
     } else {
       setFreqError(null);
     }
+    // Re-validate alternate against new primary
+    if (altFreqValue && selectedChannel) {
+      const altErr = validateFrequency(altFreqValue, selectedChannel.scope);
+      if (altErr) {
+        setAltFreqError(altErr);
+      } else if (parseFloat(altFreqValue) === parseFloat(val)) {
+        setAltFreqError('Alternate frequency cannot match primary frequency');
+      } else {
+        setAltFreqError(null);
+      }
+    }
+  };
+
+  const handleAltFreqChange = (val: string) => {
+    setAltFreqValue(val);
+    if (!val) {
+      setAltFreqError(null);
+      return;
+    }
+    if (selectedChannel) {
+      const err = validateFrequency(val, selectedChannel.scope);
+      if (err) {
+        setAltFreqError(err);
+      } else if (parseFloat(val) === parseFloat(freqValue)) {
+        setAltFreqError('Alternate frequency cannot match primary frequency');
+      } else {
+        setAltFreqError(null);
+      }
+    }
   };
 
   // Re-validate when channel scope changes
@@ -476,6 +580,16 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
     if (ch && freqValue) {
       setFreqError(validateFrequency(freqValue, ch.scope));
     }
+    if (ch && altFreqValue) {
+      const altErr = validateFrequency(altFreqValue, ch.scope);
+      if (altErr) {
+        setAltFreqError(altErr);
+      } else if (freqValue && parseFloat(altFreqValue) === parseFloat(freqValue)) {
+        setAltFreqError('Alternate frequency cannot match primary frequency');
+      } else {
+        setAltFreqError(null);
+      }
+    }
   };
 
   const createMutation = useMutation({
@@ -484,6 +598,7 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
         radioChannelId: channelId,
         squadId,
         primaryFrequency: parseFloat(freqValue),
+        alternateFrequency: altFreqValue ? parseFloat(altFreqValue) : null,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['channel-assignments', eventId] });
@@ -493,6 +608,8 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
       setSquadId('');
       setFreqValue('');
       setFreqError(null);
+      setAltFreqValue('');
+      setAltFreqError(null);
       setFormError(null);
       toast.success('Assignment created');
     },
@@ -507,6 +624,7 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
     if (!squadId) { setFormError('Select a unit.'); return; }
     const err = selectedChannel ? validateFrequency(freqValue, selectedChannel.scope) : 'Select a channel first.';
     if (err) { setFreqError(err); return; }
+    if (altFreqError) return;
     setFormError(null);
     createMutation.mutate();
   };
@@ -601,6 +719,36 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
         )}
       </div>
 
+      {/* Alternate frequency input (Story 3) */}
+      <div className="space-y-2">
+        <label htmlFor="assign-alt-freq" className="text-sm font-medium">
+          Alternate frequency (MHz) <span className="text-muted-foreground text-xs">(optional)</span>
+        </label>
+        <Input
+          id="assign-alt-freq"
+          aria-label="Alternate frequency (MHz)"
+          value={altFreqValue}
+          onChange={(e) => handleAltFreqChange(e.target.value)}
+          placeholder={
+            selectedChannel
+              ? `e.g. ${selectedChannel.scope === 'VHF' ? '36.525' : '225.050'}`
+              : 'Select a channel first'
+          }
+          type="number"
+          step="0.025"
+          min={selectedChannel ? SCOPE_INFO[selectedChannel.scope].min : undefined}
+          max={selectedChannel ? SCOPE_INFO[selectedChannel.scope].max : undefined}
+          className="max-w-xs"
+          disabled={!channelId}
+        />
+        {altFreqError && (
+          <p className="text-xs text-red-600" role="alert">{altFreqError}</p>
+        )}
+        {selectedChannel && !altFreqError && altFreqValue && (
+          <p className="text-xs text-green-600">Valid {selectedChannel.scope} alternate frequency</p>
+        )}
+      </div>
+
       {formError && (
         <p className="text-sm text-red-600" role="alert">{formError}</p>
       )}
@@ -609,7 +757,7 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
         <Button
           type="submit"
           size="sm"
-          disabled={createMutation.isPending || !channelId || !squadId || !!freqError || !freqValue}
+          disabled={createMutation.isPending || !channelId || !squadId || !!freqError || !freqValue || !!altFreqError}
         >
           {createMutation.isPending ? 'Saving…' : 'Save Assignment'}
         </Button>
@@ -623,6 +771,8 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
             setSquadId('');
             setFreqValue('');
             setFreqError(null);
+            setAltFreqValue('');
+            setAltFreqError(null);
             setFormError(null);
           }}
         >
@@ -677,6 +827,7 @@ function AssignmentsSection({ eventId, channels, isCommander }: AssignmentsSecti
                 <th className="text-left py-2 px-4 font-medium">Unit</th>
                 <th className="text-left py-2 px-4 font-medium">Channel</th>
                 <th className="text-left py-2 px-4 font-medium">Primary Frequency</th>
+                <th className="text-left py-2 px-4 font-medium">Alternate Frequency</th>
                 <th className="py-2 px-4" />
               </tr>
             </thead>
