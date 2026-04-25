@@ -168,6 +168,22 @@ export const api = {
       body: JSON.stringify(req),
     }),
 
+  // Channel assignment endpoints (Story 2)
+  getChannelAssignments: (eventId: string, limit = 50, offset = 0) =>
+    request<ChannelAssignmentListDto>(`/events/${eventId}/channel-assignments?limit=${limit}&offset=${offset}`),
+  createChannelAssignment: (eventId: string, req: CreateChannelAssignmentRequest) =>
+    request<ChannelAssignmentDto>(`/events/${eventId}/channel-assignments`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  updateChannelAssignment: (eventId: string, id: string, req: UpdateChannelAssignmentRequest) =>
+    request<ChannelAssignmentDto>(`/events/${eventId}/channel-assignments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    }),
+  deleteChannelAssignment: (eventId: string, id: string) =>
+    request<void>(`/events/${eventId}/channel-assignments/${id}`, { method: 'DELETE' }),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -354,4 +370,34 @@ export interface CreateRadioChannelRequest {
 export interface UpdateRadioChannelRequest {
   name: string;
   scope: ChannelScope;
+}
+
+// ─── Channel Assignment types (Story 2) ─────────────────────────────────────
+
+export interface ChannelAssignmentDto {
+  id: string;
+  radioChannelId: string;
+  channelName: string;
+  channelScope: string;
+  squadId: string;
+  squadName: string;
+  primaryFrequency: number;
+  eventId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChannelAssignmentListDto {
+  total: number;
+  items: ChannelAssignmentDto[];
+}
+
+export interface CreateChannelAssignmentRequest {
+  radioChannelId: string;
+  squadId: string;
+  primaryFrequency: number;
+}
+
+export interface UpdateChannelAssignmentRequest {
+  primaryFrequency: number;
 }

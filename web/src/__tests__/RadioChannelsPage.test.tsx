@@ -5,7 +5,7 @@ import { server } from '../mocks/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { RadioChannelsPage } from '../pages/events/RadioChannelsPage';
-import type { RadioChannelListDto } from '../lib/api';
+import type { RadioChannelListDto, ChannelAssignmentDto, ChannelAssignmentListDto } from '../lib/api';
 
 // Mock auth so we can control commander vs. player role
 vi.mock('../hooks/useAuth', () => ({
@@ -33,6 +33,40 @@ const mockUhfChannel: RadioChannelListDto = {
   conflictCount: 1,
 };
 
+const mockAssignment: ChannelAssignmentDto = {
+  id: 'assign-1',
+  radioChannelId: 'chan-1',
+  channelName: 'Command Net',
+  channelScope: 'VHF',
+  squadId: 'squad-1',
+  squadName: 'Alpha-1',
+  primaryFrequency: 36.5,
+  eventId: 'event-123',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const mockAssignmentList: ChannelAssignmentListDto = {
+  total: 1,
+  items: [mockAssignment],
+};
+
+const mockRoster = {
+  platoons: [
+    {
+      id: 'platoon-1',
+      name: 'Alpha Platoon',
+      isCommandElement: false,
+      hqPlayers: [],
+      squads: [
+        { id: 'squad-1', name: 'Alpha-1', players: [] },
+        { id: 'squad-2', name: 'Alpha-2', players: [] },
+      ],
+    },
+  ],
+  unassignedPlayers: [],
+};
+
 function renderPage(role = 'faction_commander') {
   mockUseAuth.mockReturnValue({
     user: { id: 'user-1', role, email: 'test@test.com', callsign: 'TestUser' },
@@ -58,6 +92,12 @@ describe('RadioChannelsPage', () => {
     server.use(
       http.get('/api/events/:eventId/radio-channels', () =>
         HttpResponse.json([mockVhfChannel, mockUhfChannel])
+      ),
+      http.get('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json(mockAssignmentList)
+      ),
+      http.get('/api/events/:eventId/roster', () =>
+        HttpResponse.json(mockRoster)
       )
     );
   });
@@ -177,13 +217,132 @@ describe('RadioChannelsPage', () => {
   // Empty state
   it('shows empty state when no channels exist', async () => {
     server.use(
-      http.get('/api/events/:eventId/radio-channels', () => HttpResponse.json([]))
+      http.get('/api/events/:eventId/radio-channels', () => HttpResponse.json([])),
+      http.get('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json({ total: 0, items: [] })
+      )
     );
 
     renderPage('faction_commander');
 
     await waitFor(() => {
       expect(screen.getByText('No radio channels yet.')).toBeDefined();
+    });
+  });
+
+  // ── Story 2: Assignment section ───────────────────────────────────────────
+
+  // AC-08: assignment list view per operation
+  it('AC-08: shows assignment list with squad name, channel, frequency', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha-1')).toBeDefined();
+      expect(screen.getByText('36.500 MHz')).toBeDefined();
+    });
+  });
+
+  // AC-09: edit and delete controls per assignment
+  it('AC-09: commander sees edit and delete buttons per assignment', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Alpha-1')).toBeDefined());
+
+    expect(screen.getByRole('button', { name: /Edit assignment for Alpha-1/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Delete assignment for Alpha-1/i })).toBeDefined();
+  });
+
+  // AC-09: player cannot edit/delete assignments
+  it('AC-09: player does not see edit/delete for assignments', async () => {
+    renderPage('player');
+
+    await waitFor(() => expect(screen.getByText('Alpha-1')).toBeDefined());
+
+    expect(screen.queryByRole('button', { name: /Edit assignment/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Delete assignment/i })).toBeNull();
+  });
+
+  // AC-01: unit selector in create form
+  it('AC-01: Assign Frequency form shows unit selector loaded from roster', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Select unit')).toBeDefined();
+    });
+
+    // After roster loads, squads appear as options in the unit selector
+    await waitFor(() => {
+      const select = screen.getByLabelText('Select unit') as HTMLSelectElement;
+      const options = Array.from(select.options).map((o) => o.text);
+      expect(options.some((o) => o.includes('Alpha-1'))).toBe(true);
+    });
+  });
+
+  // AC-02: channel selector in create form
+  it('AC-02: Assign Frequency form shows channel selector', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Select channel')).toBeDefined();
+    });
+  });
+
+  // AC-03: frequency numeric input in create form
+  it('AC-03: Assign Frequency form shows primary frequency input', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Primary frequency (MHz)')).toBeDefined();
+    });
+  });
+
+  // AC-10: real-time inline validation on frequency input
+  it('AC-10: shows real-time validation error for out-of-range frequency', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => expect(screen.getByLabelText('Select channel')).toBeDefined());
+
+    // Select VHF channel
+    fireEvent.change(screen.getByLabelText('Select channel'), { target: { value: 'chan-1' } });
+
+    // Enter out-of-range frequency
+    await waitFor(() => expect(screen.getByLabelText('Primary frequency (MHz)')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Primary frequency (MHz)'), { target: { value: '90.0' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/out of range|within VHF/i)).toBeDefined();
+    });
+  });
+
+  // AC-10: real-time 25 kHz spacing validation
+  it('AC-10: shows validation error for invalid 25 kHz spacing', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => expect(screen.getByLabelText('Select channel')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Select channel'), { target: { value: 'chan-1' } });
+
+    await waitFor(() => expect(screen.getByLabelText('Primary frequency (MHz)')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Primary frequency (MHz)'), { target: { value: '36.012' } });
+
+    await waitFor(() => {
+      // The validation error specifically matches the alert role
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.some((a) => /25 kHz/i.test(a.textContent ?? ''))).toBe(true);
     });
   });
 });
