@@ -212,6 +212,10 @@ public class AppDbContext : IdentityDbContext<AppUser>
             .Property(a => a.PrimaryFrequency)
             .HasColumnType("decimal(8,3)");
 
+        // Soft-delete global filter — excludes IsDeleted rows from all queries
+        builder.Entity<ChannelAssignment>()
+            .HasQueryFilter(a => !a.IsDeleted);
+
         // FrequencyConflict → Event
         builder.Entity<FrequencyConflict>()
             .HasOne(fc => fc.Event)

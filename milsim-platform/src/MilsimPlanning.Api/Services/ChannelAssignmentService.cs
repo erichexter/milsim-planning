@@ -10,11 +10,13 @@ public class ChannelAssignmentService
 {
     private readonly AppDbContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly NatoFrequencyValidationService _validator;
 
-    public ChannelAssignmentService(AppDbContext db, ICurrentUser currentUser)
+    public ChannelAssignmentService(AppDbContext db, ICurrentUser currentUser, NatoFrequencyValidationService validator)
     {
         _db = db;
         _currentUser = currentUser;
+        _validator = validator;
     }
 
     // ── GET /api/events/{eventId}/channel-assignments ─────────────────────────
@@ -63,7 +65,7 @@ public class ChannelAssignmentService
             ?? throw new KeyNotFoundException($"Squad {request.SquadId} not found.");
 
         // Validate frequency against channel scope
-        ValidateFrequency(request.PrimaryFrequency, channel.Scope);
+        _validator.Validate(request.PrimaryFrequency, channel.Scope);
 
         var now = DateTime.UtcNow;
         var assignment = new ChannelAssignment
@@ -108,7 +110,7 @@ public class ChannelAssignmentService
             ?? throw new KeyNotFoundException($"ChannelAssignment {assignmentId} not found.");
 
         // Validate frequency against channel scope
-        ValidateFrequency(request.PrimaryFrequency, assignment.RadioChannel.Scope);
+        _validator.Validate(request.PrimaryFrequency, assignment.RadioChannel.Scope);
 
         assignment.PrimaryFrequency = request.PrimaryFrequency;
         assignment.UpdatedAt = DateTime.UtcNow;
@@ -139,35 +141,6 @@ public class ChannelAssignmentService
         assignment.IsDeleted = true;
         assignment.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-    }
-
-    // ── Frequency validation ──────────────────────────────────────────────────
-
-    internal static void ValidateFrequency(decimal frequency, ChannelScope scope)
-    {
-        bool validRange = scope switch
-        {
-            ChannelScope.VHF => frequency >= 30.0M && frequency <= 87.975M,
-            ChannelScope.UHF => frequency >= 225.0M && frequency <= 400.0M,
-            _ => throw new ArgumentException($"Unknown channel scope: {scope}")
-        };
-
-        if (!validRange)
-        {
-            var rangeMsg = scope == ChannelScope.VHF
-                ? "VHF accepts 30.0–87.975 MHz"
-                : "UHF accepts 225–400 MHz";
-            throw new ArgumentException(
-                $"Frequency {frequency} MHz is out of range for {scope}. {rangeMsg}.");
-        }
-
-        // 25 kHz spacing check
-        var remainder = Math.Abs(frequency % 0.025M);
-        var alignmentError = Math.Min(remainder, Math.Abs(remainder - 0.025M));
-        if (alignmentError > 0.0001M)
-            throw new ArgumentException(
-                $"Frequency {frequency} MHz does not align to 25 kHz spacing. " +
-                "Frequency must be a multiple of 0.025 MHz (e.g., 30.025, 30.050).");
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
