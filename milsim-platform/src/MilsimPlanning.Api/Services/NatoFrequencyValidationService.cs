@@ -3,14 +3,14 @@ using MilsimPlanning.Api.Data.Entities;
 namespace MilsimPlanning.Api.Services;
 
 /// <summary>
-/// Validates NATO radio frequencies for VHF (30.0–69.975 MHz) and UHF (225.0–400.0 MHz)
+/// Validates NATO radio frequencies for VHF (30.0–87.975 MHz) and UHF (225.0–400.0 MHz)
 /// with mandatory 25 kHz channel spacing.
 /// </summary>
 public class NatoFrequencyValidationService
 {
-    // VHF: 30.000–69.975 MHz (25 kHz spacing)
+    // VHF: 30.000–87.975 MHz (25 kHz spacing)
     private const decimal VhfMin = 30.000m;
-    private const decimal VhfMax = 69.975m;
+    private const decimal VhfMax = 87.975m;
 
     // UHF: 225.000–400.000 MHz (25 kHz spacing)
     private const decimal UhfMin = 225.000m;
@@ -27,7 +27,7 @@ public class NatoFrequencyValidationService
 
         var (min, max, label) = scope switch
         {
-            ChannelScope.VHF => (VhfMin, VhfMax, "VHF (30.0–69.975 MHz)"),
+            ChannelScope.VHF => (VhfMin, VhfMax, "VHF (30.0–87.975 MHz)"),
             ChannelScope.UHF => (UhfMin, UhfMax, "UHF (225.0–400.0 MHz)"),
             _ => throw new ArgumentException($"Unknown channel scope: {scope}")
         };
