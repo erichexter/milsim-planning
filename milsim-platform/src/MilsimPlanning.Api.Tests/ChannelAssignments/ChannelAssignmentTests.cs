@@ -399,3 +399,109 @@ public class ChannelAssignmentCrudTests : ChannelAssignmentTestsBase
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }
+
+// ── Alternate frequency tests (Story 3) ───────────────────────────────────────
+
+[Trait("Category", "ChannelAssignment_AlternateFrequency")]
+public class ChannelAssignmentAlternateFrequencyTests : ChannelAssignmentTestsBase
+{
+    public ChannelAssignmentAlternateFrequencyTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task CreateAssignment_WithAlternateFrequency_Returns201WithBothFrequencies()
+    {
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 36.500m, alternateFrequency = 36.525m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("primaryFrequency").GetDecimal().Should().Be(36.500m);
+        body.GetProperty("alternateFrequency").GetDecimal().Should().Be(36.525m);
+    }
+
+    [Fact]
+    public async Task CreateAssignment_AlternateEqualsPrimary_Returns422WithMessage()
+    {
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 36.500m, alternateFrequency = 36.500m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("Alternate frequency cannot match primary frequency");
+    }
+
+    [Fact]
+    public async Task CreateAssignment_InvalidAlternateFrequency_Returns422()
+    {
+        // 90.0 MHz is out of VHF range
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 36.500m, alternateFrequency = 90.0m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("out of range");
+    }
+
+    [Fact]
+    public async Task CreateAssignment_InvalidAlternateSpacing_Returns422()
+    {
+        // 36.012 does not align to 25 kHz spacing
+        var response = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 36.500m, alternateFrequency = 36.012m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("25 kHz");
+    }
+
+    [Fact]
+    public async Task UpdateAssignment_AddAlternateFrequency_Returns200()
+    {
+        // Create without alternate
+        var createResponse = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 50.500m });
+
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var assignmentId = created.GetProperty("id").GetGuid();
+
+        // Update to add alternate
+        var updateResponse = await _commanderClient.PutAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments/{assignmentId}",
+            new { primaryFrequency = 50.500m, alternateFrequency = 50.525m });
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        updated.GetProperty("primaryFrequency").GetDecimal().Should().Be(50.500m);
+        updated.GetProperty("alternateFrequency").GetDecimal().Should().Be(50.525m);
+    }
+
+    [Fact]
+    public async Task UpdateAssignment_RemoveAlternateFrequency_Returns200WithNullAlternate()
+    {
+        // Create with alternate
+        var createResponse = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 55.500m, alternateFrequency = 55.525m });
+
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var assignmentId = created.GetProperty("id").GetGuid();
+
+        // Update with null alternate (removes it)
+        var updateResponse = await _commanderClient.PutAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments/{assignmentId}",
+            new { primaryFrequency = 55.500m, alternateFrequency = (decimal?)null });
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        updated.GetProperty("primaryFrequency").GetDecimal().Should().Be(55.500m);
+        // alternateFrequency should be null
+        updated.GetProperty("alternateFrequency").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+}

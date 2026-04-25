@@ -1,5 +1,6 @@
 namespace MilsimPlanning.Api.Models.ChannelAssignments;
 
 public record UpdateChannelAssignmentRequest(
-    decimal PrimaryFrequency
+    decimal PrimaryFrequency,
+    decimal? AlternateFrequency = null
 );
