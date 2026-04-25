@@ -353,7 +353,11 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
       toast.success('Assignment updated');
     },
     onError: (err: Error & { status?: number }) => {
-      setFreqError(err.message);
+      if (err.status === 409) {
+        setFreqError(`Frequency conflict: ${err.message}`);
+      } else {
+        setFreqError(err.message);
+      }
     },
   });
 
@@ -614,7 +618,11 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
       toast.success('Assignment created');
     },
     onError: (err: Error & { status?: number }) => {
-      setFormError(err.message);
+      if (err.status === 409) {
+        setFormError(`Frequency conflict: ${err.message}`);
+      } else {
+        setFormError(err.message);
+      }
     },
   });
 

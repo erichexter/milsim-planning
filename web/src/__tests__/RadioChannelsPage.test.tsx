@@ -444,4 +444,37 @@ describe('RadioChannelsPage', () => {
       ).toBe(true);
     });
   });
+
+  // AC-04: Frequency conflict error from backend (409) is shown in create form
+  it('Story 3 AC-04: shows conflict error when backend returns 409 on create', async () => {
+    server.use(
+      http.post('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json(
+          { detail: "Frequency 36.500 MHz conflicts with primary frequency assigned to 'Alpha-1'." },
+          { status: 409 }
+        )
+      )
+    );
+
+    renderPage('faction_commander');
+
+    // Open the create form
+    await waitFor(() => expect(screen.getByRole('button', { name: /Assign Frequency/i })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: /Assign Frequency/i }));
+
+    // Fill in required fields
+    await waitFor(() => expect(screen.getByLabelText('Select channel')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Select channel'), { target: { value: 'chan-1' } });
+    fireEvent.change(screen.getByLabelText('Primary frequency (MHz)'), { target: { value: '36.500' } });
+    fireEvent.change(screen.getByLabelText('Select unit'), { target: { value: 'squad-1' } });
+
+    // Submit the form directly (avoids disabled-button timing issues)
+    const assignForm = document.querySelector('form.border') as HTMLFormElement;
+    fireEvent.submit(assignForm);
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.some((a) => /conflict/i.test(a.textContent ?? ''))).toBe(true);
+    });
+  });
 });
