@@ -22,6 +22,7 @@ import { NotificationBlastPage } from './pages/events/NotificationBlastPage';
 import { CsvImportPage } from './pages/roster/CsvImportPage';
 import { HierarchyBuilder } from './pages/roster/HierarchyBuilder';
 import { RosterView } from './pages/roster/RosterView';
+import { RadioChannelsPage } from './pages/events/RadioChannelsPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
           { path: '/events/:id/maps', element: <MapResourcesPage /> },
           { path: '/events/:id/roster', element: <RosterView /> },
           { path: '/events/:id/notifications', element: <NotificationBlastPage /> },
+          { path: '/events/:id/radio-channels', element: <RadioChannelsPage /> },
 
           // Commander-only routes — redirect non-commanders to /dashboard
           {
