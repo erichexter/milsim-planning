@@ -505,3 +505,158 @@ public class ChannelAssignmentAlternateFrequencyTests : ChannelAssignmentTestsBa
         updated.GetProperty("alternateFrequency").ValueKind.Should().Be(JsonValueKind.Null);
     }
 }
+
+// ── AC-04: Frequency conflict detection tests ──────────────────────────────────
+
+[Trait("Category", "ChannelAssignment_ConflictDetection")]
+public class ChannelAssignmentConflictDetectionTests : ChannelAssignmentTestsBase
+{
+    public ChannelAssignmentConflictDetectionTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public async Task CreateAssignment_DuplicatePrimaryFrequency_Returns409()
+    {
+        // First assignment succeeds
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 60.500m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Second squad tries the same primary frequency on the same channel
+        var squad2Id = Guid.NewGuid();
+        var squad2 = new Squad { Id = squad2Id, PlatoonId = _platoonId, Name = "Alpha-2", Order = 2 };
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Squads.Add(squad2);
+        await db.SaveChangesAsync();
+
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = squad2Id, primaryFrequency = 60.500m });
+
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var body = await second.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("60.500");
+    }
+
+    [Fact]
+    public async Task CreateAssignment_PrimaryConflictsWithExistingAlternate_Returns409()
+    {
+        // First assignment with primary + alternate
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 62.500m, alternateFrequency = 62.525m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Second squad tries primary that matches first squad's alternate
+        var squad2Id = Guid.NewGuid();
+        var squad2 = new Squad { Id = squad2Id, PlatoonId = _platoonId, Name = "Alpha-3", Order = 3 };
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Squads.Add(squad2);
+        await db.SaveChangesAsync();
+
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = squad2Id, primaryFrequency = 62.525m });
+
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var body = await second.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("62.525");
+    }
+
+    [Fact]
+    public async Task CreateAssignment_AlternateConflictsWithExistingPrimary_Returns409()
+    {
+        // First assignment
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 64.500m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Second squad tries alternate that matches first squad's primary
+        var squad2Id = Guid.NewGuid();
+        var squad2 = new Squad { Id = squad2Id, PlatoonId = _platoonId, Name = "Alpha-4", Order = 4 };
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Squads.Add(squad2);
+        await db.SaveChangesAsync();
+
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = squad2Id, primaryFrequency = 64.525m, alternateFrequency = 64.500m });
+
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var body = await second.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("64.500");
+    }
+
+    [Fact]
+    public async Task UpdateAssignment_ConflictsWithOtherUnit_Returns409()
+    {
+        // Create two assignments with different frequencies
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 66.500m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var squad2Id = Guid.NewGuid();
+        var squad2 = new Squad { Id = squad2Id, PlatoonId = _platoonId, Name = "Alpha-5", Order = 5 };
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Squads.Add(squad2);
+        await db.SaveChangesAsync();
+
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = squad2Id, primaryFrequency = 66.525m });
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        var secondBody = await second.Content.ReadFromJsonAsync<JsonElement>();
+        var secondId = secondBody.GetProperty("id").GetGuid();
+
+        // Try to update second to match first's frequency
+        var updateResponse = await _commanderClient.PutAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments/{secondId}",
+            new { primaryFrequency = 66.500m });
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var body = await updateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("detail").GetString().Should().Contain("66.500");
+    }
+
+    [Fact]
+    public async Task UpdateAssignment_SameFrequency_NoConflictWithSelf_Returns200()
+    {
+        // Create assignment
+        var create = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 68.500m });
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await create.Content.ReadFromJsonAsync<JsonElement>();
+        var assignmentId = created.GetProperty("id").GetGuid();
+
+        // Update with same frequency — should not conflict with itself
+        var update = await _commanderClient.PutAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments/{assignmentId}",
+            new { primaryFrequency = 68.500m });
+
+        update.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task CreateAssignment_SameFrequencyDifferentChannel_Returns201()
+    {
+        // Assign on VHF channel
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 70.500m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Same squad, different channel — no conflict
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelUhfId, squadId = _squadId, primaryFrequency = 225.025m });
+
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+}

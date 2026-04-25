@@ -75,6 +75,9 @@ public class ChannelAssignmentService
                 throw new ArgumentException("Alternate frequency cannot match primary frequency");
         }
 
+        // AC-04: Check for frequency conflicts with other units on the same channel
+        await AssertNoFrequencyConflictsAsync(request.RadioChannelId, request.PrimaryFrequency, request.AlternateFrequency, excludeAssignmentId: null);
+
         var now = DateTime.UtcNow;
         var assignment = new ChannelAssignment
         {
@@ -129,6 +132,9 @@ public class ChannelAssignmentService
                 throw new ArgumentException("Alternate frequency cannot match primary frequency");
         }
 
+        // AC-04: Check for frequency conflicts with other units on the same channel (exclude self)
+        await AssertNoFrequencyConflictsAsync(assignment.RadioChannelId, request.PrimaryFrequency, request.AlternateFrequency, excludeAssignmentId: assignmentId);
+
         assignment.PrimaryFrequency = request.PrimaryFrequency;
         assignment.AlternateFrequency = request.AlternateFrequency;
         assignment.UpdatedAt = DateTime.UtcNow;
@@ -162,6 +168,44 @@ public class ChannelAssignmentService
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// AC-04: Checks if a primary or alternate frequency conflicts with any existing
+    /// (non-deleted) assignment on the same radio channel. Excludes the calling
+    /// assignment's own record (for updates).
+    /// </summary>
+    private async Task AssertNoFrequencyConflictsAsync(
+        Guid radioChannelId,
+        decimal primaryFrequency,
+        decimal? alternateFrequency,
+        Guid? excludeAssignmentId)
+    {
+        var existingAssignments = await _db.ChannelAssignments
+            .Include(a => a.Squad)
+            .Where(a => a.RadioChannelId == radioChannelId && !a.IsDeleted)
+            .Where(a => excludeAssignmentId == null || a.Id != excludeAssignmentId.Value)
+            .ToListAsync();
+
+        foreach (var existing in existingAssignments)
+        {
+            // Check primary frequency against existing primary
+            if (existing.PrimaryFrequency == primaryFrequency)
+                throw new FrequencyConflictException(existing.Squad.Name, primaryFrequency, "primary");
+
+            // Check primary frequency against existing alternate
+            if (existing.AlternateFrequency.HasValue && existing.AlternateFrequency.Value == primaryFrequency)
+                throw new FrequencyConflictException(existing.Squad.Name, primaryFrequency, "alternate");
+
+            // Check alternate frequency (if provided) against existing primary
+            if (alternateFrequency.HasValue && existing.PrimaryFrequency == alternateFrequency.Value)
+                throw new FrequencyConflictException(existing.Squad.Name, alternateFrequency.Value, "primary");
+
+            // Check alternate frequency (if provided) against existing alternate
+            if (alternateFrequency.HasValue && existing.AlternateFrequency.HasValue
+                && existing.AlternateFrequency.Value == alternateFrequency.Value)
+                throw new FrequencyConflictException(existing.Squad.Name, alternateFrequency.Value, "alternate");
+        }
+    }
 
     private void AssertCommanderAccess(Faction faction)
     {

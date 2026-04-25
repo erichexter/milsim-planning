@@ -21,7 +21,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       return undefined as T;   // navigation is in flight; prevent further processing
     }
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw Object.assign(new Error(error.error ?? 'API error'), { status: response.status });
+    throw Object.assign(new Error(error.detail ?? error.error ?? 'API error'), { status: response.status });
   }
   if (response.status === 204) return undefined as T;
   return response.json();
@@ -48,7 +48,7 @@ async function upload<T>(path: string, file: File, fieldName = 'file'): Promise<
       return undefined as T;
     }
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw Object.assign(new Error(error.error ?? 'API error'), { status: response.status });
+    throw Object.assign(new Error(error.detail ?? error.error ?? 'API error'), { status: response.status });
   }
   if (response.status === 204) return undefined as T;
   return response.json();

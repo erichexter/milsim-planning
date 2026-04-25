@@ -45,6 +45,7 @@ public class ChannelAssignmentsController : ControllerBase
             var result = await _service.CreateAssignmentAsync(eventId, request);
             return StatusCode(201, result);
         }
+        catch (FrequencyConflictException ex) { return Problem(title: "Frequency Conflict", detail: ex.Message, statusCode: 409); }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ArgumentException ex) { return Problem(title: "Validation Error", detail: ex.Message, statusCode: 422); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
@@ -64,6 +65,7 @@ public class ChannelAssignmentsController : ControllerBase
             var result = await _service.UpdateAssignmentAsync(eventId, id, request);
             return Ok(result);
         }
+        catch (FrequencyConflictException ex) { return Problem(title: "Frequency Conflict", detail: ex.Message, statusCode: 409); }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ArgumentException ex) { return Problem(title: "Validation Error", detail: ex.Message, statusCode: 422); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
