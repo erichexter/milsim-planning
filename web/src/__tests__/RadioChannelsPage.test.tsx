@@ -41,6 +41,7 @@ const mockAssignment: ChannelAssignmentDto = {
   squadId: 'squad-1',
   squadName: 'Alpha-1',
   primaryFrequency: 36.5,
+  alternateFrequency: null,
   eventId: 'event-123',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -343,6 +344,137 @@ describe('RadioChannelsPage', () => {
       // The validation error specifically matches the alert role
       const alerts = screen.getAllByRole('alert');
       expect(alerts.some((a) => /25 kHz/i.test(a.textContent ?? ''))).toBe(true);
+    });
+  });
+
+  // ── Story 3: Alternate Frequency ───────────────────────────────────────────
+
+  // Alternate frequency column header appears in table
+  it('Story 3: shows Alternate Frequency column in assignments table', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => {
+      expect(screen.getByText('Alternate Frequency')).toBeDefined();
+    });
+  });
+
+  // Null alternate frequency shows em dash
+  it('Story 3: shows em dash for null alternate frequency', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha-1')).toBeDefined();
+      // The dash for null alternate frequency
+      expect(screen.getByText('—')).toBeDefined();
+    });
+  });
+
+  // Alternate frequency displayed when present
+  it('Story 3: shows alternate frequency when present', async () => {
+    const assignmentWithAlt: ChannelAssignmentDto = {
+      ...mockAssignment,
+      id: 'assign-alt',
+      alternateFrequency: 36.525,
+    };
+
+    server.use(
+      http.get('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json({ total: 1, items: [assignmentWithAlt] })
+      )
+    );
+
+    renderPage('faction_commander');
+
+    await waitFor(() => {
+      expect(screen.getByText('36.525 MHz')).toBeDefined();
+    });
+  });
+
+  // Alternate frequency input in create form
+  it('Story 3: Assign Frequency form shows alternate frequency input', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Alternate frequency (MHz)')).toBeDefined();
+    });
+  });
+
+  // Alternate frequency real-time validation: out of range
+  it('Story 3: shows validation error when alternate frequency is out of range', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => expect(screen.getByLabelText('Select channel')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Select channel'), { target: { value: 'chan-1' } });
+
+    await waitFor(() => expect(screen.getByLabelText('Alternate frequency (MHz)')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Alternate frequency (MHz)'), { target: { value: '90.0' } });
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.some((a) => /out of range|within VHF/i.test(a.textContent ?? ''))).toBe(true);
+    });
+  });
+
+  // Alternate frequency real-time validation: same as primary
+  it('Story 3: shows error when alternate frequency matches primary', async () => {
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Assign Frequency')).toBeDefined());
+    fireEvent.click(screen.getByText('Assign Frequency'));
+
+    await waitFor(() => expect(screen.getByLabelText('Select channel')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Select channel'), { target: { value: 'chan-1' } });
+
+    await waitFor(() => expect(screen.getByLabelText('Primary frequency (MHz)')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Primary frequency (MHz)'), { target: { value: '36.500' } });
+
+    await waitFor(() => expect(screen.getByLabelText('Alternate frequency (MHz)')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Alternate frequency (MHz)'), { target: { value: '36.500' } });
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      expect(
+        alerts.some((a) => /cannot match primary/i.test(a.textContent ?? ''))
+      ).toBe(true);
+    });
+  });
+
+  // AC-04: Frequency conflict error from backend (409) is shown in create form
+  it('Story 3 AC-04: shows conflict error when backend returns 409 on create', async () => {
+    server.use(
+      http.post('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json(
+          { detail: "Frequency 36.500 MHz conflicts with primary frequency assigned to 'Alpha-1'." },
+          { status: 409 }
+        )
+      )
+    );
+
+    renderPage('faction_commander');
+
+    // Open the create form
+    await waitFor(() => expect(screen.getByRole('button', { name: /Assign Frequency/i })).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: /Assign Frequency/i }));
+
+    // Fill in required fields
+    await waitFor(() => expect(screen.getByLabelText('Select channel')).toBeDefined());
+    fireEvent.change(screen.getByLabelText('Select channel'), { target: { value: 'chan-1' } });
+    fireEvent.change(screen.getByLabelText('Primary frequency (MHz)'), { target: { value: '36.500' } });
+    fireEvent.change(screen.getByLabelText('Select unit'), { target: { value: 'squad-1' } });
+
+    // Submit the form directly (avoids disabled-button timing issues)
+    const assignForm = document.querySelector('form.border') as HTMLFormElement;
+    fireEvent.submit(assignForm);
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.some((a) => /conflict/i.test(a.textContent ?? ''))).toBe(true);
     });
   });
 });

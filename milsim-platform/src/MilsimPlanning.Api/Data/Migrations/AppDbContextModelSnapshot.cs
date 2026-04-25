@@ -17,7 +17,7 @@ namespace MilsimPlanning.Api.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -218,6 +218,47 @@ namespace MilsimPlanning.Api.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ChannelAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("AlternateFrequency")
+                        .HasColumnType("decimal(8,3)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("PrimaryFrequency")
+                        .HasColumnType("decimal(8,3)");
+
+                    b.Property<Guid>("RadioChannelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SquadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("RadioChannelId");
+
+                    b.HasIndex("SquadId");
+
+                    b.ToTable("ChannelAssignments");
+                });
+
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
@@ -364,6 +405,114 @@ namespace MilsimPlanning.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Factions");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.FrequencyAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AlternateFrequency")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConflictingUnitName")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PerformedByDisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PerformedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PrimaryFrequency")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UnitName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnitType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "OccurredAt");
+
+                    b.ToTable("FrequencyAuditLogs");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.FrequencyConflict", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActionTaken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FrequencyType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UnitAId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UnitAName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnitAType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UnitBId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UnitBName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnitBType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "Status");
+
+                    b.ToTable("FrequencyConflicts");
                 });
 
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.InfoSection", b =>
@@ -546,6 +695,84 @@ namespace MilsimPlanning.Api.Data.Migrations
                     b.ToTable("Platoons");
                 });
 
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RadioChannel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CallSign")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "Order");
+
+                    b.ToTable("RadioChannels");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RadioChannelAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Alternate")
+                        .HasColumnType("decimal(7,3)");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("HasConflict")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("PlatoonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Primary")
+                        .HasColumnType("decimal(7,3)");
+
+                    b.Property<Guid?>("SquadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("FactionId");
+
+                    b.HasIndex("PlatoonId");
+
+                    b.HasIndex("SquadId");
+
+                    b.ToTable("RadioChannelAssignments");
+                });
+
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RosterChangeRequest", b =>
                 {
                     b.Property<Guid>("Id")
@@ -689,6 +916,33 @@ namespace MilsimPlanning.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.ChannelAssignment", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.RadioChannel", "RadioChannel")
+                        .WithMany()
+                        .HasForeignKey("RadioChannelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Squad", "Squad")
+                        .WithMany()
+                        .HasForeignKey("SquadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("RadioChannel");
+
+                    b.Navigation("Squad");
+                });
+
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.EventMembership", b =>
                 {
                     b.HasOne("MilsimPlanning.Api.Data.Entities.Event", "Event")
@@ -752,6 +1006,28 @@ namespace MilsimPlanning.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Commander");
+
+                    b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.FrequencyAuditLog", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.FrequencyConflict", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Event");
                 });
@@ -820,6 +1096,49 @@ namespace MilsimPlanning.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Faction");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RadioChannel", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RadioChannelAssignment", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.RadioChannel", "Channel")
+                        .WithMany("Assignments")
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Faction", "Faction")
+                        .WithMany()
+                        .HasForeignKey("FactionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Platoon", "Platoon")
+                        .WithMany()
+                        .HasForeignKey("PlatoonId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Squad", "Squad")
+                        .WithMany()
+                        .HasForeignKey("SquadId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Channel");
+
+                    b.Navigation("Faction");
+
+                    b.Navigation("Platoon");
+
+                    b.Navigation("Squad");
                 });
 
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RosterChangeRequest", b =>
@@ -900,6 +1219,11 @@ namespace MilsimPlanning.Api.Data.Migrations
                     b.Navigation("Players");
 
                     b.Navigation("Squads");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.RadioChannel", b =>
+                {
+                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.Squad", b =>
