@@ -184,6 +184,10 @@ export const api = {
   deleteChannelAssignment: (eventId: string, id: string) =>
     request<void>(`/events/${eventId}/channel-assignments/${id}`, { method: 'DELETE' }),
 
+  // Conflict summary endpoint (Story 4 — AC-07)
+  getChannelAssignmentConflicts: (eventId: string) =>
+    request<ChannelAssignmentConflictSummaryDto>(`/events/${eventId}/channel-assignments/conflicts`),
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -372,7 +376,7 @@ export interface UpdateRadioChannelRequest {
   scope: ChannelScope;
 }
 
-// ─── Channel Assignment types (Story 2) ─────────────────────────────────────
+// ─── Channel Assignment types (Story 2 + Story 4) ───────────────────────────
 
 export interface ChannelAssignmentDto {
   id: string;
@@ -384,6 +388,8 @@ export interface ChannelAssignmentDto {
   primaryFrequency: number;
   alternateFrequency: number | null;
   eventId: string;
+  hasConflict: boolean;          // AC-05: conflict state flag
+  conflictWith: string[] | null; // AC-07: names of units this conflicts with
   createdAt: string;
   updatedAt: string;
 }
@@ -398,9 +404,28 @@ export interface CreateChannelAssignmentRequest {
   squadId: string;
   primaryFrequency: number;
   alternateFrequency?: number | null;
+  overrideConflict?: boolean;  // AC-04: advisory mode override flag
 }
 
 export interface UpdateChannelAssignmentRequest {
   primaryFrequency: number;
   alternateFrequency?: number | null;
+  overrideConflict?: boolean;  // AC-04: advisory mode override flag
+}
+
+// ─── Conflict summary types (Story 4 — AC-07) ───────────────────────────────
+
+export interface ChannelAssignmentConflictItemDto {
+  assignmentId: string;
+  squadName: string;
+  channelName: string;
+  conflictingFrequency: number;
+  frequencyType: string;          // "primary" | "alternate"
+  conflictingSquadName: string;
+}
+
+export interface ChannelAssignmentConflictSummaryDto {
+  eventId: string;
+  conflictCount: number;
+  conflicts: ChannelAssignmentConflictItemDto[];
 }

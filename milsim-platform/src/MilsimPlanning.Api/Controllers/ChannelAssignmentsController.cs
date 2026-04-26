@@ -85,4 +85,20 @@ public class ChannelAssignmentsController : ControllerBase
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
     }
+
+    // ── GET /api/events/{eventId}/channel-assignments/conflicts ───────────────
+    // AC-07: Planner can view conflict summary: which units share frequency, affected channels
+
+    [HttpGet("api/events/{eventId:guid}/channel-assignments/conflicts")]
+    [Authorize(Policy = "RequirePlayer")]
+    public async Task<ActionResult<ChannelAssignmentConflictSummaryDto>> GetConflicts(Guid eventId)
+    {
+        try
+        {
+            var result = await _service.GetConflictsAsync(eventId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
+    }
 }

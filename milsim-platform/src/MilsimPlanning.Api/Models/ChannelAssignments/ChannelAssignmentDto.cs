@@ -11,6 +11,8 @@ public record ChannelAssignmentDto
     public decimal PrimaryFrequency { get; init; }
     public decimal? AlternateFrequency { get; init; }
     public Guid EventId { get; init; }
+    public bool HasConflict { get; init; }           // AC-05: conflict state
+    public List<string>? ConflictWith { get; init; } // AC-07: names of conflicting units
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
 }

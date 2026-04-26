@@ -12,6 +12,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/dialog';
 import { toast } from 'sonner';
 
 // ── Frequency range constants (NATO standard) ─────────────────────────────────
@@ -19,6 +27,39 @@ const SCOPE_INFO: Record<ChannelScope, { label: string; range: string; min: numb
   VHF: { label: 'VHF', range: '30.0–87.975 MHz', min: 30.0, max: 87.975 },
   UHF: { label: 'UHF', range: '225–400 MHz', min: 225.0, max: 400.0 },
 };
+
+// ── AC-04: Advisory conflict confirmation dialog ───────────────────────────────
+
+interface ConflictConfirmDialogProps {
+  open: boolean;
+  conflictMessage: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ConflictConfirmDialog({ open, conflictMessage, onConfirm, onCancel }: ConflictConfirmDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            Frequency Conflict Detected
+          </DialogTitle>
+          <DialogDescription>
+            {conflictMessage} Proceeding will create a conflict. Are you sure you want to continue?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm} aria-label="Proceed with conflict">
+            OK, Proceed Anyway
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ── Real-time frequency validation (AC-10) ────────────────────────────────────
 
@@ -306,13 +347,16 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
   );
   const [altFreqError, setAltFreqError] = useState<string | null>(null);
 
+  // AC-04: Advisory mode conflict dialog state
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictMessage, setConflictMessage] = useState('');
+
   const scope = (assignment.channelScope as ChannelScope) ?? 'VHF';
 
   // Real-time validation as user types (AC-10)
   const handleFreqChange = (val: string) => {
     setFreqValue(val);
     setFreqError(validateFrequency(val, scope));
-    // Re-validate alternate against new primary if alternate is present
     if (altFreqValue) {
       const altErr = validateFrequency(altFreqValue, scope);
       if (altErr) {
@@ -341,20 +385,26 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
     }
   };
 
+  // AC-04: mutation accepts override flag to support advisory re-submit
   const updateMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (overrideConflict = false) =>
       api.updateChannelAssignment(eventId, assignment.id, {
         primaryFrequency: parseFloat(freqValue),
         alternateFrequency: altFreqValue ? parseFloat(altFreqValue) : null,
+        overrideConflict,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['channel-assignments', eventId] });
+      void queryClient.invalidateQueries({ queryKey: ['channel-assignment-conflicts', eventId] });
       setEditing(false);
+      setConflictDialogOpen(false);
       toast.success('Assignment updated');
     },
     onError: (err: Error & { status?: number }) => {
       if (err.status === 409) {
-        setFreqError(`Frequency conflict: ${err.message}`);
+        // AC-04: Show advisory dialog instead of static error
+        setConflictMessage(err.message);
+        setConflictDialogOpen(true);
       } else {
         setFreqError(err.message);
       }
@@ -366,6 +416,7 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['channel-assignments', eventId] });
       void queryClient.invalidateQueries({ queryKey: ['radio-channels', eventId] });
+      void queryClient.invalidateQueries({ queryKey: ['channel-assignment-conflicts', eventId] });
       toast.success('Assignment deleted');
     },
     onError: (err: Error) => {
@@ -385,6 +436,7 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
         : ''
     );
     setAltFreqError(null);
+    setConflictDialogOpen(false);
   };
 
   const isSaveDisabled =
@@ -392,74 +444,94 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
 
   if (editing) {
     return (
-      <tr className="border-b">
-        <td className="py-3 px-4 text-sm">{assignment.squadName}</td>
-        <td className="py-3 px-4 text-sm">{assignment.channelName}</td>
-        <td className="py-3 px-4">
-          <div className="space-y-1">
-            <Input
-              aria-label="Primary frequency (MHz)"
-              value={freqValue}
-              onChange={(e) => handleFreqChange(e.target.value)}
-              placeholder="e.g. 36.500"
-              className="h-8 w-32"
-              type="number"
-              step="0.025"
-              min={channel ? SCOPE_INFO[channel.scope].min : 30}
-              max={channel ? SCOPE_INFO[channel.scope].max : 400}
-              autoFocus
-            />
-            {freqError && (
-              <p className="text-xs text-red-600" role="alert">{freqError}</p>
-            )}
-          </div>
-        </td>
-        <td className="py-3 px-4">
-          <div className="space-y-1">
-            <Input
-              aria-label="Alternate frequency (MHz)"
-              value={altFreqValue}
-              onChange={(e) => handleAltFreqChange(e.target.value)}
-              placeholder="Optional"
-              className="h-8 w-32"
-              type="number"
-              step="0.025"
-              min={channel ? SCOPE_INFO[channel.scope].min : 30}
-              max={channel ? SCOPE_INFO[channel.scope].max : 400}
-            />
-            {altFreqError && (
-              <p className="text-xs text-red-600" role="alert">{altFreqError}</p>
-            )}
-          </div>
-        </td>
-        <td className="py-3 px-4">
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => updateMutation.mutate()}
-              disabled={isSaveDisabled}
-              aria-label="Save assignment"
-            >
-              <Check className="h-4 w-4 text-green-600" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={cancelEdit}
-              aria-label="Cancel edit"
-            >
-              <X className="h-4 w-4 text-red-600" />
-            </Button>
-          </div>
-        </td>
-      </tr>
+      <>
+        <tr className="border-b">
+          <td className="py-3 px-4 text-sm">{assignment.squadName}</td>
+          <td className="py-3 px-4 text-sm">{assignment.channelName}</td>
+          <td className="py-3 px-4">
+            <div className="space-y-1">
+              <Input
+                aria-label="Primary frequency (MHz)"
+                value={freqValue}
+                onChange={(e) => handleFreqChange(e.target.value)}
+                placeholder="e.g. 36.500"
+                className="h-8 w-32"
+                type="number"
+                step="0.025"
+                min={channel ? SCOPE_INFO[channel.scope].min : 30}
+                max={channel ? SCOPE_INFO[channel.scope].max : 400}
+                autoFocus
+              />
+              {freqError && (
+                <p className="text-xs text-red-600" role="alert">{freqError}</p>
+              )}
+            </div>
+          </td>
+          <td className="py-3 px-4">
+            <div className="space-y-1">
+              <Input
+                aria-label="Alternate frequency (MHz)"
+                value={altFreqValue}
+                onChange={(e) => handleAltFreqChange(e.target.value)}
+                placeholder="Optional"
+                className="h-8 w-32"
+                type="number"
+                step="0.025"
+                min={channel ? SCOPE_INFO[channel.scope].min : 30}
+                max={channel ? SCOPE_INFO[channel.scope].max : 400}
+              />
+              {altFreqError && (
+                <p className="text-xs text-red-600" role="alert">{altFreqError}</p>
+              )}
+            </div>
+          </td>
+          <td className="py-3 px-4">
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => updateMutation.mutate(false)}
+                disabled={isSaveDisabled}
+                aria-label="Save assignment"
+              >
+                <Check className="h-4 w-4 text-green-600" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={cancelEdit}
+                aria-label="Cancel edit"
+              >
+                <X className="h-4 w-4 text-red-600" />
+              </Button>
+            </div>
+          </td>
+        </tr>
+        {/* AC-04: Advisory conflict dialog */}
+        <ConflictConfirmDialog
+          open={conflictDialogOpen}
+          conflictMessage={conflictMessage}
+          onConfirm={() => updateMutation.mutate(true)}
+          onCancel={() => setConflictDialogOpen(false)}
+        />
+      </>
     );
   }
 
   return (
     <tr className="border-b hover:bg-muted/50">
-      <td className="py-3 px-4 text-sm font-medium">{assignment.squadName}</td>
+      <td className="py-3 px-4 text-sm font-medium">
+        <div className="flex items-center gap-2">
+          {assignment.squadName}
+          {/* AC-05: Show conflict badge when assignment has active conflict */}
+          {assignment.hasConflict && (
+            <Badge variant="destructive" className="text-xs" aria-label="Frequency conflict">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Conflict
+            </Badge>
+          )}
+        </div>
+      </td>
       <td className="py-3 px-4 text-sm">
         {assignment.channelName}
         <span className="ml-2 text-xs text-muted-foreground">{assignment.channelScope}</span>
@@ -520,6 +592,10 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
   const [freqError, setFreqError] = useState<string | null>(null);
   const [altFreqValue, setAltFreqValue] = useState('');
   const [altFreqError, setAltFreqError] = useState<string | null>(null);
+
+  // AC-04: Advisory mode conflict dialog state
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictMessage, setConflictMessage] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
   // Load roster to get squad list (AC-01)
@@ -596,17 +672,20 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
     }
   };
 
+  // AC-04: mutation accepts override flag to support advisory re-submit
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (overrideConflict = false) =>
       api.createChannelAssignment(eventId, {
         radioChannelId: channelId,
         squadId,
         primaryFrequency: parseFloat(freqValue),
         alternateFrequency: altFreqValue ? parseFloat(altFreqValue) : null,
+        overrideConflict,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['channel-assignments', eventId] });
       void queryClient.invalidateQueries({ queryKey: ['radio-channels', eventId] });
+      void queryClient.invalidateQueries({ queryKey: ['channel-assignment-conflicts', eventId] });
       setOpen(false);
       setChannelId('');
       setSquadId('');
@@ -615,11 +694,14 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
       setAltFreqValue('');
       setAltFreqError(null);
       setFormError(null);
+      setConflictDialogOpen(false);
       toast.success('Assignment created');
     },
     onError: (err: Error & { status?: number }) => {
       if (err.status === 409) {
-        setFormError(`Frequency conflict: ${err.message}`);
+        // AC-04: Show advisory dialog instead of static error
+        setConflictMessage(err.message);
+        setConflictDialogOpen(true);
       } else {
         setFormError(err.message);
       }
@@ -634,7 +716,7 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
     if (err) { setFreqError(err); return; }
     if (altFreqError) return;
     setFormError(null);
-    createMutation.mutate();
+    createMutation.mutate(false);
   };
 
   if (!open) {
@@ -782,11 +864,20 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
             setAltFreqValue('');
             setAltFreqError(null);
             setFormError(null);
+            setConflictDialogOpen(false);
           }}
         >
           Cancel
         </Button>
       </div>
+
+      {/* AC-04: Advisory conflict dialog */}
+      <ConflictConfirmDialog
+        open={conflictDialogOpen}
+        conflictMessage={conflictMessage}
+        onConfirm={() => createMutation.mutate(true)}
+        onCancel={() => setConflictDialogOpen(false)}
+      />
     </form>
   );
 }
@@ -853,6 +944,46 @@ function AssignmentsSection({ eventId, channels, isCommander }: AssignmentsSecti
           </table>
         </div>
       )}
+
+      {/* AC-07: Conflict summary panel */}
+      <ConflictSummarySection eventId={eventId} />
+    </div>
+  );
+}
+
+// ── AC-07: Conflict summary section ──────────────────────────────────────────
+
+interface ConflictSummarySectionProps {
+  eventId: string;
+}
+
+function ConflictSummarySection({ eventId }: ConflictSummarySectionProps) {
+  const { data } = useQuery({
+    queryKey: ['channel-assignment-conflicts', eventId],
+    queryFn: () => api.getChannelAssignmentConflicts(eventId),
+    enabled: !!eventId,
+  });
+
+  if (!data || data.conflictCount === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-2">
+      <div className="flex items-center gap-2 text-destructive font-semibold text-sm">
+        <AlertTriangle className="h-4 w-4" />
+        {data.conflictCount} Frequency Conflict{data.conflictCount !== 1 ? 's' : ''}
+      </div>
+      <ul className="text-sm space-y-1">
+        {data.conflicts.map((c, i) => (
+          <li key={i} className="text-muted-foreground">
+            <span className="font-medium text-foreground">{c.squadName}</span>
+            {' '}({c.frequencyType}:{' '}
+            <span className="font-mono">{c.conflictingFrequency.toFixed(3)} MHz</span>)
+            {' '}conflicts with{' '}
+            <span className="font-medium text-foreground">{c.conflictingSquadName}</span>
+            {' '}on <span className="font-medium">{c.channelName}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

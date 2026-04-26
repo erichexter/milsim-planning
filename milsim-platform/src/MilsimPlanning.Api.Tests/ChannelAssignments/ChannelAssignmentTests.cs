@@ -659,4 +659,87 @@ public class ChannelAssignmentConflictDetectionTests : ChannelAssignmentTestsBas
 
         second.StatusCode.Should().Be(HttpStatusCode.Created);
     }
+
+    // ── AC-04: Advisory mode override ─────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateAssignment_WithOverrideConflict_Returns201WithHasConflictTrue()
+    {
+        // First assignment occupies frequency 72.500
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 72.500m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Second squad — same frequency but user overrides the advisory warning
+        var squad2Id = Guid.NewGuid();
+        var squad2 = new Squad { Id = squad2Id, PlatoonId = _platoonId, Name = "Alpha-Override", Order = 20 };
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Squads.Add(squad2);
+        await db.SaveChangesAsync();
+
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = squad2Id, primaryFrequency = 72.500m, overrideConflict = true });
+
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await second.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("hasConflict").GetBoolean().Should().BeTrue("overridden conflict should be persisted as hasConflict=true");
+    }
+
+    // ── AC-05: Clean assignment has hasConflict=false ──────────────────────────
+
+    [Fact]
+    public async Task CreateAssignment_NoConflict_ReturnsHasConflictFalse()
+    {
+        var create = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 74.500m });
+
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await create.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("hasConflict").GetBoolean().Should().BeFalse("a clean assignment should have hasConflict=false");
+    }
+
+    // ── AC-07: GET /channel-assignments/conflicts returns conflict summary ─────
+
+    [Fact]
+    public async Task GetConflicts_ReturnsConflictSummaryWithConflictingUnits()
+    {
+        // Create first assignment
+        var first = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = _squadId, primaryFrequency = 76.500m });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Create second squad
+        var squad2Id = Guid.NewGuid();
+        var squad2 = new Squad { Id = squad2Id, PlatoonId = _platoonId, Name = "Alpha-Conflict-Summary", Order = 21 };
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Squads.Add(squad2);
+        await db.SaveChangesAsync();
+
+        // Create conflicting assignment with override
+        var second = await _commanderClient.PostAsJsonAsync(
+            $"/api/events/{_eventId}/channel-assignments",
+            new { radioChannelId = _channelVhfId, squadId = squad2Id, primaryFrequency = 76.500m, overrideConflict = true });
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Fetch conflict summary
+        var summary = await _commanderClient.GetAsync($"/api/events/{_eventId}/channel-assignments/conflicts");
+        summary.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await summary.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("conflictCount").GetInt32().Should().BeGreaterThan(0, "there should be at least one conflict");
+
+        var conflicts = body.GetProperty("conflicts").EnumerateArray().ToList();
+        conflicts.Should().NotBeEmpty();
+
+        var first_conflict = conflicts.First();
+        first_conflict.TryGetProperty("squadName", out _).Should().BeTrue();
+        first_conflict.TryGetProperty("conflictingSquadName", out _).Should().BeTrue();
+        first_conflict.TryGetProperty("conflictingFrequency", out _).Should().BeTrue();
+    }
 }
