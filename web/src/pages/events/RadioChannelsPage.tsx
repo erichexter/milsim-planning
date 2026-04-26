@@ -387,7 +387,7 @@ function AssignmentRow({ assignment, channels, isCommander, eventId }: Assignmen
 
   // AC-04: mutation accepts override flag to support advisory re-submit
   const updateMutation = useMutation({
-    mutationFn: (overrideConflict = false) =>
+    mutationFn: (overrideConflict: boolean) =>
       api.updateChannelAssignment(eventId, assignment.id, {
         primaryFrequency: parseFloat(freqValue),
         alternateFrequency: altFreqValue ? parseFloat(altFreqValue) : null,
@@ -674,7 +674,7 @@ function CreateAssignmentForm({ eventId, channels }: CreateAssignmentFormProps) 
 
   // AC-04: mutation accepts override flag to support advisory re-submit
   const createMutation = useMutation({
-    mutationFn: (overrideConflict = false) =>
+    mutationFn: (overrideConflict: boolean) =>
       api.createChannelAssignment(eventId, {
         radioChannelId: channelId,
         squadId,

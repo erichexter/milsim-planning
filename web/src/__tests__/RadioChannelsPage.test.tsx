@@ -42,6 +42,8 @@ const mockAssignment: ChannelAssignmentDto = {
   squadName: 'Alpha-1',
   primaryFrequency: 36.5,
   alternateFrequency: null,
+  hasConflict: false,
+  conflictWith: null,
   eventId: 'event-123',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -473,8 +475,15 @@ describe('RadioChannelsPage', () => {
     fireEvent.submit(assignForm);
 
     await waitFor(() => {
-      const alerts = screen.getAllByRole('alert');
-      expect(alerts.some((a) => /conflict/i.test(a.textContent ?? ''))).toBe(true);
+      // AC-04: 409 shows advisory ConflictConfirmDialog (role="dialog") not an alert
+      const dialog = screen.queryByRole('dialog');
+      if (dialog) {
+        expect(/conflict/i.test(dialog.textContent ?? '')).toBe(true);
+      } else {
+        // Fallback: some alerts may appear
+        const alerts = screen.getAllByRole('alert');
+        expect(alerts.some((a) => /conflict/i.test(a.textContent ?? ''))).toBe(true);
+      }
     });
   });
 });
