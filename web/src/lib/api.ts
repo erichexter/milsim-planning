@@ -21,7 +21,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       return undefined as T;   // navigation is in flight; prevent further processing
     }
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw Object.assign(new Error(error.error ?? 'API error'), { status: response.status });
+    throw Object.assign(new Error(error.detail ?? error.error ?? 'API error'), { status: response.status });
   }
   if (response.status === 204) return undefined as T;
   return response.json();
@@ -48,7 +48,7 @@ async function upload<T>(path: string, file: File, fieldName = 'file'): Promise<
       return undefined as T;
     }
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw Object.assign(new Error(error.error ?? 'API error'), { status: response.status });
+    throw Object.assign(new Error(error.detail ?? error.error ?? 'API error'), { status: response.status });
   }
   if (response.status === 204) return undefined as T;
   return response.json();
@@ -153,6 +153,40 @@ export const api = {
     request<FrequencyLevelDto>(`/platoons/${platoonId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
   setFactionFrequencies: (factionId: string, req: SetFrequenciesRequest) =>
     request<FrequencyLevelDto>(`/factions/${factionId}/frequencies`, { method: 'PUT', body: JSON.stringify(req) }),
+
+  // Radio channel endpoints (Story 1)
+  getRadioChannels: (eventId: string) =>
+    request<RadioChannelListDto[]>(`/events/${eventId}/radio-channels`),
+  createRadioChannel: (eventId: string, req: CreateRadioChannelRequest) =>
+    request<RadioChannelDetailDto>(`/events/${eventId}/radio-channels`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  updateRadioChannel: (channelId: string, req: UpdateRadioChannelRequest) =>
+    request<RadioChannelDetailDto>(`/radio-channels/${channelId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(req),
+    }),
+
+  // Channel assignment endpoints (Story 2)
+  getChannelAssignments: (eventId: string, limit = 50, offset = 0) =>
+    request<ChannelAssignmentListDto>(`/events/${eventId}/channel-assignments?limit=${limit}&offset=${offset}`),
+  createChannelAssignment: (eventId: string, req: CreateChannelAssignmentRequest) =>
+    request<ChannelAssignmentDto>(`/events/${eventId}/channel-assignments`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  updateChannelAssignment: (eventId: string, id: string, req: UpdateChannelAssignmentRequest) =>
+    request<ChannelAssignmentDto>(`/events/${eventId}/channel-assignments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    }),
+  deleteChannelAssignment: (eventId: string, id: string) =>
+    request<void>(`/events/${eventId}/channel-assignments/${id}`, { method: 'DELETE' }),
+
+  // Conflict summary endpoint (Story 4 — AC-07)
+  getChannelAssignmentConflicts: (eventId: string) =>
+    request<ChannelAssignmentConflictSummaryDto>(`/events/${eventId}/channel-assignments/conflicts`),
 
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
@@ -292,4 +326,106 @@ export interface EventFrequenciesDto {
 export interface SetFrequenciesRequest {
   primaryFrequency: string | null;
   backupFrequency: string | null;
+}
+
+// ─── Radio Channel types ────────────────────────────────────────────────────
+
+export type ChannelScope = 'VHF' | 'UHF';
+
+export interface RadioChannelListDto {
+  id: string;
+  name: string;
+  callSign: string | null;
+  scope: ChannelScope;
+  assignmentCount: number;
+  conflictCount: number;
+}
+
+export interface RadioChannelDetailDto {
+  id: string;
+  eventId: string;
+  name: string;
+  callSign: string | null;
+  scope: ChannelScope;
+  assignments: RadioChannelAssignmentDto[];
+  createdAt: string;
+}
+
+export interface RadioChannelAssignmentDto {
+  id: string;
+  channelId: string;
+  unitId: string;
+  unitType: string;
+  unitName: string;
+  primary: number | null;
+  alternate: number | null;
+  hasConflict: boolean;
+  conflictWith: string[] | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface CreateRadioChannelRequest {
+  name: string;
+  callSign?: string | null;
+  scope: ChannelScope;
+}
+
+export interface UpdateRadioChannelRequest {
+  name: string;
+  scope: ChannelScope;
+}
+
+// ─── Channel Assignment types (Story 2 + Story 4) ───────────────────────────
+
+export interface ChannelAssignmentDto {
+  id: string;
+  radioChannelId: string;
+  channelName: string;
+  channelScope: string;
+  squadId: string;
+  squadName: string;
+  primaryFrequency: number;
+  alternateFrequency: number | null;
+  eventId: string;
+  hasConflict: boolean;          // AC-05: conflict state flag
+  conflictWith: string[] | null; // AC-07: names of units this conflicts with
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChannelAssignmentListDto {
+  total: number;
+  items: ChannelAssignmentDto[];
+}
+
+export interface CreateChannelAssignmentRequest {
+  radioChannelId: string;
+  squadId: string;
+  primaryFrequency: number;
+  alternateFrequency?: number | null;
+  overrideConflict?: boolean;  // AC-04: advisory mode override flag
+}
+
+export interface UpdateChannelAssignmentRequest {
+  primaryFrequency: number;
+  alternateFrequency?: number | null;
+  overrideConflict?: boolean;  // AC-04: advisory mode override flag
+}
+
+// ─── Conflict summary types (Story 4 — AC-07) ───────────────────────────────
+
+export interface ChannelAssignmentConflictItemDto {
+  assignmentId: string;
+  squadName: string;
+  channelName: string;
+  conflictingFrequency: number;
+  frequencyType: string;          // "primary" | "alternate"
+  conflictingSquadName: string;
+}
+
+export interface ChannelAssignmentConflictSummaryDto {
+  eventId: string;
+  conflictCount: number;
+  conflicts: ChannelAssignmentConflictItemDto[];
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye } from 'lucide-react';
+import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye, Radio } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
@@ -192,7 +192,7 @@ export function EventDetail() {
           </div>
 
           {/* ── Summary cards ───────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
             {/* Players card */}
             <Link
@@ -273,6 +273,18 @@ export function EventDetail() {
                 </>
               )}
             </Link>
+
+            {/* Radio Channels card — AC-01: all users can navigate to channel list */}
+            <Link
+              to={`/events/${id}/radio-channels`}
+              className="block border rounded-lg p-4 hover:bg-muted/40 transition-colors space-y-2"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Radio className="h-4 w-4 text-muted-foreground" />
+                Radio Channels
+              </div>
+              <p className="text-sm text-muted-foreground italic">View channels</p>
+            </Link>
           </div>
 
           {/* ── Commander controls ───────────────────────────────────────── */}
@@ -305,6 +317,12 @@ export function EventDetail() {
                 </Button>
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/notifications`}>Notifications</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to={`/events/${id}/radio-channels`}>
+                    <Radio className="h-4 w-4 mr-1.5" />
+                    Radio Channels
+                  </Link>
                 </Button>
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/player`}>

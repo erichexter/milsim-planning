@@ -28,6 +28,13 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Phase 5/6 DbSets — Radio Channels
+    public DbSet<RadioChannel> RadioChannels => Set<RadioChannel>();
+    public DbSet<RadioChannelAssignment> RadioChannelAssignments => Set<RadioChannelAssignment>();
+    public DbSet<ChannelAssignment> ChannelAssignments => Set<ChannelAssignment>();
+    public DbSet<FrequencyConflict> FrequencyConflicts => Set<FrequencyConflict>();
+    public DbSet<FrequencyAuditLog> FrequencyAuditLogs => Set<FrequencyAuditLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +138,106 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Phase 5/6 Configuration — Radio Channels ===
+
+        // RadioChannel → Event
+        builder.Entity<RadioChannel>()
+            .HasOne(rc => rc.Event)
+            .WithMany()
+            .HasForeignKey(rc => rc.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // RadioChannel ordering per event
+        builder.Entity<RadioChannel>()
+            .HasIndex(rc => new { rc.EventId, rc.Order });
+
+        // RadioChannelAssignment → RadioChannel (cascade delete)
+        builder.Entity<RadioChannelAssignment>()
+            .HasOne(a => a.Channel)
+            .WithMany(rc => rc.Assignments)
+            .HasForeignKey(a => a.ChannelId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // RadioChannelAssignment optional FK → Squad
+        builder.Entity<RadioChannelAssignment>()
+            .HasOne(a => a.Squad)
+            .WithMany()
+            .HasForeignKey(a => a.SquadId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // RadioChannelAssignment optional FK → Platoon
+        builder.Entity<RadioChannelAssignment>()
+            .HasOne(a => a.Platoon)
+            .WithMany()
+            .HasForeignKey(a => a.PlatoonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // RadioChannelAssignment optional FK → Faction
+        builder.Entity<RadioChannelAssignment>()
+            .HasOne(a => a.Faction)
+            .WithMany()
+            .HasForeignKey(a => a.FactionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // RadioChannelAssignment decimal precision
+        builder.Entity<RadioChannelAssignment>()
+            .Property(a => a.Primary)
+            .HasColumnType("decimal(7,3)");
+
+        builder.Entity<RadioChannelAssignment>()
+            .Property(a => a.Alternate)
+            .HasColumnType("decimal(7,3)");
+
+        // ChannelAssignment (legacy) relationships
+        builder.Entity<ChannelAssignment>()
+            .HasOne(a => a.RadioChannel)
+            .WithMany()
+            .HasForeignKey(a => a.RadioChannelId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ChannelAssignment>()
+            .HasOne(a => a.Squad)
+            .WithMany()
+            .HasForeignKey(a => a.SquadId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ChannelAssignment>()
+            .HasOne(a => a.Event)
+            .WithMany()
+            .HasForeignKey(a => a.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ChannelAssignment>()
+            .Property(a => a.PrimaryFrequency)
+            .HasColumnType("decimal(8,3)");
+
+        builder.Entity<ChannelAssignment>()
+            .Property(a => a.AlternateFrequency)
+            .HasColumnType("decimal(8,3)");
+
+        // Soft-delete global filter — excludes IsDeleted rows from all queries
+        builder.Entity<ChannelAssignment>()
+            .HasQueryFilter(a => !a.IsDeleted);
+
+        // FrequencyConflict → Event
+        builder.Entity<FrequencyConflict>()
+            .HasOne(fc => fc.Event)
+            .WithMany()
+            .HasForeignKey(fc => fc.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FrequencyConflict>()
+            .HasIndex(fc => new { fc.EventId, fc.Status });
+
+        // FrequencyAuditLog → Event
+        builder.Entity<FrequencyAuditLog>()
+            .HasOne(al => al.Event)
+            .WithMany()
+            .HasForeignKey(al => al.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FrequencyAuditLog>()
+            .HasIndex(al => new { al.EventId, al.OccurredAt });
     }
 }
