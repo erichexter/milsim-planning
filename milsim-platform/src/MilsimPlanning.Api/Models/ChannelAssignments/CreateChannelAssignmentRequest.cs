@@ -4,5 +4,6 @@ public record CreateChannelAssignmentRequest(
     Guid RadioChannelId,
     Guid SquadId,
     decimal PrimaryFrequency,
-    decimal? AlternateFrequency = null
+    decimal? AlternateFrequency = null,
+    bool OverrideConflict = false   // AC-04: advisory mode override flag
 );

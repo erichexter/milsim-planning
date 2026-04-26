@@ -13,6 +13,7 @@ public class ChannelAssignment
     public Guid EventId { get; set; }
     public decimal PrimaryFrequency { get; set; }
     public decimal? AlternateFrequency { get; set; }
+    public bool HasConflict { get; set; } = false;   // AC-05: conflict state persisted on record
     public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
