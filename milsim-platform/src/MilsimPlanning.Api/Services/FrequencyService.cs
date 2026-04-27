@@ -10,11 +10,13 @@ public class FrequencyService
 {
     private readonly AppDbContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly AuditLogService _auditLogService;
 
-    public FrequencyService(AppDbContext db, ICurrentUser currentUser)
+    public FrequencyService(AppDbContext db, ICurrentUser currentUser, AuditLogService auditLogService)
     {
         _db = db;
         _currentUser = currentUser;
+        _auditLogService = auditLogService;
     }
 
     // ── GET /api/events/{eventId}/frequencies ─────────────────────────────────
@@ -110,8 +112,22 @@ public class FrequencyService
 
         AssertCommanderAccess(squad.Platoon.Faction);
 
+        // Determine if this is a create or update (AC-03)
+        var isCreate = string.IsNullOrWhiteSpace(squad.PrimaryFrequency) && string.IsNullOrWhiteSpace(squad.BackupFrequency);
+        var actionType = isCreate ? "created" : "updated";
+
         squad.PrimaryFrequency = request.PrimaryFrequency;
         squad.BackupFrequency = request.BackupFrequency;
+
+        // Log audit entry
+        await _auditLogService.LogFrequencyChangeAsync(
+            squad.Platoon.FactionId,
+            squad.Name,
+            "Squad",
+            request.PrimaryFrequency,
+            request.BackupFrequency,
+            actionType);
+
         await _db.SaveChangesAsync();
 
         return new FrequencyLevelDto(squad.PrimaryFrequency, squad.BackupFrequency);
@@ -128,8 +144,22 @@ public class FrequencyService
 
         AssertCommanderAccess(platoon.Faction);
 
+        // Determine if this is a create or update (AC-03)
+        var isCreate = string.IsNullOrWhiteSpace(platoon.PrimaryFrequency) && string.IsNullOrWhiteSpace(platoon.BackupFrequency);
+        var actionType = isCreate ? "created" : "updated";
+
         platoon.PrimaryFrequency = request.PrimaryFrequency;
         platoon.BackupFrequency = request.BackupFrequency;
+
+        // Log audit entry
+        await _auditLogService.LogFrequencyChangeAsync(
+            platoon.Faction.EventId,
+            platoon.Name,
+            "Platoon",
+            request.PrimaryFrequency,
+            request.BackupFrequency,
+            actionType);
+
         await _db.SaveChangesAsync();
 
         return new FrequencyLevelDto(platoon.PrimaryFrequency, platoon.BackupFrequency);
@@ -145,8 +175,22 @@ public class FrequencyService
 
         AssertCommanderAccess(faction);
 
+        // Determine if this is a create or update (AC-03)
+        var isCreate = string.IsNullOrWhiteSpace(faction.PrimaryFrequency) && string.IsNullOrWhiteSpace(faction.BackupFrequency);
+        var actionType = isCreate ? "created" : "updated";
+
         faction.PrimaryFrequency = request.PrimaryFrequency;
         faction.BackupFrequency = request.BackupFrequency;
+
+        // Log audit entry
+        await _auditLogService.LogFrequencyChangeAsync(
+            faction.EventId,
+            faction.Name,
+            "Faction",
+            request.PrimaryFrequency,
+            request.BackupFrequency,
+            actionType);
+
         await _db.SaveChangesAsync();
 
         return new FrequencyLevelDto(faction.PrimaryFrequency, faction.BackupFrequency);
