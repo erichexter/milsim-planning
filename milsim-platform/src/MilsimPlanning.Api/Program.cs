@@ -123,6 +123,7 @@ builder.Services.AddScoped<EventService>();
 builder.Services.AddScoped<RosterService>();
 builder.Services.AddScoped<HierarchyService>();
 builder.Services.AddScoped<FrequencyService>();
+builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IMapResourceService, MapResourceService>();
 

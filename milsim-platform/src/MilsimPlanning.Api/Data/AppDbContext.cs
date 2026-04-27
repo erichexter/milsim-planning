@@ -28,6 +28,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // Phase 4 DbSets
     public DbSet<RosterChangeRequest> RosterChangeRequests => Set<RosterChangeRequest>();
 
+    // Frequency Audit Log
+    public DbSet<FrequencyAuditLog> FrequencyAuditLogs => Set<FrequencyAuditLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST be first — sets up Identity tables
@@ -131,5 +134,29 @@ public class AppDbContext : IdentityDbContext<AppUser>
         // RosterChangeRequest indexes: fast lookup for "all pending for event"
         builder.Entity<RosterChangeRequest>()
             .HasIndex(r => new { r.EventId, r.Status });
+
+        // === Frequency Audit Log Configuration ===
+
+        // FrequencyAuditLog → Event
+        builder.Entity<FrequencyAuditLog>()
+            .HasOne(f => f.Event)
+            .WithMany()
+            .HasForeignKey(f => f.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // FrequencyAuditLog → User
+        builder.Entity<FrequencyAuditLog>()
+            .HasOne(f => f.User)
+            .WithMany()
+            .HasForeignKey(f => f.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Indexes for fast audit log queries
+        builder.Entity<FrequencyAuditLog>()
+            .HasIndex(f => new { f.EventId, f.Timestamp })
+            .IsDescending(false, true); // EventId ASC, Timestamp DESC for efficient sorting
+
+        builder.Entity<FrequencyAuditLog>()
+            .HasIndex(f => new { f.EventId, f.UnitName });
     }
 }

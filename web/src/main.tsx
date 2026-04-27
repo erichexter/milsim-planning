@@ -16,6 +16,7 @@ import { EventList } from './pages/events/EventList';
 import { EventDetail } from './pages/events/EventDetail';
 import { PlayerEventPage } from './pages/events/PlayerEventPage';
 import { ChangeRequestsPage } from './pages/events/ChangeRequestsPage';
+import { AuditLogPage } from './pages/events/AuditLogPage';
 import { BriefingPage } from './pages/events/BriefingPage';
 import { MapResourcesPage } from './pages/events/MapResourcesPage';
 import { NotificationBlastPage } from './pages/events/NotificationBlastPage';
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
             element: <ProtectedRoute requiredRole="faction_commander" />,
             children: [
               { path: '/events/:id/change-requests', element: <ChangeRequestsPage /> },
+              { path: '/events/:id/audit-log', element: <AuditLogPage /> },
               { path: '/events/:id/hierarchy', element: <HierarchyBuilder /> },
               { path: '/events/:id/roster/import', element: <CsvImportPage /> },
             ],

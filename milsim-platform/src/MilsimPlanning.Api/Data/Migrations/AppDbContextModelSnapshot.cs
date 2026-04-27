@@ -17,7 +17,7 @@ namespace MilsimPlanning.Api.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -364,6 +364,55 @@ namespace MilsimPlanning.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Factions");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.FrequencyAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AlternateFrequency")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConflictingUnitName")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PrimaryFrequency")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UnitName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnitType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EventId", "Timestamp")
+                        .IsDescending(false, true);
+
+                    b.HasIndex("EventId", "UnitName");
+
+                    b.ToTable("FrequencyAuditLogs");
                 });
 
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.InfoSection", b =>
@@ -754,6 +803,25 @@ namespace MilsimPlanning.Api.Data.Migrations
                     b.Navigation("Commander");
 
                     b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.FrequencyAuditLog", b =>
+                {
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilsimPlanning.Api.Data.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MilsimPlanning.Api.Data.Entities.InfoSection", b =>
