@@ -602,9 +602,8 @@ describe('RadioChannelsPage', () => {
     const mockUrl = 'blob:mock-url';
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(mockUrl);
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    const mockClick = vi.fn();
     const mockAppend = vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({} as any));
-    const mockRemove = vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({} as any));
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({} as any));
 
     renderPage();
 

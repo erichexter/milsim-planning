@@ -80,6 +80,7 @@ public class FrequencyAuditLogService
     /// </summary>
     public async Task LogAssignmentActionAsync(
         Guid eventId,
+        string channelName,       // AC-03: channel name
         string unitType,
         Guid unitId,
         string unitName,
@@ -96,6 +97,7 @@ public class FrequencyAuditLogService
         {
             Id = Guid.NewGuid(),
             EventId = eventId,
+            ChannelName = channelName,
             UnitType = unitType,
             UnitId = unitId,
             UnitName = unitName,
@@ -117,6 +119,7 @@ public class FrequencyAuditLogService
         return new FrequencyAuditLogDto(
             log.Id,
             log.EventId,
+            log.ChannelName,
             log.UnitType,
             log.UnitId,
             log.UnitName,

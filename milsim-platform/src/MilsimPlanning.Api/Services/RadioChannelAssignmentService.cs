@@ -179,6 +179,7 @@ public class RadioChannelAssignmentService
 
         await _auditLog.LogAssignmentActionAsync(
             channel.EventId,
+            channel.Name,  // AC-03: include channel name
             unitType,
             unitId,
             unitName,
@@ -193,6 +194,7 @@ public class RadioChannelAssignmentService
         {
             await _auditLog.LogAssignmentActionAsync(
                 channel.EventId,
+                channel.Name,  // AC-03: include channel name
                 unitType,
                 unitId,
                 unitName,
@@ -251,6 +253,7 @@ public class RadioChannelAssignmentService
         // Write audit log entry for deletion (Story 7)
         await _auditLog.LogAssignmentActionAsync(
             channel.EventId,
+            channel.Name,  // AC-03: include channel name
             unitType,
             unitId,
             unitName,

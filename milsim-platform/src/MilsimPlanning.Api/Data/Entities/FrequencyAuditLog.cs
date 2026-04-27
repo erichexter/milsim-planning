@@ -9,6 +9,7 @@ public class FrequencyAuditLog
     public Guid Id { get; set; }
     public Guid EventId { get; set; }
 
+    public string ChannelName { get; set; } = null!;  // AC-03: channel name
     public string UnitType { get; set; } = null!;
     public Guid UnitId { get; set; }
     public string UnitName { get; set; } = null!;

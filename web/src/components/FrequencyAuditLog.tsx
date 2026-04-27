@@ -48,7 +48,7 @@ function AuditLogEntry({ entry }: { entry: FrequencyAuditLogDto }) {
           </div>
           <p className="font-semibold text-sm">{entry.unitName}</p>
           <p className="text-xs text-muted-foreground">
-            {entry.unitType.charAt(0).toUpperCase() + entry.unitType.slice(1)}
+            {entry.unitType.charAt(0).toUpperCase() + entry.unitType.slice(1)} • {entry.channelName}
           </p>
         </div>
         <div className="text-right text-xs text-muted-foreground">

@@ -3,6 +3,7 @@ namespace MilsimPlanning.Api.Models.Channels;
 public record FrequencyAuditLogDto(
     Guid Id,
     Guid EventId,
+    string ChannelName,        // AC-03: channel name
     string UnitType,           // "squad" | "platoon" | "faction"
     Guid UnitId,
     string UnitName,

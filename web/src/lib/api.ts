@@ -486,6 +486,7 @@ export interface ChannelAssignmentConflictSummaryDto {
 export interface FrequencyAuditLogDto {
   id: string;
   eventId: string;
+  channelName: string;        // AC-03: channel name
   unitType: string;           // "squad" | "platoon" | "faction"
   unitId: string;
   unitName: string;
