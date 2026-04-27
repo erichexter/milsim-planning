@@ -153,7 +153,7 @@ public class ChannelAssignmentService
 
         // AC-06: Write audit log entry
         await WriteAuditLogAsync(
-            eventId, "squad", request.SquadId, squad.Name,
+            eventId, channel.Name, "squad", request.SquadId, squad.Name,
             request.PrimaryFrequency, request.AlternateFrequency,
             hasConflict ? "created_with_conflict" : "created",
             hasConflict ? string.Join(", ", conflicts.Select(c => c.ExistingSquadName).Distinct()) : null);
@@ -239,7 +239,7 @@ public class ChannelAssignmentService
 
         // AC-06: Write audit log entry
         await WriteAuditLogAsync(
-            eventId, "squad", assignment.SquadId, assignment.Squad.Name,
+            eventId, assignment.RadioChannel.Name, "squad", assignment.SquadId, assignment.Squad.Name,
             request.PrimaryFrequency, request.AlternateFrequency,
             hasConflict ? "updated_with_conflict" : "updated",
             hasConflict ? string.Join(", ", conflicts.Select(c => c.ExistingSquadName).Distinct()) : null);
@@ -268,12 +268,13 @@ public class ChannelAssignmentService
 
         var assignment = await _db.ChannelAssignments
             .Include(a => a.Squad)
+            .Include(a => a.RadioChannel)
             .FirstOrDefaultAsync(a => a.Id == assignmentId && a.EventId == eventId)
             ?? throw new KeyNotFoundException($"ChannelAssignment {assignmentId} not found.");
 
         // AC-06: Write audit log before soft delete
         await WriteAuditLogAsync(
-            eventId, "squad", assignment.SquadId, assignment.Squad.Name,
+            eventId, assignment.RadioChannel.Name, "squad", assignment.SquadId, assignment.Squad.Name,
             assignment.PrimaryFrequency, assignment.AlternateFrequency,
             "deleted", null);
 
@@ -449,9 +450,11 @@ public class ChannelAssignmentService
 
     /// <summary>
     /// AC-06: Write a frequency audit log entry for every create/update/delete.
+    /// AC-03: Captures channel name for audit trail display.
     /// </summary>
     private async Task WriteAuditLogAsync(
         Guid eventId,
+        string channelName,
         string unitType,
         Guid unitId,
         string unitName,
@@ -468,6 +471,7 @@ public class ChannelAssignmentService
         {
             Id = Guid.NewGuid(),
             EventId = eventId,
+            ChannelName = channelName,
             UnitType = unitType,
             UnitId = unitId,
             UnitName = unitName,
