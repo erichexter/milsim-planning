@@ -9,6 +9,7 @@ namespace MilsimPlanning.Api.Services;
 /// <summary>
 /// Orchestrates validation, conflict detection, and persistence for
 /// RadioChannelAssignment (Story 4 — AC-01 through AC-07).
+/// Writes audit log entries for all operations (Story 7).
 /// </summary>
 public class RadioChannelAssignmentService
 {
@@ -16,17 +17,20 @@ public class RadioChannelAssignmentService
     private readonly ICurrentUser _currentUser;
     private readonly NatoFrequencyValidationService _validator;
     private readonly RadioConflictDetectionService _conflictDetector;
+    private readonly FrequencyAuditLogService _auditLog;
 
     public RadioChannelAssignmentService(
         AppDbContext db,
         ICurrentUser currentUser,
         NatoFrequencyValidationService validator,
-        RadioConflictDetectionService conflictDetector)
+        RadioConflictDetectionService conflictDetector,
+        FrequencyAuditLogService auditLog)
     {
         _db = db;
         _currentUser = currentUser;
         _validator = validator;
         _conflictDetector = conflictDetector;
+        _auditLog = auditLog;
     }
 
     // ── GET /api/radio-channels/{channelId}/assignments ───────────────────────
@@ -78,7 +82,7 @@ public class RadioChannelAssignmentService
         AssertCommanderAccess(channel.Event.Faction);
 
         // Resolve unit and validate it exists
-        var (squadId, platoonId, factionId, _) =
+        var (squadId, platoonId, factionId, unitName) =
             await ResolveUnitAsync(unitType, unitId, channel.EventId);
 
         // Validate frequencies (AC-01/02)
@@ -123,6 +127,7 @@ public class RadioChannelAssignmentService
 
         var hasConflict = allConflicts.Count > 0;
         var now = DateTime.UtcNow;
+        var isCreate = existing is null;
 
         if (existing is null)
         {
@@ -166,6 +171,38 @@ public class RadioChannelAssignmentService
 
         await _db.SaveChangesAsync();
 
+        // Write audit log entry (Story 7)
+        var primaryFreqStr = request.Primary?.ToString("F3");
+        var alternateFreqStr = request.Alternate?.ToString("F3");
+        var actionType = isCreate ? "created" : "updated";
+        var conflictingUnitName = allConflicts.FirstOrDefault()?.UnitName;
+
+        await _auditLog.LogAssignmentActionAsync(
+            channel.EventId,
+            unitType,
+            unitId,
+            unitName,
+            primaryFreqStr,
+            alternateFreqStr,
+            actionType,
+            conflictingUnitName
+        );
+
+        // Log conflict detection if applicable (AC-04)
+        if (hasConflict)
+        {
+            await _auditLog.LogAssignmentActionAsync(
+                channel.EventId,
+                unitType,
+                unitId,
+                unitName,
+                primaryFreqStr,
+                alternateFreqStr,
+                "conflict_detected",
+                conflictingUnitName
+            );
+        }
+
         // Reload with navigation properties
         await _db.Entry(existing).Reference(a => a.Channel).LoadAsync();
         if (existing.SquadId.HasValue)
@@ -192,7 +229,7 @@ public class RadioChannelAssignmentService
         ScopeGuard.AssertEventAccess(_currentUser, channel.EventId);
         AssertCommanderAccess(channel.Event.Faction);
 
-        var (squadId, platoonId, factionId, _) =
+        var (squadId, platoonId, factionId, unitName) =
             await ResolveUnitAsync(unitType, unitId, channel.EventId);
 
         var assignment = await _db.RadioChannelAssignments
@@ -204,8 +241,23 @@ public class RadioChannelAssignmentService
             ?? throw new KeyNotFoundException(
                 $"Assignment for {unitType} {unitId} on channel {channelId} not found.");
 
+        // Capture frequency info before deletion (Story 7)
+        var primaryFreqStr = assignment.Primary?.ToString("F3");
+        var alternateFreqStr = assignment.Alternate?.ToString("F3");
+
         _db.RadioChannelAssignments.Remove(assignment);
         await _db.SaveChangesAsync();
+
+        // Write audit log entry for deletion (Story 7)
+        await _auditLog.LogAssignmentActionAsync(
+            channel.EventId,
+            unitType,
+            unitId,
+            unitName,
+            primaryFreqStr,
+            alternateFreqStr,
+            "deleted"
+        );
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

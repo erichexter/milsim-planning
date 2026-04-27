@@ -228,6 +228,17 @@ export const api = {
   getChannelAssignmentConflicts: (eventId: string) =>
     request<ChannelAssignmentConflictSummaryDto>(`/events/${eventId}/channel-assignments/conflicts`),
 
+  // Frequency audit log endpoint (Story 7)
+  getFrequencyAuditLog: (eventId: string, unitFilter?: string, startDate?: Date, endDate?: Date, newestFirst = true) => {
+    const params = new URLSearchParams();
+    if (unitFilter) params.append('unitFilter', unitFilter);
+    if (startDate) params.append('startDate', startDate.toISOString());
+    if (endDate) params.append('endDate', endDate.toISOString());
+    params.append('newestFirst', String(newestFirst));
+    const queryString = params.toString();
+    return request<FrequencyAuditLogDto[]>(`/events/${eventId}/frequency-audit-log${queryString ? '?' + queryString : ''}`);
+  },
+
   // Profile
   getProfile: () => request<UserProfile>('/profile'),
 };
@@ -468,4 +479,21 @@ export interface ChannelAssignmentConflictSummaryDto {
   eventId: string;
   conflictCount: number;
   conflicts: ChannelAssignmentConflictItemDto[];
+}
+
+// ─── Frequency Audit Log types (Story 7) ────────────────────────────────────
+
+export interface FrequencyAuditLogDto {
+  id: string;
+  eventId: string;
+  unitType: string;           // "squad" | "platoon" | "faction"
+  unitId: string;
+  unitName: string;
+  primaryFrequency: string | null;
+  alternateFrequency: string | null;
+  actionType: string;         // "created" | "updated" | "deleted" | "conflict_detected" | "conflict_overridden"
+  conflictingUnitName: string | null;
+  performedByUserId: string;
+  performedByDisplayName: string;
+  occurredAt: string;        // ISO 8601 timestamp
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Radio, Plus, Pencil, Check, X, AlertTriangle, Trash2, Download } from 'lucide-react';
+import { Radio, Plus, Pencil, Check, X, AlertTriangle, Trash2, Download, History } from 'lucide-react';
 import {
   api,
   type RadioChannelListDto,
@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../../components/ui/dialog';
+import { FrequencyAuditLog } from '../../components/FrequencyAuditLog';
 import { toast } from 'sonner';
 
 // ── Frequency range constants (NATO standard) ─────────────────────────────────
@@ -1101,6 +1102,17 @@ export function RadioChannelsPage() {
           channels={channels ?? []}
           isCommander={isCommander}
         />
+      )}
+
+      {/* AC-01: Audit log view (Story 7) */}
+      {id && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Frequency Assignment Audit Log</h2>
+          </div>
+          <FrequencyAuditLog eventId={id} />
+        </div>
       )}
     </div>
   );

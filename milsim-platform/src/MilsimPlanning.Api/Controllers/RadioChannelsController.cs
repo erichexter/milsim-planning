@@ -14,17 +14,20 @@ public class RadioChannelsController : ControllerBase
     private readonly RadioChannelConflictSummaryService _conflictSummaryService;
     private readonly RadioChannelChannelService _channelService;
     private readonly FrequencyExportService _exportService;
+    private readonly FrequencyAuditLogService _auditLogService;
 
     public RadioChannelsController(
         RadioChannelAssignmentService assignmentService,
         RadioChannelConflictSummaryService conflictSummaryService,
         RadioChannelChannelService channelService,
-        FrequencyExportService exportService)
+        FrequencyExportService exportService,
+        FrequencyAuditLogService auditLogService)
     {
         _assignmentService = assignmentService;
         _conflictSummaryService = conflictSummaryService;
         _channelService = channelService;
         _exportService = exportService;
+        _auditLogService = auditLogService;
     }
 
     // ── GET /api/events/{eventId}/radio-channels ──────────────────────────────
@@ -195,6 +198,28 @@ public class RadioChannelsController : ControllerBase
             // Return as file download
             var bytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
             return File(bytes, "application/json", filename);
+        }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
+    }
+
+    // ── GET /api/events/{eventId}/frequency-audit-log ───────────────────────
+    // Story 7: AC-02, AC-03: Get audit log entries for frequency assignments
+    // AC-07: supports optional unit filter and date range
+
+    [HttpGet("api/events/{eventId:guid}/frequency-audit-log")]
+    [Authorize(Policy = "RequirePlayer")]
+    public async Task<ActionResult<List<FrequencyAuditLogDto>>> GetFrequencyAuditLog(
+        Guid eventId,
+        [FromQuery] string? unitFilter = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] bool newestFirst = true)
+    {
+        try
+        {
+            var result = await _auditLogService.GetAuditLogAsync(eventId, unitFilter, startDate, endDate, newestFirst);
+            return Ok(result);
         }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }

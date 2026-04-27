@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye, Radio } from 'lucide-react';
+import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye, Radio, Download } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { toast } from 'sonner';
 
 export function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -101,6 +102,20 @@ export function EventDetail() {
     return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
       month: 'short', day: 'numeric', year: 'numeric',
     });
+  };
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportFrequencies = async () => {
+    setIsExporting(true);
+    try {
+      await api.exportFrequencyMapping(id!);
+      toast.success('Frequency mapping exported successfully');
+    } catch (error) {
+      toast.error((error as Error).message || 'Failed to export frequencies');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -287,7 +302,20 @@ export function EventDetail() {
             </Link>
           </div>
 
-          {/* ── Commander controls ───────────────────────────────────────── */}
+          {/* ── Export and Commander controls ───────────────────────────────── */}
+          {/* AC-01: Planner accesses Export button/action within operation context */}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleExportFrequencies}
+              disabled={isExporting}
+              variant="outline"
+              title="Export channel-unit frequency mapping as JSON"
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              {isExporting ? 'Exporting...' : 'Export Frequencies'}
+            </Button>
+          </div>
+
           {isCommander && (
             <div className="rounded-lg border border-dashed p-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
