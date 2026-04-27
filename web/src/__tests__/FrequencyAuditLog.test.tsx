@@ -92,20 +92,22 @@ describe('FrequencyAuditLog - Acceptance Criteria Verification', () => {
       expect(screen.getByText('Conflict Detected')).toBeInTheDocument();
     }, { timeout: 3000 });
 
+    const auditLog = screen.getByTestId('frequency-audit-log');
+
     // Verify required fields are present:
     // - Timestamps (displayed as formatted date)
-    expect(screen.getByText(/4\/27\/2026/)).toBeInTheDocument();
+    expect(auditLog).toHaveTextContent(/4\/27\/2026/);
 
     // - Unit names
-    expect(screen.getByText('Alpha Squad')).toBeInTheDocument();
-    expect(screen.getByText('Bravo Squad')).toBeInTheDocument();
+    expect(auditLog).toHaveTextContent('Alpha Squad');
+    expect(auditLog).toHaveTextContent('Bravo Squad');
 
     // - Channel names
-    expect(screen.getByText(/Channel/)).toBeInTheDocument();
+    expect(auditLog).toHaveTextContent('Channel');
 
     // - Primary and alternate frequencies with MHz
-    expect(screen.getByText('36.500 MHz')).toBeInTheDocument();
-    expect(screen.getByText('36.525 MHz')).toBeInTheDocument();
+    expect(auditLog).toHaveTextContent('36.500 MHz');
+    expect(auditLog).toHaveTextContent('36.525 MHz');
   });
 
   it('AC-04: Log includes conflict-related actions with associated unit name', async () => {
@@ -139,18 +141,34 @@ describe('FrequencyAuditLog - Acceptance Criteria Verification', () => {
   it('AC-06: Log data is persistent (displayed from database)', async () => {
     renderWithQuery(<FrequencyAuditLog eventId={mockEventId} />);
 
+    // Wait for the audit log element to exist
+    let auditLog: HTMLElement;
+    await waitFor(() => {
+      auditLog = screen.getByTestId('frequency-audit-log');
+      expect(auditLog).toBeInTheDocument();
+    }, { timeout: 3000 });
+
     // Component successfully queries the database endpoint
     await waitFor(() => {
       expect(screen.getByText('Created')).toBeInTheDocument();
     }, { timeout: 3000 });
 
     // Both entries are loaded (data persists)
-    expect(screen.getByText('Alpha Squad')).toBeInTheDocument();
-    expect(screen.getByText('Bravo Squad')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(auditLog!).toHaveTextContent('Alpha Squad');
+      expect(auditLog!).toHaveTextContent('Bravo Squad');
+    }, { timeout: 3000 });
   });
 
   it('AC-07: Log is filterable by unit name', async () => {
     renderWithQuery(<FrequencyAuditLog eventId={mockEventId} />);
+
+    // Wait for data to load first
+    let auditLog: HTMLElement;
+    await waitFor(() => {
+      auditLog = screen.getByTestId('frequency-audit-log');
+      expect(auditLog).toHaveTextContent('Alpha Squad');
+    }, { timeout: 3000 });
 
     // Filter control should be visible
     const filterInput = screen.getByPlaceholderText('Search unit...');
@@ -161,7 +179,7 @@ describe('FrequencyAuditLog - Acceptance Criteria Verification', () => {
 
     // Results should be filtered
     await waitFor(() => {
-      expect(screen.getByText('Alpha Squad')).toBeInTheDocument();
+      expect(auditLog!).toHaveTextContent('Alpha Squad');
     }, { timeout: 3000 });
 
     // Verify other units are not shown (after filtering)
@@ -171,8 +189,15 @@ describe('FrequencyAuditLog - Acceptance Criteria Verification', () => {
   it('AC-02 (cont): Log sort order is user-configurable', async () => {
     renderWithQuery(<FrequencyAuditLog eventId={mockEventId} />);
 
-    // Find sort order dropdown
-    const sortSelect = screen.getByDisplayValue(/newest|oldest/i);
+    // Wait for data to load first
+    let auditLog: HTMLElement;
+    await waitFor(() => {
+      auditLog = screen.getByTestId('frequency-audit-log');
+      expect(auditLog).toHaveTextContent('Alpha Squad');
+    }, { timeout: 3000 });
+
+    // Find sort order dropdown by role
+    const sortSelect = screen.getByRole('combobox', { name: /Sort/i });
     expect(sortSelect).toBeInTheDocument();
 
     // Verify both sort options are available
