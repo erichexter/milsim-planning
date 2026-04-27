@@ -30,7 +30,7 @@ export function AuditLogPage() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <EventBreadcrumb eventId={eventId} />
+            <EventBreadcrumb eventId={eventId} page="Audit Log" />
             <h1 className="text-2xl font-bold mt-2">Frequency Assignment Audit Log</h1>
             <p className="text-sm text-muted-foreground mt-1">
               View all frequency assignments, changes, and conflict resolution history

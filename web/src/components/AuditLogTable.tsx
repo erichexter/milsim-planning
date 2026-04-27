@@ -10,7 +10,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ArrowUpDown, FileJson } from 'lucide-react';
-import { useAuditLog, type AuditLogQuery } from '../hooks/useAuditLog';
+import { useAuditLog } from '../hooks/useAuditLog';
 import { format } from 'date-fns';
 
 interface AuditLogTableProps {
