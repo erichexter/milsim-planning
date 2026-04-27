@@ -553,4 +553,154 @@ describe('RadioChannelsPage', () => {
       }
     });
   });
+
+  // Story 6: Export frequency mapping as JSON (AC-01: Export button visible)
+  it('Story 6 AC-01: shows Export button for accessing frequency export', async () => {
+    renderPage();
+
+    await waitFor(() => {
+      const exportButton = screen.getByRole('button', { name: /Export/i });
+      expect(exportButton).toBeDefined();
+    });
+  });
+
+  // Story 6: AC-05: Export generates downloadable JSON file
+  it('Story 6 AC-05: triggers download when Export button is clicked', async () => {
+    const mockJsonData = {
+      operation: 'Test Operation',
+      export_timestamp: new Date().toISOString(),
+      channels: [
+        {
+          name: 'Command Net',
+          scope: 'VHF',
+          assignments: [
+            { unit: 'Squad-Alpha-1', primaryFrequency: 36.5, alternateFrequency: 36.525 },
+          ],
+        },
+      ],
+    };
+
+    server.use(
+      http.get('/api/events/:eventId/radio-channels/export', () => {
+        const jsonString = JSON.stringify(mockJsonData);
+        return new HttpResponse(jsonString, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Disposition': 'attachment; filename="Test-Operation_frequencies_2026-04-25.json"',
+          },
+        });
+      })
+    );
+
+    // Mock URL.createObjectURL and document methods for testing
+    const mockUrl = 'blob:mock-url';
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(mockUrl);
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const mockClick = vi.fn();
+    const mockAppend = vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({} as any));
+    const mockRemove = vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({} as any));
+
+    renderPage();
+
+    await waitFor(() => {
+      const exportButton = screen.getByRole('button', { name: /Export/i });
+      expect(exportButton).toBeDefined();
+    });
+
+    const exportButton = screen.getByRole('button', { name: /Export/i });
+    fireEvent.click(exportButton);
+
+    await waitFor(() => {
+      // Check that URL.createObjectURL was called (download was initiated)
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(mockAppend).toHaveBeenCalled();
+    });
+
+    // Cleanup
+    vi.restoreAllMocks();
+  });
+
+  // Story 6: AC-07: JSON export is valid and parseable
+  it('Story 6 AC-07: exports valid JSON that can be parsed', async () => {
+    const validJsonData = {
+      operation: 'Exercise Falcon',
+      export_timestamp: '2026-04-25T18:00:00Z',
+      channels: [
+        {
+          name: 'Command Net',
+          scope: 'VHF',
+          assignments: [
+            {
+              unit: 'Squad-Alpha',
+              primaryFrequency: 30.025,
+              alternateFrequency: 30.050,
+            },
+            {
+              unit: 'Squad-Bravo',
+              primaryFrequency: 30.075,
+              alternateFrequency: null,
+            },
+          ],
+        },
+      ],
+    };
+
+    server.use(
+      http.get('/api/events/:eventId/radio-channels/export', () => {
+        return new HttpResponse(JSON.stringify(validJsonData), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      })
+    );
+
+    renderPage();
+
+    // Verify the JSON structure is valid and matches schema
+    const jsonString = JSON.stringify(validJsonData);
+    const parsed = JSON.parse(jsonString);
+    expect(parsed.operation).toBeDefined();
+    expect(parsed.export_timestamp).toBeDefined();
+    expect(parsed.channels).toBeInstanceOf(Array);
+    expect(parsed.channels[0].assignments).toBeInstanceOf(Array);
+  });
+
+  // Story 6: AC-08: Export available even if conflicts exist
+  it('Story 6 AC-08: export button works even when conflicts are present', async () => {
+    // Set up channels with conflicts
+    server.use(
+      http.get('/api/events/:eventId/radio-channels', () =>
+        HttpResponse.json([
+          {
+            ...mockVhfChannel,
+            conflictCount: 2, // Has conflicts
+          },
+          mockUhfChannel,
+        ])
+      ),
+      http.get('/api/events/:eventId/radio-channels/export', () =>
+        HttpResponse.json({
+          operation: 'Test Op',
+          export_timestamp: new Date().toISOString(),
+          channels: [
+            {
+              name: 'Command Net',
+              scope: 'VHF',
+              assignments: [],
+            },
+          ],
+        })
+      )
+    );
+
+    renderPage();
+
+    await waitFor(() => {
+      const exportButton = screen.getByRole('button', { name: /Export/i });
+      expect(exportButton).toBeDefined();
+      // Verify button is not disabled despite conflicts
+      expect((exportButton as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
 });

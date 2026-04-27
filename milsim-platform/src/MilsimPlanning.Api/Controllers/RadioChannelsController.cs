@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MilsimPlanning.Api.Authorization;
@@ -12,15 +13,18 @@ public class RadioChannelsController : ControllerBase
     private readonly RadioChannelAssignmentService _assignmentService;
     private readonly RadioChannelConflictSummaryService _conflictSummaryService;
     private readonly RadioChannelChannelService _channelService;
+    private readonly FrequencyExportService _exportService;
 
     public RadioChannelsController(
         RadioChannelAssignmentService assignmentService,
         RadioChannelConflictSummaryService conflictSummaryService,
-        RadioChannelChannelService channelService)
+        RadioChannelChannelService channelService,
+        FrequencyExportService exportService)
     {
         _assignmentService = assignmentService;
         _conflictSummaryService = conflictSummaryService;
         _channelService = channelService;
+        _exportService = exportService;
     }
 
     // ── GET /api/events/{eventId}/radio-channels ──────────────────────────────
@@ -153,6 +157,44 @@ public class RadioChannelsController : ControllerBase
         {
             var result = await _conflictSummaryService.GetConflictSummaryAsync(eventId);
             return Ok(result);
+        }
+        catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
+        catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
+    }
+
+    // ── GET /api/events/{eventId}/radio-channels/export ──────────────────────
+    // AC-01, AC-05: Export channel-unit frequency mapping as JSON file
+    // Generates JSON file with all channels and assignments for the operation
+
+    [HttpGet("api/events/{eventId:guid}/radio-channels/export")]
+    [Authorize(Policy = "RequirePlayer")]
+    public async Task<IActionResult> ExportFrequencyMapping(Guid eventId)
+    {
+        try
+        {
+            var exportData = await _exportService.ExportAsync(eventId);
+
+            // Serialize to JSON with proper formatting
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true
+            };
+            var jsonContent = JsonSerializer.Serialize(exportData, jsonOptions);
+
+            // Generate filename: {operation}_frequencies_{date}.json
+            // e.g., Op-Falcon_frequencies_2026-04-25.json
+            var dateStr = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var operationNameSlug = exportData.OperationName
+                .Replace(" ", "-")
+                .Replace("/", "-")
+                .Replace("\\", "-")
+                .Replace(":", "-");
+            var filename = $"{operationNameSlug}_frequencies_{dateStr}.json";
+
+            // Return as file download
+            var bytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
+            return File(bytes, "application/json", filename);
         }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }

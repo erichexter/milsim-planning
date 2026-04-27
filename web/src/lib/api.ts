@@ -167,6 +167,46 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(req),
     }),
+  // Export frequency mapping as JSON (Story 6 - AC-05)
+  exportFrequencyMapping: async (eventId: string) => {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${BASE_URL}/events/${eventId}/radio-channels/export`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearToken();
+        window.location.href = '/auth/login';
+        return;
+      }
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw Object.assign(new Error(error.detail ?? error.error ?? 'Failed to export frequencies'), { status: response.status });
+    }
+
+    // Get filename from Content-Disposition header or use default
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = 'frequencies.json';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (match) filename = match[1];
+    }
+
+    // Get the blob and trigger download
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
 
   // Channel assignment endpoints (Story 2)
   getChannelAssignments: (eventId: string, limit = 50, offset = 0) =>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Radio, Plus, Pencil, Check, X, AlertTriangle, Trash2 } from 'lucide-react';
+import { Radio, Plus, Pencil, Check, X, AlertTriangle, Trash2, Download } from 'lucide-react';
 import {
   api,
   type RadioChannelListDto,
@@ -988,6 +988,41 @@ function ConflictSummarySection({ eventId }: ConflictSummarySectionProps) {
   );
 }
 
+// ── Export button (AC-01: Planner accesses Export button within operation context) ──
+
+interface ExportButtonProps {
+  eventId: string;
+}
+
+function ExportButton({ eventId }: ExportButtonProps) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await api.exportFrequencyMapping(eventId);
+      toast.success('Frequency mapping exported successfully');
+    } catch (error) {
+      toast.error((error as Error).message || 'Failed to export frequencies');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleExport}
+      disabled={isExporting}
+      size="sm"
+      variant="outline"
+      aria-label="Export frequency mapping"
+    >
+      <Download className="h-4 w-4 mr-1" />
+      {isExporting ? 'Exporting…' : 'Export'}
+    </Button>
+  );
+}
+
 // ── Page component ─────────────────────────────────────────────────────────────
 
 export function RadioChannelsPage() {
@@ -1021,7 +1056,10 @@ export function RadioChannelsPage() {
           <Radio className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold">Radio Channels</h1>
         </div>
-        {isCommander && <CreateChannelForm eventId={id!} />}
+        <div className="flex items-center gap-2">
+          <ExportButton eventId={id!} />
+          {isCommander && <CreateChannelForm eventId={id!} />}
+        </div>
       </div>
 
       {/* Channel list */}

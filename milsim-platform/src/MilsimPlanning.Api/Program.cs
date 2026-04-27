@@ -126,13 +126,14 @@ builder.Services.AddScoped<FrequencyService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IMapResourceService, MapResourceService>();
 
-// Radio Channel services (Story 1 + Story 4)
+// Radio Channel services (Story 1 + Story 4 + Story 6)
 builder.Services.AddScoped<ChannelAssignmentService>();
 builder.Services.AddScoped<RadioChannelChannelService>();
 builder.Services.AddScoped<NatoFrequencyValidationService>();
 builder.Services.AddScoped<RadioConflictDetectionService>();
 builder.Services.AddScoped<RadioChannelAssignmentService>();
 builder.Services.AddScoped<RadioChannelConflictSummaryService>();
+builder.Services.AddScoped<FrequencyExportService>();
 
 // ── Current User (scoped — one instance per HTTP request) ─────────────────────
 builder.Services.AddHttpContextAccessor();
