@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye } from 'lucide-react';
+import { ChevronRight, Users, BookOpen, Map, AlertCircle, Calendar, MapPin, Eye, Radio, Download } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { toast } from 'sonner';
 
 export function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -103,6 +104,20 @@ export function EventDetail() {
     });
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportFrequencies = async () => {
+    setIsExporting(true);
+    try {
+      await api.exportFrequencyMapping(id!);
+      toast.success('Frequency mapping exported successfully');
+    } catch (error) {
+      toast.error((error as Error).message || 'Failed to export frequencies');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-4xl lg:max-w-5xl mx-auto space-y-6">
       {/* Breadcrumb */}
@@ -192,7 +207,7 @@ export function EventDetail() {
           </div>
 
           {/* ── Summary cards ───────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
             {/* Players card */}
             <Link
@@ -273,9 +288,34 @@ export function EventDetail() {
                 </>
               )}
             </Link>
+
+            {/* Radio Channels card — AC-01: all users can navigate to channel list */}
+            <Link
+              to={`/events/${id}/radio-channels`}
+              className="block border rounded-lg p-4 hover:bg-muted/40 transition-colors space-y-2"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Radio className="h-4 w-4 text-muted-foreground" />
+                Radio Channels
+              </div>
+              <p className="text-sm text-muted-foreground italic">View channels</p>
+            </Link>
           </div>
 
-          {/* ── Commander controls ───────────────────────────────────────── */}
+          {/* ── Export and Commander controls ───────────────────────────────── */}
+          {/* AC-01: Planner accesses Export button/action within operation context */}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleExportFrequencies}
+              disabled={isExporting}
+              variant="outline"
+              title="Export channel-unit frequency mapping as JSON"
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              {isExporting ? 'Exporting...' : 'Export Frequencies'}
+            </Button>
+          </div>
+
           {isCommander && (
             <div className="rounded-lg border border-dashed p-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -305,6 +345,12 @@ export function EventDetail() {
                 </Button>
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/notifications`}>Notifications</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to={`/events/${id}/radio-channels`}>
+                    <Radio className="h-4 w-4 mr-1.5" />
+                    Radio Channels
+                  </Link>
                 </Button>
                 <Button variant="outline" asChild>
                   <Link to={`/events/${id}/player`}>

@@ -41,6 +41,7 @@ public class FrequencyController : ControllerBase
         }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
+        catch (ArgumentException ex) { return Problem(title: "Unprocessable Entity", detail: ex.Message, statusCode: 422); }
     }
 
     // ── PUT /api/platoons/{platoonId}/frequencies ─────────────────────────────
@@ -56,6 +57,7 @@ public class FrequencyController : ControllerBase
         }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
+        catch (ArgumentException ex) { return Problem(title: "Unprocessable Entity", detail: ex.Message, statusCode: 422); }
     }
 
     // ── PUT /api/factions/{factionId}/frequencies ─────────────────────────────
@@ -71,5 +73,6 @@ public class FrequencyController : ControllerBase
         }
         catch (KeyNotFoundException ex) { return Problem(title: "Not Found", detail: ex.Message, statusCode: 404); }
         catch (ForbiddenException ex) { return Problem(title: "Forbidden", detail: ex.Message, statusCode: 403); }
+        catch (ArgumentException ex) { return Problem(title: "Unprocessable Entity", detail: ex.Message, statusCode: 422); }
     }
 }
