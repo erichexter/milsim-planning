@@ -447,6 +447,73 @@ describe('RadioChannelsPage', () => {
     });
   });
 
+  // AC-06: edit alternate frequency independently (edit row shows alternate input pre-populated)
+  it('Story 3 AC-06: edit row pre-populates alternate frequency for independent editing', async () => {
+    const assignmentWithAlt: ChannelAssignmentDto = {
+      ...mockAssignment,
+      id: 'assign-alt-edit',
+      primaryFrequency: 36.5,
+      alternateFrequency: 36.525,
+    };
+
+    server.use(
+      http.get('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json({ total: 1, items: [assignmentWithAlt] })
+      )
+    );
+
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Alpha-1')).toBeDefined());
+
+    // Click Edit
+    fireEvent.click(screen.getByRole('button', { name: /Edit assignment for Alpha-1/i }));
+
+    await waitFor(() => {
+      // Both primary and alternate inputs are present with their values
+      const altInput = screen.getByLabelText('Alternate frequency (MHz)') as HTMLInputElement;
+      expect(altInput).toBeDefined();
+      expect(altInput.value).toBe('36.525');
+    });
+  });
+
+  // AC-07: planner can clear alternate frequency to remove it
+  it('Story 3 AC-07: edit row allows clearing alternate frequency', async () => {
+    const assignmentWithAlt: ChannelAssignmentDto = {
+      ...mockAssignment,
+      id: 'assign-alt-remove',
+      primaryFrequency: 36.5,
+      alternateFrequency: 36.525,
+    };
+
+    server.use(
+      http.get('/api/events/:eventId/channel-assignments', () =>
+        HttpResponse.json({ total: 1, items: [assignmentWithAlt] })
+      ),
+      http.put('/api/events/:eventId/channel-assignments/:id', () =>
+        HttpResponse.json({ ...assignmentWithAlt, alternateFrequency: null })
+      )
+    );
+
+    renderPage('faction_commander');
+
+    await waitFor(() => expect(screen.getByText('Alpha-1')).toBeDefined());
+
+    // Click Edit
+    fireEvent.click(screen.getByRole('button', { name: /Edit assignment for Alpha-1/i }));
+
+    await waitFor(() => expect(screen.getByLabelText('Alternate frequency (MHz)')).toBeDefined());
+
+    // Clear the alternate frequency field
+    const altInput = screen.getByLabelText('Alternate frequency (MHz)') as HTMLInputElement;
+    fireEvent.change(altInput, { target: { value: '' } });
+
+    // No error should appear (clearing is valid)
+    await waitFor(() => {
+      expect(altInput.value).toBe('');
+    });
+  });
+
   // AC-04: Frequency conflict error from backend (409) is shown in create form
   it('Story 3 AC-04: shows conflict error when backend returns 409 on create', async () => {
     server.use(
