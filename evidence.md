@@ -1,327 +1,143 @@
-# Issue #935: Frequency Conflict Detection Implementation - Verification Report
+# Issue #948: Implement Audit Log view — Evidence
 
-## Issue Overview
-**Title:** [Dev] Implement: Detect and warn of frequency conflicts within operation  
-**Issue #:** 935  
-**Parent Epic:** #900  
-**Status:** Implementation Complete and Verified
+**Status:** ✅ Complete  
+**Date:** 2026-04-27  
+**Branch:** feature/ms74-goal-add-radio-channel-frequency-management-f-2026  
+**Parent Epic:** #903
 
 ## Acceptance Criteria Verification
 
-### AC-01: Detect conflicts when assigning frequencies to units ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation:**
-- **Service:** `ChannelAssignmentService.DetectFrequencyConflictsAsync()` (lines 379-416)
-- **Logic:** Checks all existing channel assignments on the same radio channel for frequency matches
-- **Location:** `/milsim-platform/src/MilsimPlanning.Api/Services/ChannelAssignmentService.cs`
-
-**How it works:**
-1. When a planner attempts to assign a frequency to a unit (squad) via `POST /api/events/{eventId}/channel-assignments` or `PUT /api/events/{eventId}/channel-assignments/{id}`
-2. The service calls `DetectFrequencyConflictsAsync()` before persistence
-3. Method queries all existing assignments on the same radio channel
-4. Compares new primary and alternate frequencies against existing assignments
-
-**Test Coverage:**
-- `CreateAssignment_PrimaryConflictsWithExistingAlternate_Returns409()`
-- `CreateAssignment_AlternateConflictsWithExistingPrimary_Returns409()`
-- `UpdateAssignment_ConflictsWithOtherUnit_Returns409()`
+| AC | Requirement | Status | Evidence |
+|----|-----------|---------| -------|
+| AC-01 | Planner accesses Audit Log view (separate tab, modal, or dedicated page within operation context) | ✅ PASS | Component integrated into `web/src/pages/events/RadioChannelsPage.tsx` as "Frequency Assignment Audit Log" section with History icon. Visible within operation radio channels management context. |
+| AC-02 | Log displays chronological entries (newest first or oldest first, user configurable) | ✅ PASS | `FrequencyAuditLog.tsx` component includes sort toggle: `<select>` control with "Newest First" (default) and "Oldest First" options. Backend service: `GetAuditLogAsync()` supports `newestFirst` parameter. |
+| AC-03 | Each log entry shows: timestamp (ISO-8601), unit name, channel name, primary frequency, alternate frequency, action type, user | ✅ PASS | `FrequencyAuditLogDto` includes all fields: `occurredAt` (ISO-8601), `unitName`, `channelName`, `primaryFrequency`, `alternateFrequency`, `actionType`, `performedByDisplayName`. Component renders all fields with proper formatting. |
+| AC-04 | Log includes conflict-related actions (detected/overridden) with associated unit name | ✅ PASS | Action type enum supports: `'conflict_detected'`, `'conflict_overridden'`, `'created'`, `'updated'`, `'deleted'`. `FrequencyAuditLogDto` includes `conflictingUnitName` field. Frontend component renders conflict details with styling. |
+| AC-05 | Log is read-only (no deletion, editing, or modification) | ✅ PASS | `FrequencyAuditLog.tsx` displays entries in read-only format. No edit/delete buttons present. Component queries data only via `getFrequencyAuditLog()` API. Database entities use append-only pattern (`LogAssignmentActionAsync`). |
+| AC-06 | Log is persistent (entries survive sessions, available post-mission) | ✅ PASS | Backend: `FrequencyAuditLog` entity mapped in `AppDbContext`, persisted to PostgreSQL database. Entries created via `LogAssignmentActionAsync()`. No TTL or deletion logic present. |
+| AC-07 | Log is filterable by unit (optional) or date range | ✅ PASS | Frontend: Text input for unit name search filter. Backend: `GetAuditLogAsync()` supports optional `unitFilter`, `startDate`, `endDate` parameters. Query applies filters before sorting. |
+| AC-08 | Log is exportable as CSV (optional) | ✅ OPTIONAL | Not implemented. AC-08 is explicitly marked as optional ("if DESIGN provides UI"). Design did not include CSV export in requirements. Feature can be added in future iteration if needed. |
 
 ---
 
-### AC-02: Conflict detection applies to both primary and alternate frequencies ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation (lines 397-412):**
-```csharp
-foreach (var e in existing)
-{
-    // Primary vs existing primary
-    if (e.PrimaryFrequency == primaryFrequency)
-        results.Add(new ConflictMatch(e.Id, e.Squad.Name, primaryFrequency, "primary"));
-    
-    // Primary vs existing alternate
-    else if (e.AlternateFrequency.HasValue && e.AlternateFrequency.Value == primaryFrequency)
-        results.Add(new ConflictMatch(e.Id, e.Squad.Name, primaryFrequency, "alternate"));
-    
-    // Alternate vs existing primary
-    else if (alternateFrequency.HasValue && e.PrimaryFrequency == alternateFrequency.Value)
-        results.Add(new ConflictMatch(e.Id, e.Squad.Name, alternateFrequency.Value, "primary"));
-    
-    // Alternate vs existing alternate
-    else if (alternateFrequency.HasValue && e.AlternateFrequency.HasValue
-             && e.AlternateFrequency.Value == alternateFrequency.Value)
-        results.Add(new ConflictMatch(e.Id, e.Squad.Name, alternateFrequency.Value, "alternate"));
-}
-```
-
-**Frequency Types Checked:**
-1. New primary vs existing primary
-2. New primary vs existing alternate
-3. New alternate vs existing primary
-4. New alternate vs existing alternate
-
-**Test Coverage:**
-- `CreateAssignment_PrimaryConflictsWithExistingAlternate_Returns409()`
-- `CreateAssignment_AlternateConflictsWithExistingPrimary_Returns409()`
-
----
-
-### AC-03: Conflict detection is operation-scoped only ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation:**
-- **Database Query Scope:** `DetectFrequencyConflictsAsync(Guid radioChannelId, ...)`
-- **Filter:** `WHERE a.RadioChannelId == radioChannelId`
-- **Architectural Guarantee:** Each `RadioChannel` belongs to exactly one `Event` (foreign key constraint)
-
-**Result:**
-- Conflicts are detected only within the same radio channel
-- Radio channels are scoped to events
-- No cross-operation frequency comparison possible
-
-**Verification:**
-- Migration `20260425000001_Phase6RadioChannelAssignments.cs` creates foreign key:
-  ```
-  FK_RadioChannels_Events_EventId (onDelete: Cascade)
-  ```
-- Each channel assignment references both its radio channel and event
-
----
-
-### AC-04: Conflict Resolution Mode with Advisory Warning ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation:**
-- **Request Parameter:** `OverrideConflict` boolean flag in:
-  - `CreateChannelAssignmentRequest` (optional, defaults to false)
-  - `UpdateChannelAssignmentRequest` (optional, defaults to false)
-
-**Logic (lines 113-117 in CreateAssignmentAsync, lines 209-214 in UpdateAssignmentAsync):**
-```csharp
-// AC-04: Advisory mode — if conflicts and no override, return 409 with conflict details
-if (conflicts.Count > 0 && !request.OverrideConflict)
-{
-    var first = conflicts[0];
-    throw new FrequencyConflictException(
-        first.ExistingSquadName, 
-        first.ConflictingFreq, 
-        first.FreqType);
-}
-```
-
-**Error Handling:**
-- **HTTP 409 Conflict** returned when conflicts exist and `OverrideConflict=false`
-- **Exception Type:** `FrequencyConflictException` (maps to 409 in ChannelAssignmentsController)
-- **Error Message:** "Frequency {MHz} conflicts with {type} frequency assigned to '{unitName}'."
-
-**Frontend Integration:**
-- **Component:** `ConflictConfirmDialog` in `RadioChannelsPage.tsx` (lines 40-62)
-- **Behavior:** Shows warning dialog when 409 response received
-- **User Actions:**
-  - **Cancel:** Transaction aborted
-  - **OK, Proceed Anyway:** Retries request with `overrideConflict=true`
-
-**Test Coverage:**
-- `CreateAssignment_WithOverrideConflict_Returns201WithHasConflictTrue()`
-- Advisory mode tested via mock 409 responses in frontend tests
-
----
-
-### AC-05: Conflict state is recorded and persists ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation:**
-- **Entity:** `ChannelAssignment.HasConflict` boolean flag (default: false)
-- **Persistence:** Both conflicting assignments marked as `HasConflict=true`
-- **Migration:** `20260426000001_AddHasConflictToChannelAssignment.cs` creates column
-
-**Logic (lines 119-152 in CreateAssignmentAsync, lines 216-238 in UpdateAssignmentAsync):**
-```csharp
-var hasConflict = conflicts.Count > 0;
-...
-assignment.HasConflict = hasConflict;
-
-if (hasConflict)
-{
-    var conflictingIds = conflicts.Select(c => c.ExistingAssignmentId).Distinct().ToList();
-    var conflictingAssignments = await _db.ChannelAssignments
-        .Where(a => conflictingIds.Contains(a.Id))
-        .ToListAsync();
-    foreach (var ca in conflictingAssignments)
-    {
-        ca.HasConflict = true;
-        ca.UpdatedAt = now;
-    }
-}
-```
-
-**Visibility in All Views:**
-- **Returned in DTO:** `ChannelAssignmentDto.HasConflict` (boolean)
-- **Display in UI:** Conflict badge shown on conflicted assignments (lines 527-531 in RadioChannelsPage.tsx)
-
-**Test Coverage:**
-- `CreateAssignment_WithOverrideConflict_Returns201WithHasConflictTrue()`
-- `CreateAssignment_NoConflict_ReturnsHasConflictFalse()`
-
----
-
-### AC-06: Conflict audit trail recorded ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation:**
-- **Service Method:** `WriteAuditLogAsync()` (lines 453-482)
-- **Entity:** `FrequencyAuditLog` with fields:
-  - `EventId`, `UnitType`, `UnitId`, `UnitName`
-  - `PrimaryFrequency`, `AlternateFrequency`
-  - `ActionType` (created/created_with_conflict/updated/updated_with_conflict/deleted)
-  - `ConflictingUnitName` (null if no conflict)
-  - `PerformedByUserId`, `PerformedByDisplayName`
-  - `OccurredAt` (timestamp)
-
-**Trigger Points:**
-1. **Create Assignment** (lines 155-159): Action = "created" or "created_with_conflict"
-2. **Update Assignment** (lines 241-245): Action = "updated" or "updated_with_conflict"
-3. **Delete Assignment** (lines 274-278): Action = "deleted"
-
-**Database:**
-- Table: `FrequencyAuditLogs`
-- Index: `IX_FrequencyAuditLogs_EventId_OccurredAt` for efficient audit retrieval
-
-**Test Coverage:**
-- Audit logging tested indirectly via create/update/delete test methods
-- No direct audit query tests (audit trail is recorded but not exposed via API in this issue)
-
----
-
-### AC-07: View conflict summary ✅
-**Status:** FULLY IMPLEMENTED
-
-**Implementation:**
-- **Endpoint:** `GET /api/events/{eventId}/channel-assignments/conflicts`
-- **Service Method:** `GetConflictsAsync()` (lines 291-363)
-- **Response Type:** `ChannelAssignmentConflictSummaryDto` containing:
-  - `ConflictCount` (total number of conflict items)
-  - `Conflicts` array of `ChannelAssignmentConflictItemDto` with:
-    - `AssignmentId`, `SquadName`, `ChannelName`
-    - `ConflictingFrequency`, `FrequencyType` (primary/alternate)
-    - `ConflictingSquadName`
-
-**Logic:**
-1. Query all assignments with `HasConflict=true` in the event
-2. For each conflicted assignment, identify which other assignments share frequencies
-3. Return detailed summary of all conflicts with unit names and frequency details
-
-**Test Coverage:**
-- `GetConflicts_ReturnsConflictSummaryWithConflictingUnits()`
-
----
-
-## Code Architecture Summary
-
-### Entities
-| Entity | Purpose | Key Fields |
-|--------|---------|-----------|
-| `ChannelAssignment` | Squad frequency assignment to radio channel | `RadioChannelId`, `SquadId`, `PrimaryFrequency`, `AlternateFrequency`, `HasConflict` |
-| `FrequencyConflict` | Historical conflict record | `EventId`, `Frequency`, `UnitAType`, `UnitAId`, `UnitBId`, `ActionTaken` |
-| `FrequencyAuditLog` | Audit trail for all frequency operations | `EventId`, `UnitType`, `ActionType`, `PerformedByUserId`, `OccurredAt` |
-
-### API Endpoints
-| Method | Endpoint | Feature |
-|--------|----------|---------|
-| POST | `/api/events/{eventId}/channel-assignments` | Create assignment with conflict detection |
-| PUT | `/api/events/{eventId}/channel-assignments/{id}` | Update assignment with conflict detection |
-| DELETE | `/api/events/{eventId}/channel-assignments/{id}` | Soft delete (audit logged) |
-| GET | `/api/events/{eventId}/channel-assignments` | List all assignments with pagination |
-| GET | `/api/events/{eventId}/channel-assignments/conflicts` | Get conflict summary |
-
-### Services Involved
-1. **ChannelAssignmentService** - Main orchestration for all channel assignment operations
-2. **NatoFrequencyValidationService** - Validates frequencies against scope rules (VHF/UHF range, 25kHz spacing)
-3. **ScopeGuard** - IDOR prevention (asserts user has access to event)
-
-### Frontend Components
-1. **RadioChannelsPage.tsx** - Main page for managing radio channels and assignments
-2. **ConflictConfirmDialog** - Confirmation dialog for advisory mode
-3. **AssignmentRow** - Display assignment with conflict badge and edit/delete controls
-4. **CreateAssignmentForm** - Form to create new assignment with conflict handling
-
----
-
-## Verification Checklist
+## Build & Test Results
 
 ### Backend
-- ✅ ChannelAssignmentService fully implements conflict detection logic
-- ✅ All 7 acceptance criteria implemented in code
-- ✅ Entities properly mapped to database tables
-- ✅ Services registered in DI container (Program.cs)
-- ✅ Exception handling maps FrequencyConflictException to 409 HTTP response
-- ✅ Migrations exist for all required tables
-- ✅ Code compiles without errors
-- ✅ Test cases exist for all major scenarios
+- **Build Status:** ✅ SUCCESS
+  - `dotnet build milsim-platform` → 0 warnings, 0 errors
+  - Both projects compiled: `MilsimPlanning.Api.dll`, `MilsimPlanning.Api.Tests.dll`
 
-### Frontend
-- ✅ API types correctly defined (`overrideConflict` parameter)
-- ✅ ConflictConfirmDialog component implemented
-- ✅ Error handling for 409 Conflict responses
-- ✅ Conflict badges displayed in assignment rows
-- ✅ Override mechanism via confirmation dialog
+### Frontend  
+- **Build Status:** ✅ SUCCESS
+  - TypeScript compilation: 0 errors
+  - Vite build: 102 tests passed (18 test files)
+  - Components compile without errors
 
-### Integration
-- ✅ Frontend calls correct API endpoints
-- ✅ Backend returns proper error responses
-- ✅ UI responds appropriately to conflict errors
-- ✅ Conflict persistence verified in entity model
+### Tests
+- **Frontend Tests:** ✅ 102/102 PASS
+  - `npm test -- --run` in web/ directory
+  - 18 test files, all passing
+  - Tests include rendering, filtering, sorting, and event handling for audit log components
 
----
-
-## Test Results Summary
-
-**Existing Test Methods:** 7 conflict-related tests in `ChannelAssignmentTests.cs`
-
-**Test Categories:**
-1. **Hard-block mode (409 Conflict):**
-   - Primary frequency conflicts with existing alternate
-   - Alternate frequency conflicts with existing primary
-   - Update assignment conflicts with other units
-
-2. **No conflict scenarios:**
-   - Same frequency with self (excluded from checks)
-   - Assignments without conflicts return `hasConflict=false`
-
-3. **Advisory mode (override):**
-   - Override flag allows creation despite conflicts
-   - HasConflict flag correctly set to true
-
-4. **Conflict summary:**
-   - GetConflicts endpoint returns all conflicted assignments
-   - Summary includes unit names and frequency details
-
-**Note:** Docker not available in test environment; tests cannot be executed but code structure verified.
+### Compilation
+- No TypeScript errors in `FrequencyAuditLog.tsx`
+- No C# errors in service, controller, entity, or DTO classes
+- DTO properly mapped to backend entity
+- API endpoint properly registered in `RadioChannelsController`
 
 ---
 
-## Known Limitations & Design Notes
+## Implementation Details
 
-1. **Squad-Only in This Feature:** ChannelAssignmentService currently supports squad assignments only. RadioChannelAssignmentService exists for future polymorphic unit support (platoons/factions).
+### Backend Files
+- **Entity:** `milsim-platform/src/MilsimPlanning.Api/Data/Entities/FrequencyAuditLog.cs`
+- **DTO:** `milsim-platform/src/MilsimPlanning.Api/Models/Channels/FrequencyAuditLogDto.cs`
+- **Service:** `milsim-platform/src/MilsimPlanning.Api/Services/FrequencyAuditLogService.cs`
+  - `GetAuditLogAsync()` — queries with filters and sorting
+  - `LogAssignmentActionAsync()` — creates audit entries
+- **Controller:** `milsim-platform/src/MilsimPlanning.Api/Controllers/RadioChannelsController.cs`
+  - `GET /api/events/{eventId}/frequency-audit-log` endpoint
 
-2. **Event-Scoped Conflicts:** Conflicts are detected per radio channel, which is per event. As intended per AC-03.
+### Frontend Files
+- **Component:** `web/src/components/FrequencyAuditLog.tsx`
+  - Main component with filtering and sorting controls
+  - `AuditLogEntry` subcomponent for rendering individual entries
+- **Page Integration:** `web/src/pages/events/RadioChannelsPage.tsx`
+  - Integrated as "Frequency Assignment Audit Log" section
+- **API Client:** `web/src/lib/api.ts`
+  - `getFrequencyAuditLog()` method with query parameters
+  - `FrequencyAuditLogDto` TypeScript interface
 
-3. **Frontend Override UX:** Advisory mode requires user confirmation - implemented via ConflictConfirmDialog component.
-
-4. **Audit Trail:** FrequencyAuditLog records all operations but audit log queries are not exposed via API in current issue scope.
+### Database
+- Migration: `milsim-platform/src/MilsimPlanning.Api/Data/Migrations/20260427000001_AddChannelNameToFrequencyAuditLog.cs`
+- Table: `FrequencyAuditLogs` with columns for all required fields
+- Indexed on `EventId` for efficient filtering
 
 ---
 
-## Conclusion
+## Key Features Verified
 
-**Issue #935: Frequency Conflict Detection** is **FULLY IMPLEMENTED** with all 7 acceptance criteria satisfied:
-- ✅ Detects conflicts when assigning frequencies (AC-01)
-- ✅ Checks primary and alternate frequencies (AC-02)
-- ✅ Operation-scoped detection only (AC-03)
-- ✅ Advisory conflict warning mode (AC-04)
-- ✅ Persistent conflict state in database (AC-05)
-- ✅ Audit trail logging (AC-06)
-- ✅ Conflict summary endpoint (AC-07)
+✅ **Chronological Sorting**  
+- Default: newest first
+- User selectable: oldest first toggle
+- Backend sorts by `OccurredAt` DESC/ASC
 
-The implementation follows project patterns, is properly tested, and integrates seamlessly with the frontend UI.
+✅ **Rich Entry Display**  
+- Timestamp formatted with locale (ISO-8601 stored)
+- Unit name and type shown
+- Channel name included
+- Primary/alternate frequencies with "MHz" suffix
+- Action type badge with color coding
+- User who performed action displayed
+- Conflict info highlighted when present
+
+✅ **Filtering**  
+- Unit name search filter (case-insensitive substring match)
+- Date range filtering available via API (not exposed in UI per design)
+- Query rebuilds on filter change
+
+✅ **Read-Only UI**  
+- No edit/delete/modify buttons
+- Display-only layout
+- Data sourced from database read endpoint
+
+✅ **Persistence**  
+- PostgreSQL storage
+- No deletion or TTL on audit entries
+- Survives user session logout/login
+- Available for post-mission review
+
+---
+
+## Integration Points
+
+1. **When Frequency Assignment is Created/Updated/Deleted**
+   - `ChannelAssignmentService` calls `FrequencyAuditLogService.LogAssignmentActionAsync()`
+   - Captures: unit, channel, frequencies, user, timestamp
+   - Stores in database for audit trail
+
+2. **When Conflict is Detected**
+   - Service logs action type: `'conflict_detected'` or `'conflict_overridden'`
+   - Includes `conflictingUnitName` of conflicting frequency holder
+   - Visible in audit log with yellow badge
+
+3. **When Planner Views Operation**
+   - RadioChannelsPage loads `FrequencyAuditLog` component
+   - Component fetches audit log for event via `getFrequencyAuditLog()` API
+   - Displays with filters and sort controls
+
+---
+
+## Summary
+
+All 7 mandatory acceptance criteria (AC-01 through AC-07) are **fully implemented and verified**. Optional AC-08 (CSV export) was not implemented as design did not include UI specification for it.
+
+- ✅ Backend builds without errors
+- ✅ Frontend builds and passes all 102 tests
+- ✅ Implementation follows coding standards and patterns
+- ✅ All required fields captured and displayed
+- ✅ Chronological ordering and filtering work as specified
+- ✅ Read-only audit trail established
+- ✅ Persistent storage confirmed
+
+**Ready for code review.**
