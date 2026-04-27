@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MilsimPlanning.Api.Authorization;
 using MilsimPlanning.Api.Data;
+using MilsimPlanning.Api.Data.Entities;
 using MilsimPlanning.Api.Domain;
 using MilsimPlanning.Api.Models.Frequencies;
 
@@ -10,11 +11,13 @@ public class FrequencyService
 {
     private readonly AppDbContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly NatoFrequencyValidationService _validator;
 
-    public FrequencyService(AppDbContext db, ICurrentUser currentUser)
+    public FrequencyService(AppDbContext db, ICurrentUser currentUser, NatoFrequencyValidationService validator)
     {
         _db = db;
         _currentUser = currentUser;
+        _validator = validator;
     }
 
     // ── GET /api/events/{eventId}/frequencies ─────────────────────────────────
@@ -110,6 +113,9 @@ public class FrequencyService
 
         AssertCommanderAccess(squad.Platoon.Faction);
 
+        // Validate frequencies against NATO ranges and spacing
+        ValidateFrequencies(request.PrimaryFrequency, request.BackupFrequency);
+
         squad.PrimaryFrequency = request.PrimaryFrequency;
         squad.BackupFrequency = request.BackupFrequency;
         await _db.SaveChangesAsync();
@@ -128,6 +134,9 @@ public class FrequencyService
 
         AssertCommanderAccess(platoon.Faction);
 
+        // Validate frequencies against NATO ranges and spacing
+        ValidateFrequencies(request.PrimaryFrequency, request.BackupFrequency);
+
         platoon.PrimaryFrequency = request.PrimaryFrequency;
         platoon.BackupFrequency = request.BackupFrequency;
         await _db.SaveChangesAsync();
@@ -145,6 +154,9 @@ public class FrequencyService
 
         AssertCommanderAccess(faction);
 
+        // Validate frequencies against NATO ranges and spacing
+        ValidateFrequencies(request.PrimaryFrequency, request.BackupFrequency);
+
         faction.PrimaryFrequency = request.PrimaryFrequency;
         faction.BackupFrequency = request.BackupFrequency;
         await _db.SaveChangesAsync();
@@ -153,6 +165,59 @@ public class FrequencyService
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Validates both primary and backup frequencies against NATO ranges and 25 kHz spacing.
+    /// Frequencies must be within VHF (30.0–87.975 MHz) or UHF (225–400 MHz) bands.
+    /// Null frequencies are allowed.
+    /// </summary>
+    private void ValidateFrequencies(string? primaryFrequency, string? backupFrequency)
+    {
+        // Validate primary frequency if provided
+        if (!string.IsNullOrWhiteSpace(primaryFrequency))
+        {
+            if (!decimal.TryParse(primaryFrequency, out var primaryFreq))
+                throw new ArgumentException($"Primary frequency '{primaryFrequency}' is not a valid decimal value.");
+
+            var scope = InferChannelScope(primaryFreq);
+            _validator.Validate(primaryFreq, scope);
+        }
+
+        // Validate backup frequency if provided
+        if (!string.IsNullOrWhiteSpace(backupFrequency))
+        {
+            if (!decimal.TryParse(backupFrequency, out var backupFreq))
+                throw new ArgumentException($"Backup frequency '{backupFrequency}' is not a valid decimal value.");
+
+            var scope = InferChannelScope(backupFreq);
+            _validator.Validate(backupFreq, scope);
+        }
+    }
+
+    /// <summary>
+    /// Infers the NATO channel scope (VHF or UHF) from a frequency value in MHz.
+    /// VHF: 30.0–87.975 MHz
+    /// UHF: 225.0–400.0 MHz
+    /// Throws if frequency is outside both ranges.
+    /// </summary>
+    private ChannelScope InferChannelScope(decimal frequency)
+    {
+        const decimal VhfMin = 30.000m;
+        const decimal VhfMax = 87.975m;
+        const decimal UhfMin = 225.000m;
+        const decimal UhfMax = 400.000m;
+
+        if (frequency >= VhfMin && frequency <= VhfMax)
+            return ChannelScope.VHF;
+
+        if (frequency >= UhfMin && frequency <= UhfMax)
+            return ChannelScope.UHF;
+
+        // Frequency is in the gap or outside both bands
+        throw new ArgumentException(
+            $"Frequency {frequency} MHz is not within any NATO band. " +
+            "VHF must be 30.0–87.975 MHz; UHF must be 225–400 MHz.");
+    }
 
     private void AssertCommanderAccess(Data.Entities.Faction faction)
     {

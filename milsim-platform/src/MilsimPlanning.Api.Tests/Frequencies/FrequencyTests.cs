@@ -464,3 +464,245 @@ public class FrequencyRoleVisibilityTests : FrequencyTestsBase
         downgradeClient.Dispose();
     }
 }
+
+// ── NATO frequency range validation tests ──────────────────────────────────────
+
+[Trait("Category", "Frequency_Validation")]
+public class FrequencyValidationTests : FrequencyTestsBase
+{
+    public FrequencyValidationTests(PostgreSqlFixture fixture) : base(fixture) { }
+
+    // ── Valid frequencies ────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("30.025")]  // VHF minimum valid
+    [InlineData("36.500")]  // VHF mid-range
+    [InlineData("87.975")]  // VHF maximum
+    public async Task SetSquadFrequencies_ValidVhfFrequencies_Returns200(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("primary").GetString().Should().Be(frequency);
+    }
+
+    [Theory]
+    [InlineData("225.025")]  // UHF minimum valid
+    [InlineData("250.000")]  // UHF mid-range
+    [InlineData("399.975")]  // UHF near maximum
+    public async Task SetSquadFrequencies_ValidUhfFrequencies_Returns200(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("primary").GetString().Should().Be(frequency);
+    }
+
+    // ── Invalid VHF frequencies ─────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("29.999")]   // Below VHF minimum
+    [InlineData("30.000")]   // Not aligned to 25 kHz (minimum must be 30.025)
+    [InlineData("30.001")]   // Invalid spacing
+    [InlineData("30.024")]   // Invalid spacing (0.001 below valid)
+    [InlineData("30.026")]   // Invalid spacing (0.001 above valid)
+    public async Task SetSquadFrequencies_InvalidVhfFrequencies_Returns422(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("title").GetString().Should().Be("Unprocessable Entity");
+    }
+
+    [Theory]
+    [InlineData("88.000")]   // Above VHF maximum
+    [InlineData("100.000")]  // In VHF/UHF gap
+    [InlineData("224.999")]  // Below UHF minimum
+    public async Task SetSquadFrequencies_OutOfVhfRange_Returns422(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    // ── Invalid UHF frequencies ─────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("225.000")]  // Not aligned to 25 kHz
+    [InlineData("225.001")]  // Invalid spacing
+    [InlineData("225.024")]  // Invalid spacing
+    [InlineData("225.026")]  // Invalid spacing
+    [InlineData("250.001")]  // Invalid spacing
+    public async Task SetSquadFrequencies_InvalidUhfFrequencies_Returns422(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Theory]
+    [InlineData("400.000")]  // Above UHF maximum (must be < 400.0, max valid is 399.975)
+    [InlineData("400.025")]  // Above UHF maximum
+    [InlineData("450.000")]  // Well above UHF maximum
+    public async Task SetSquadFrequencies_OutOfUhfRange_Returns422(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    // ── Invalid format ──────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("abc")]      // Non-numeric
+    [InlineData("36.5.0")]   // Multiple decimals
+    [InlineData("")]         // Empty string (treated as null)
+    public async Task SetSquadFrequencies_InvalidFormat_Returns422(string frequency)
+    {
+        // Empty string is sent as-is (treated as valid empty/null scenario)
+        if (string.IsNullOrWhiteSpace(frequency))
+        {
+            var response = await _commanderClient.PutAsJsonAsync(
+                $"/api/squads/{_squadId}/frequencies",
+                new { primaryFrequency = (string?)null, backupFrequency = (string?)null });
+            response.StatusCode.Should().Be(HttpStatusCode.OK);  // Null is allowed
+        }
+        else
+        {
+            var response = await _commanderClient.PutAsJsonAsync(
+                $"/api/squads/{_squadId}/frequencies",
+                new { primaryFrequency = frequency, backupFrequency = (string?)null });
+            response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        }
+    }
+
+    // ── Null/empty frequencies (allowed) ────────────────────────────────────────
+
+    [Fact]
+    public async Task SetSquadFrequencies_BothNull_Returns200()
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = (string?)null, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("primary").ValueKind.Should().Be(JsonValueKind.Null);
+        body.GetProperty("backup").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task SetSquadFrequencies_OnlyPrimarySet_Returns200()
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = "36.500", backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("primary").GetString().Should().Be("36.500");
+        body.GetProperty("backup").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    // ── Platoon frequencies validation ────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("36.500")]
+    [InlineData("250.000")]
+    public async Task SetPlatoonFrequencies_ValidFrequencies_Returns200(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/platoons/{_platoonId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Theory]
+    [InlineData("30.001")]  // Invalid VHF spacing
+    [InlineData("225.001")] // Invalid UHF spacing
+    public async Task SetPlatoonFrequencies_InvalidFrequencies_Returns422(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/platoons/{_platoonId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    // ── Faction frequencies validation ──────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("36.500")]
+    [InlineData("250.000")]
+    public async Task SetFactionFrequencies_ValidFrequencies_Returns200(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/factions/{_factionId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Theory]
+    [InlineData("30.001")]  // Invalid VHF spacing
+    [InlineData("225.001")] // Invalid UHF spacing
+    public async Task SetFactionFrequencies_InvalidFrequencies_Returns422(string frequency)
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/factions/{_factionId}/frequencies",
+            new { primaryFrequency = frequency, backupFrequency = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    // ── Both primary and backup frequencies ────────────────────────────────────────
+
+    [Fact]
+    public async Task SetSquadFrequencies_BothValidVhf_Returns200()
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = "36.500", backupFrequency = "36.525" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("primary").GetString().Should().Be("36.500");
+        body.GetProperty("backup").GetString().Should().Be("36.525");
+    }
+
+    [Fact]
+    public async Task SetSquadFrequencies_ValidPrimaryInvalidBackup_Returns422()
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = "36.500", backupFrequency = "36.501" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task SetSquadFrequencies_InvalidPrimaryValidBackup_Returns422()
+    {
+        var response = await _commanderClient.PutAsJsonAsync(
+            $"/api/squads/{_squadId}/frequencies",
+            new { primaryFrequency = "36.501", backupFrequency = "36.500" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+}
